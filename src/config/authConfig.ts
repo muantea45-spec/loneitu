@@ -3,6 +3,11 @@
  * Strictly protects the Editorial CMS Console from unauthorized access.
  */
 
+// Official Google Cloud Console OAuth 2.0 Client ID for Loneitu
+export const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  '890840043778-tjhsv22vi85uph314c9g9vetc9n8n13u.apps.googleusercontent.com';
+
 export const DEFAULT_AUTHORIZED_EMAILS: string[] = [
   'muantea45@gmail.com', // Primary Owner & Journal Administrator
   'ddvktp@gmail.com',    // Journal Administrator

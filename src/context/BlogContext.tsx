@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
-import { DEFAULT_AUTHORIZED_EMAILS, DEFAULT_ADMIN_KEY, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
+import { DEFAULT_AUTHORIZED_EMAILS, DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
 
@@ -415,12 +415,12 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [googleClientId, setGoogleClientIdState] = useState<string>(() => {
     try {
       return (
-        import.meta.env.VITE_GOOGLE_CLIENT_ID ||
         localStorage.getItem(STORAGE_KEYS.GOOGLE_CLIENT_ID) ||
+        GOOGLE_CLIENT_ID ||
         ''
       );
     } catch {
-      return '';
+      return GOOGLE_CLIENT_ID || '';
     }
   });
 
