@@ -92,7 +92,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   onSaved,
   onCancel,
 }) => {
-  const { articles, categories, tags, authors, addArticle, updateArticle, addCategory, addTag, addAuthor } = useBlog();
+  const { articles, categories, tags, authors, addArticle, updateArticle, addCategory, addTag, addAuthor, uploadImage } = useBlog();
   const { showToast } = useToast();
 
   const existingArticle = articleId ? articles.find(a => a.id === articleId) : null;
@@ -193,7 +193,8 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     setIsCompressing(true);
     try {
       const result = await compressImage(file, 1200, 0.82);
-      setImageUploadPreview(result.dataUrl);
+      const cloudUrl = await uploadImage(result.dataUrl, file.name);
+      setImageUploadPreview(cloudUrl);
       setImageUploadSizeKb(result.sizeKb);
       if (!imageCaption) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
@@ -212,8 +213,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
       e.preventDefault();
       try {
         const result = await compressImage(file, 1200, 0.82);
+        const cloudUrl = await uploadImage(result.dataUrl, file.name);
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-        insertImageAtCursor(result.dataUrl, nameWithoutExt);
+        insertImageAtCursor(cloudUrl, nameWithoutExt);
       } catch {
         showToast('Failed to drop image', 'error');
       }

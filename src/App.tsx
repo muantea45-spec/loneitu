@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { BlogProvider } from './context/BlogContext';
 import { ToastProvider } from './components/common/Toast';
@@ -8,13 +8,22 @@ import { SidebarMenu } from './components/layout/SidebarMenu';
 import { BookmarkDrawer } from './components/common/BookmarkDrawer';
 import { SearchModal } from './components/common/SearchModal';
 
-// Pages
+// Fast Initial Load: Primary homepage is statically imported
 import { HomePage } from './pages/HomePage';
-import { ArticleDetailPage } from './pages/ArticleDetailPage';
-import { CategoryArchivePage } from './pages/CategoryArchivePage';
-import { TagArchivePage } from './pages/TagArchivePage';
-import { AboutPage } from './pages/AboutPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
+
+// Code Splitting: Lazy-load heavier routes to keep initial bundle ultra-fast
+const ArticleDetailPage = React.lazy(() => import('./pages/ArticleDetailPage').then(m => ({ default: m.ArticleDetailPage })));
+const CategoryArchivePage = React.lazy(() => import('./pages/CategoryArchivePage').then(m => ({ default: m.CategoryArchivePage })));
+const TagArchivePage = React.lazy(() => import('./pages/TagArchivePage').then(m => ({ default: m.TagArchivePage })));
+const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="w-full min-h-[50vh] flex flex-col items-center justify-center p-8 text-[#143520]">
+    <div className="w-8 h-8 border-3 border-[#256B3A]/20 border-t-[#256B3A] rounded-full animate-spin mb-3" />
+    <span className="text-xs font-semibold text-[#8F7855] tracking-wide">Chhiar zung zung rawh le...</span>
+  </div>
+);
 
 const AppLayout: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -35,18 +44,20 @@ const AppLayout: React.FC = () => {
         />
       )}
 
-      {/* Main Page Routing */}
+      {/* Main Page Routing with Suspense code-splitting */}
       <div className="flex-1">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/thuziak-thar" element={<HomePage />} />
-          <Route path="/article/:slug" element={<ArticleDetailPage />} />
-          <Route path="/category/:slug" element={<CategoryArchivePage />} />
-          <Route path="/tag/:slug" element={<TagArchivePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/admin/*" element={<AdminDashboardPage />} />
-          <Route path="*" element={<HomePage />} />
-        </Routes>
+        <Suspense fallback={<PageLoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/thuziak-thar" element={<HomePage />} />
+            <Route path="/article/:slug" element={<ArticleDetailPage />} />
+            <Route path="/category/:slug" element={<CategoryArchivePage />} />
+            <Route path="/tag/:slug" element={<TagArchivePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/admin/*" element={<AdminDashboardPage />} />
+            <Route path="*" element={<HomePage />} />
+          </Routes>
+        </Suspense>
       </div>
 
       {/* Public Footer */}

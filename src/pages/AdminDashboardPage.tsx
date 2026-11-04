@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useBlog } from '../context/BlogContext';
 import { AdminLoginPage } from './AdminLoginPage';
@@ -11,7 +11,7 @@ import { CategoryManager } from '../components/admin/CategoryManager';
 import { TagManager } from '../components/admin/TagManager';
 import { AuthorManager } from '../components/admin/AuthorManager';
 import { AboutEditor } from '../components/admin/AboutEditor';
-import { RotateCcw, Download, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
+import { RotateCcw, Download, Upload, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/common/Toast';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -20,7 +20,9 @@ export const AdminDashboardPage: React.FC = () => {
     articles,
     categories,
     tags,
+    authors,
     resetToInitialData,
+    restoreFullDatabase,
     authorizedEmails,
     primaryOwnerEmail,
     setPrimaryOwnerEmail,
@@ -89,21 +91,64 @@ export const AdminDashboardPage: React.FC = () => {
     setEditingArticleId(null);
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleExportJSON = () => {
-    const data = {
-      exportDate: new Date().toISOString(),
-      articles,
-      categories,
-      tags,
-      aboutData,
+    const backup = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      platform: 'Loneitu (MIZORAM TAN)',
+      data: {
+        articles,
+        categories,
+        tags,
+        authors,
+        aboutData,
+        authorizedEmails,
+        primaryOwnerEmail,
+        adminSecurityKey,
+      },
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `loneitu-database-export-${Date.now()}.json`;
+    a.download = `loneitu-full-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    showToast('Database export downloaded!', 'success');
+    showToast('Full database snapshot downloaded!', 'success');
+  };
+
+  const handleRestoreFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const payload = parsed.data || parsed;
+
+      if (!Array.isArray(payload.articles) || !Array.isArray(payload.categories)) {
+        showToast('Invalid backup file. Missing articles or categories data.', 'error');
+        return;
+      }
+
+      if (
+        window.confirm(
+          `Restore database from backup? This will replace your current articles (${articles.length} items) with the backup (${payload.articles.length} items) and sync across all devices.`
+        )
+      ) {
+        const ok = await restoreFullDatabase(parsed);
+        if (ok) {
+          showToast('Database successfully restored and synced to cloud!', 'success');
+        } else {
+          showToast('Failed to restore database from backup.', 'error');
+        }
+      }
+    } catch {
+      showToast('Error reading backup JSON file.', 'error');
+    } finally {
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleResetSeed = () => {
@@ -450,22 +495,48 @@ export const AdminDashboardPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Export JSON */}
-              <div className="p-5 bg-[#F2F7F3] rounded-2xl border border-[#B7CEB4] space-y-3">
-                <div className="flex items-center gap-2 text-sm font-bold text-[#143520]">
-                  <Download className="w-4 h-4 text-[#256B3A]" />
-                  <span>Export Database JSON Snapshot</span>
+              {/* Database Snapshot & Disaster Recovery */}
+              <div className="p-5 bg-white rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-[#143520]">
+                    <Database className="w-5 h-5 text-[#256B3A]" />
+                    <span>Database Snapshot & Disaster Recovery</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#EBF1EA] text-[#256B3A]">
+                    {articles.length} articles • {categories.length} sectors
+                  </span>
                 </div>
-                <p className="text-xs text-[#4A584E] leading-relaxed">
-                  Download a complete JSON export of all currently authored articles, categories, practice tags, and reader engagement metrics.
+                <p className="text-xs text-[#6F5B3C] leading-relaxed">
+                  Download a complete, self-contained JSON snapshot of all authored articles, full markdown texts, images, sector categories, tags, agronomist authors, and admin access whitelists. You can upload and restore this file at any time to recover accidentally deleted content.
                 </p>
-                <button
-                  onClick={handleExportJSON}
-                  className="px-4 py-2.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <Database className="w-3.5 h-3.5 text-[#BFDC28]" />
-                  <span>Download .json Backup</span>
-                </button>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleExportJSON}
+                    className="px-4 py-2.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+                  >
+                    <Download className="w-4 h-4 text-[#BFDC28]" />
+                    <span>Download Full Backup (.json)</span>
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleRestoreFile}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2.5 rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] border border-[#DDD4BC] text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
+                  >
+                    <Upload className="w-4 h-4 text-[#256B3A]" />
+                    <span>Restore from Backup (.json)</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

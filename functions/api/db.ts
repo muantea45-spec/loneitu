@@ -38,12 +38,21 @@ export const onRequestGet: PagesFunction = async () => {
 export const onRequestPost: PagesFunction = async (context) => {
   try {
     const body = await context.request.text();
+    const adminKey = context.request.headers.get('x-admin-key') || '';
+    const adminEmail = context.request.headers.get('x-admin-email') || '';
+    const authHeader = context.request.headers.get('authorization') || '';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    };
+    if (adminKey) headers['x-admin-key'] = adminKey;
+    if (adminEmail) headers['x-admin-email'] = adminEmail;
+    if (authHeader) headers['authorization'] = authHeader;
+
     const res = await fetch(`${BACKEND_URL}?_t=${Date.now()}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      },
+      headers,
       body,
     });
     const text = await res.text();
@@ -73,7 +82,7 @@ export const onRequestOptions: PagesFunction = async () => {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Key, X-Admin-Email',
     },
   });
 };

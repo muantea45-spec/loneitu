@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, AboutPageData } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA } from '../data/initialData';
@@ -72,8 +72,10 @@ interface BlogContextType {
   loginAdmin: (pass: string) => boolean;
   logoutAdmin: () => void;
 
-  // Maintenance
+  // Maintenance & Cloud utilities
   resetToInitialData: () => void;
+  restoreFullDatabase: (backupData: any) => Promise<boolean>;
+  uploadImage: (dataUrl: string, filename?: string) => Promise<string>;
   filteredArticles: Article[];
 }
 
@@ -135,20 +137,28 @@ async function fetchRemoteDatabase(): Promise<any> {
   return null;
 }
 
-async function saveRemoteDatabase(payload: any): Promise<boolean> {
+async function saveRemoteDatabase(payload: any, authInfo?: { key?: string; email?: string }): Promise<boolean> {
   const t = Date.now();
   let saved = false;
+
+  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || 'mizoram-loneitu-2026';
+  const email = authInfo?.email || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) : null) || 'muantea45@gmail.com';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+  };
+  if (key) headers['X-Admin-Key'] = key;
+  if (email) headers['X-Admin-Email'] = email;
+
   for (const endpoint of CLOUD_API_ENDPOINTS) {
     try {
       const url = `${endpoint}?_cb=${t}`;
       const res = await fetch(url, {
         method: 'POST',
         cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        },
+        headers,
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -160,6 +170,35 @@ async function saveRemoteDatabase(payload: any): Promise<boolean> {
     }
   }
   return saved;
+}
+
+const UPLOAD_API_ENDPOINTS = [
+  'https://loneitu.ddvktp.workers.dev/api/upload',
+  '/api/upload',
+];
+
+async function uploadImageToCloud(dataUrl: string, filename?: string): Promise<string> {
+  if (!dataUrl || !dataUrl.startsWith('data:')) {
+    return dataUrl;
+  }
+  for (const endpoint of UPLOAD_API_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && json.url) {
+          return json.url;
+        }
+      }
+    } catch {
+      // try next endpoint
+    }
+  }
+  return dataUrl;
 }
 
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -1147,6 +1186,59 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const restoreFullDatabase = useCallback(async (backupData: any): Promise<boolean> => {
+    if (!backupData || typeof backupData !== 'object') {
+      return false;
+    }
+    const payload = backupData.data || backupData;
+    if (!Array.isArray(payload.articles)) {
+      return false;
+    }
+
+    try {
+      if (Array.isArray(payload.articles)) setArticles(payload.articles);
+      if (Array.isArray(payload.categories)) setCategories(payload.categories);
+      if (Array.isArray(payload.tags)) setTags(payload.tags);
+      if (Array.isArray(payload.authors)) setAuthors(payload.authors);
+      if (payload.aboutData) setAboutData(payload.aboutData);
+      if (Array.isArray(payload.authorizedEmails) && payload.authorizedEmails.length > 0) {
+        setAuthorizedEmails(payload.authorizedEmails);
+      }
+      if (payload.primaryOwnerEmail) {
+        setPrimaryOwnerEmailState(payload.primaryOwnerEmail);
+      }
+      if (payload.adminSecurityKey) {
+        setAdminSecurityKeyState(payload.adminSecurityKey);
+      }
+
+      const fullSnapshot = {
+        articles: payload.articles || articles,
+        categories: payload.categories || categories,
+        tags: payload.tags || tags,
+        authors: payload.authors || authors,
+        aboutData: payload.aboutData || aboutData,
+        authorizedEmails: payload.authorizedEmails || authorizedEmails,
+        primaryOwnerEmail: payload.primaryOwnerEmail || primaryOwnerEmail,
+        adminSecurityKey: payload.adminSecurityKey || adminSecurityKey,
+        lastUpdated: Date.now(),
+      };
+
+      await saveRemoteDatabase(fullSnapshot, {
+        key: fullSnapshot.adminSecurityKey,
+        email: fullSnapshot.primaryOwnerEmail,
+      });
+      broadcastLocalChange('database_restored', fullSnapshot);
+      return true;
+    } catch (e) {
+      console.error('Failed to restore database from backup', e);
+      return false;
+    }
+  }, [articles, categories, tags, authors, aboutData, authorizedEmails, primaryOwnerEmail, adminSecurityKey]);
+
+  const uploadImage = useCallback(async (dataUrl: string, filename?: string): Promise<string> => {
+    return uploadImageToCloud(dataUrl, filename);
+  }, []);
+
   // Derived filtered articles
   const filteredArticles = useMemo(() => {
     return articles
@@ -1264,6 +1356,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginAdmin,
         logoutAdmin,
         resetToInitialData,
+        restoreFullDatabase,
+        uploadImage,
         filteredArticles,
       }}
     >
