@@ -307,17 +307,20 @@ export default {
     }
 
     // Default: Serve frontend static assets from ./dist with SPA fallback to root /
-    try {
-      let res = await env.ASSETS.fetch(request);
-      if (res.status === 404 && request.method === 'GET' && !url.pathname.startsWith('/api/')) {
+    if (env.ASSETS) {
+      try {
+        let res = await env.ASSETS.fetch(request);
+        if (res.status === 404 && request.method === 'GET' && !url.pathname.startsWith('/api/')) {
+          const rootUrl = new URL('/', request.url);
+          res = await env.ASSETS.fetch(new Request(rootUrl.toString(), request));
+        }
+        return res;
+      } catch {
         const rootUrl = new URL('/', request.url);
-        res = await env.ASSETS.fetch(new Request(rootUrl.toString(), request));
+        return env.ASSETS.fetch(new Request(rootUrl.toString(), request));
       }
-      return res;
-    } catch {
-      const rootUrl = new URL('/', request.url);
-      return env.ASSETS.fetch(new Request(rootUrl.toString(), request));
     }
+    return new Response('Not Found', { status: 404 });
   } catch (globalErr: any) {
     return new Response(`Global Worker Error: ${globalErr?.message || globalErr}\n${globalErr?.stack || ''}`, {
       status: 500,
