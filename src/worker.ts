@@ -36,7 +36,8 @@ const CORS_HEADERS = {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
     // 1. CORS Preflight
     if (request.method === 'OPTIONS') {
@@ -305,17 +306,23 @@ export default {
       }
     }
 
-    // Default: Serve frontend static assets from ./dist with SPA fallback to /index.html
+    // Default: Serve frontend static assets from ./dist with SPA fallback to root /
     try {
       let res = await env.ASSETS.fetch(request);
       if (res.status === 404 && request.method === 'GET' && !url.pathname.startsWith('/api/')) {
-        const spaUrl = new URL('/index.html', request.url);
-        res = await env.ASSETS.fetch(new Request(spaUrl.toString(), request));
+        const rootUrl = new URL('/', request.url);
+        res = await env.ASSETS.fetch(new Request(rootUrl.toString(), request));
       }
       return res;
     } catch {
-      const spaUrl = new URL('/index.html', request.url);
-      return env.ASSETS.fetch(new Request(spaUrl.toString(), request));
+      const rootUrl = new URL('/', request.url);
+      return env.ASSETS.fetch(new Request(rootUrl.toString(), request));
     }
+  } catch (globalErr: any) {
+    return new Response(`Global Worker Error: ${globalErr?.message || globalErr}\n${globalErr?.stack || ''}`, {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
   },
 };
