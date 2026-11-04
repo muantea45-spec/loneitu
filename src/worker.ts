@@ -286,11 +286,36 @@ export default {
           }
         } catch (err: any) {
           console.error('Social preview error', err);
+          const fallbackHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Loneitu — MIZORAM TAN</title>
+  <meta property="og:site_name" content="Loneitu (MIZORAM TAN)" />
+  <meta property="og:title" content="Loneitu (MIZORAM TAN)" />
+  <meta property="og:description" content="Mizoram thlai leh leilung humhalhna chanchinbu." />
+  <meta property="og:image" content="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80" />
+</head>
+<body><h1>Loneitu</h1></body>
+</html>`;
+          return new Response(fallbackHtml, {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
+          });
         }
       }
     }
 
-    // Default: Serve frontend static assets from ./dist
-    return env.ASSETS.fetch(request);
+    // Default: Serve frontend static assets from ./dist with SPA fallback to /index.html
+    try {
+      let res = await env.ASSETS.fetch(request);
+      if (res.status === 404 && request.method === 'GET' && !url.pathname.startsWith('/api/')) {
+        const spaUrl = new URL('/index.html', request.url);
+        res = await env.ASSETS.fetch(new Request(spaUrl.toString(), request));
+      }
+      return res;
+    } catch {
+      const spaUrl = new URL('/index.html', request.url);
+      return env.ASSETS.fetch(new Request(spaUrl.toString(), request));
+    }
   },
 };
