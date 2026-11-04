@@ -36,7 +36,9 @@ export default {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
           },
         });
       }
@@ -50,10 +52,12 @@ export default {
             await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(body));
             kvSaved = true;
           }
-          return new Response(JSON.stringify({ success: true, kvSaved }), {
+          return new Response(JSON.stringify({ success: true, kvSaved, data: body }), {
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+              'Pragma': 'no-cache',
             },
           });
         } catch (err: any) {
@@ -62,6 +66,7 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-store',
             },
           });
         }

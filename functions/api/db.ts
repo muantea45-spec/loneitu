@@ -6,8 +6,11 @@ const BACKEND_URL = 'https://loneitu.ddvktp.workers.dev/api/db';
 
 export const onRequestGet: PagesFunction = async () => {
   try {
-    const res = await fetch(BACKEND_URL, {
-      headers: { 'Cache-Control': 'no-cache' },
+    const res = await fetch(`${BACKEND_URL}?_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     });
     const text = await res.text();
     return new Response(text, {
@@ -15,7 +18,9 @@ export const onRequestGet: PagesFunction = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (err: any) {
@@ -24,6 +29,7 @@ export const onRequestGet: PagesFunction = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-store',
       },
     });
   }
@@ -32,9 +38,12 @@ export const onRequestGet: PagesFunction = async () => {
 export const onRequestPost: PagesFunction = async (context) => {
   try {
     const body = await context.request.text();
-    const res = await fetch(BACKEND_URL, {
+    const res = await fetch(`${BACKEND_URL}?_t=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
       body,
     });
     const text = await res.text();
@@ -43,6 +52,8 @@ export const onRequestPost: PagesFunction = async (context) => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
       },
     });
   } catch (err: any) {
@@ -51,6 +62,7 @@ export const onRequestPost: PagesFunction = async (context) => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-store',
       },
     });
   }

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef 
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
-import { DEFAULT_AUTHORIZED_EMAILS, DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
+import { DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
 
@@ -97,11 +97,27 @@ const CLOUD_API_ENDPOINTS = [
   '/api/db',
 ];
 
+function broadcastLocalChange(type: string, payload: any) {
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const channel = new BroadcastChannel('loneitu_live_bus');
+      channel.postMessage({ type, payload, timestamp: Date.now() });
+      channel.close();
+    } catch {}
+  }
+}
+
 async function fetchRemoteDatabase(): Promise<any> {
+  const t = Date.now();
   for (const endpoint of CLOUD_API_ENDPOINTS) {
     try {
-      const res = await fetch(endpoint, {
-        headers: { 'Cache-Control': 'no-cache' },
+      const url = `${endpoint}?_cb=${t}`;
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
       });
       if (res.ok) {
         const json = await res.json();
@@ -117,12 +133,19 @@ async function fetchRemoteDatabase(): Promise<any> {
 }
 
 async function saveRemoteDatabase(payload: any): Promise<boolean> {
+  const t = Date.now();
   let saved = false;
   for (const endpoint of CLOUD_API_ENDPOINTS) {
     try {
-      const res = await fetch(endpoint, {
+      const url = `${endpoint}?_cb=${t}`;
+      const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -309,19 +332,16 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const list = parsed.map((e: string) => e.trim().toLowerCase());
-          DEFAULT_AUTHORIZED_EMAILS.forEach(defaultEmail => {
-            const normalized = defaultEmail.trim().toLowerCase();
-            if (!list.includes(normalized)) {
-              list.push(normalized);
-            }
-          });
+          const list = parsed.map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+          if (!list.includes('muantea45@gmail.com')) {
+            list.unshift('muantea45@gmail.com');
+          }
           return list;
         }
       }
-      return DEFAULT_AUTHORIZED_EMAILS;
+      return ['muantea45@gmail.com'];
     } catch {
-      return DEFAULT_AUTHORIZED_EMAILS;
+      return ['muantea45@gmail.com'];
     }
   });
 
@@ -340,6 +360,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return DEFAULT_ADMIN_KEY;
     }
   });
+
+  // Track the exact timestamp of local mutations to prevent race-condition overwrites
+  const lastMutationTimeRef = useRef<number>(0);
 
   // Reference tracking latest state to prevent stale closures during cloud sync
   const latestDbStateRef = useRef({
@@ -370,16 +393,22 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const cloudData = await fetchRemoteDatabase();
       if (!cloudData) return;
 
-      if (Array.isArray(cloudData.authorizedEmails) && cloudData.authorizedEmails.length > 0) {
-        const mergedEmails = Array.from(
-          new Set([
-            ...DEFAULT_AUTHORIZED_EMAILS.map(e => e.trim().toLowerCase()),
-            ...cloudData.authorizedEmails.map((e: string) => e.trim().toLowerCase()),
-          ])
-        );
-        setAuthorizedEmails(mergedEmails);
+      // Concurrency guard: If user performed an action in the last 4 seconds, do NOT let a stale response overwrite it
+      if (Date.now() - lastMutationTimeRef.current < 4000) {
+        return;
+      }
+
+      if (Array.isArray(cloudData.authorizedEmails)) {
+        const cleanList = cloudData.authorizedEmails
+          .map((e: string) => e.trim().toLowerCase())
+          .filter(Boolean);
+        const owner = (cloudData.primaryOwnerEmail || 'muantea45@gmail.com').trim().toLowerCase();
+        if (!cleanList.includes(owner)) {
+          cleanList.unshift(owner);
+        }
+        setAuthorizedEmails(cleanList);
         try {
-          localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(mergedEmails));
+          localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(cleanList));
         } catch {}
       }
 
@@ -446,17 +475,38 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     window.addEventListener('visibilitychange', handleSyncOnVisible);
     window.addEventListener('focus', handleSyncOnVisible);
 
+    // Fast 3-second live sync poll when page is active on screen (Instant updates across devices)
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && isMounted) {
         fetchCloudDb();
       }
-    }, 45000);
+    }, 3000);
 
     return () => {
       isMounted = false;
       window.removeEventListener('visibilitychange', handleSyncOnVisible);
       window.removeEventListener('focus', handleSyncOnVisible);
       clearInterval(interval);
+    };
+  }, []);
+
+  // Multi-tab broadcast channel listener for 0ms cross-tab updates
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('loneitu_live_bus');
+    channel.onmessage = (event) => {
+      if (!event.data) return;
+      const { type, payload } = event.data;
+      if (type === 'AUTH_EMAILS' && Array.isArray(payload)) {
+        setAuthorizedEmails(payload);
+        try { localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(payload)); } catch {}
+      } else if (type === 'ARTICLES' && Array.isArray(payload)) {
+        setArticles(payload);
+        try { localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(payload)); } catch {}
+      }
+    };
+    return () => {
+      channel.close();
     };
   }, []);
 
@@ -501,9 +551,15 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!authorizedEmails.includes(normalized)) {
       updatedEmails = [...authorizedEmails, normalized];
       setAuthorizedEmails(updatedEmails);
+      try { localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updatedEmails)); } catch {}
     }
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.primaryOwnerEmail = normalized;
+    latestDbStateRef.current.authorizedEmails = updatedEmails;
     setPrimaryOwnerEmailState(normalized);
+    try { localStorage.setItem(STORAGE_KEYS.PRIMARY_OWNER, normalized); } catch {}
     pushToCloudDatabase({ primaryOwnerEmail: normalized, authorizedEmails: updatedEmails });
+    broadcastLocalChange('AUTH_EMAILS', updatedEmails);
   };
 
   const isAuthorizedEmail = (email: string): boolean => {
@@ -518,10 +574,18 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addAuthorizedEmail = (email: string): boolean => {
     const normalized = email.trim().toLowerCase();
     if (!normalized.includes('@')) return false;
-    if (isAuthorizedEmail(normalized)) return false;
-    const updated = [...authorizedEmails, normalized];
+    if (authorizedEmails.some(e => e.toLowerCase() === normalized)) return false;
+
+    const updated = [...authorizedEmails.filter(e => e.toLowerCase() !== normalized), normalized];
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.authorizedEmails = updated;
     setAuthorizedEmails(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updated));
+    } catch {}
+
     pushToCloudDatabase({ authorizedEmails: updated });
+    broadcastLocalChange('AUTH_EMAILS', updated);
     return true;
   };
 
@@ -529,9 +593,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const normalized = email.trim().toLowerCase();
     // Cannot delete the current primary journal owner
     if (normalized === primaryOwnerEmail.toLowerCase()) return false;
+
     const updated = authorizedEmails.filter(e => e.toLowerCase() !== normalized);
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.authorizedEmails = updated;
     setAuthorizedEmails(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updated));
+    } catch {}
+
     pushToCloudDatabase({ authorizedEmails: updated });
+    broadcastLocalChange('AUTH_EMAILS', updated);
     return true;
   };
 
@@ -646,7 +718,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       content: data.content,
       coverImage: data.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80',
       category: data.category,
-      tags: data.tags && data.tags.length > 0 ? data.tags : ['LeiTha'],
+      tags: data.tags || [],
       author: data.author || authors[0] || INITIAL_AUTHORS[0],
       publishedAt: new Date().toISOString(),
       readingTimeMinutes: calculateReadingTime(data.content),
@@ -658,11 +730,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updatedArticles = [newArticle, ...articles];
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch {}
     pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
     return newArticle;
   };
 
@@ -675,31 +750,40 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       return updated;
     });
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch {}
     pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
   };
 
   const deleteArticle = (id: string) => {
     const updatedArticles = articles.filter(a => a.id !== id);
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch {}
     pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
   };
 
   const toggleFeatured = (id: string) => {
     const updatedArticles = articles.map(a =>
       a.id === id ? { ...a, isFeatured: !a.isFeatured } : a
     );
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch {}
     pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
   };
 
   const toggleStatus = (id: string) => {
@@ -708,11 +792,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ? { ...a, status: (a.status === 'published' ? 'draft' : 'published') as 'draft' | 'published' }
         : a
     );
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch {}
     pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
   };
 
   const incrementViews = (id: string) => {
@@ -758,11 +845,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         comments: [...(art.comments || []), newComment],
       };
     });
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch {}
     pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
   };
 
   // Taxonomy actions
