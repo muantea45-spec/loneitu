@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
+import { SocialIconsRow } from '../common/SocialIcons';
 
 interface SidebarMenuProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   onOpenSearch,
   onOpenBookmarks,
 }) => {
-  const { categories, tags, bookmarks, articles } = useBlog();
+  const { categories, tags, bookmarks, articles, aboutData } = useBlog();
   const location = useLocation();
 
   if (!isOpen) return null;
@@ -165,6 +166,16 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* Social Media Links (Simple Brand Logos Only) */}
+            {aboutData?.socialLinks && Object.values(aboutData.socialLinks).some(v => !!v && v.trim() !== '') && (
+              <div className="p-4 border-t border-[#EBE6D6] bg-[#F6F4EB]/60">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] mb-2 px-1">
+                  Connect With Loneitu
+                </p>
+                <SocialIconsRow links={aboutData.socialLinks} variant="light" />
+              </div>
+            )}
           </div>
         </div>
       </div>

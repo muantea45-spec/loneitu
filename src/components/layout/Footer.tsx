@@ -1,8 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Sprout } from 'lucide-react';
+import { useBlog } from '../../context/BlogContext';
+import { SocialIconsRow } from '../common/SocialIcons';
 
 export const Footer: React.FC = () => {
+  const { aboutData } = useBlog();
+
   return (
     <footer className="w-full bg-[#143520] text-[#EBF1EA] border-t border-[#1E542E] mt-20">
       <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -21,14 +25,17 @@ export const Footer: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-semibold text-[#D7E3D5]">
-          <Link to="/" className="hover:text-[#BFDC28] transition-colors">
-            Kawtchhuah (Home)
-          </Link>
-          <span>•</span>
-          <Link to="/about" className="hover:text-[#BFDC28] transition-colors">
-            Kan Chanchin (About)
-          </Link>
+        <div className="flex flex-col items-start md:items-end gap-3.5">
+          <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
+          <div className="flex items-center gap-4 text-xs font-semibold text-[#D7E3D5]">
+            <Link to="/" className="hover:text-[#BFDC28] transition-colors">
+              Kawtchhuah (Home)
+            </Link>
+            <span>•</span>
+            <Link to="/about" className="hover:text-[#BFDC28] transition-colors">
+              Kan Chanchin (About)
+            </Link>
+          </div>
         </div>
       </div>
 
