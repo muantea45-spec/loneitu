@@ -198,7 +198,7 @@ He leilung nung enkawl dan hian:
     publishedAt: '2026-10-24T14:30:00Z',
     readingTimeMinutes: 6,
     status: 'published',
-    isFeatured: true,
+    isFeatured: false,
     views: 2890,
     likes: 142,
     comments: [
@@ -264,7 +264,7 @@ TUI PEK KHAWL INZAWN DAN:
     publishedAt: '2026-10-20T11:15:00Z',
     readingTimeMinutes: 8,
     status: 'published',
-    isFeatured: true,
+    isFeatured: false,
     views: 1980,
     likes: 112,
     comments: [],

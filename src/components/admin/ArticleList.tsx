@@ -132,7 +132,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
               <th className="px-3 sm:px-5 py-3 w-auto min-w-0">Article</th>
               {/* Secondary Metadata - selectively hidden on intermediate breakpoints */}
               <th className="hidden md:table-cell px-3 py-3 w-36 lg:w-44">Sector</th>
-              <th className="hidden lg:table-cell px-2 py-3 w-16 text-center">Featured</th>
+              <th className="hidden md:table-cell px-2 py-3 w-16 text-center">Featured</th>
               <th className="px-2 sm:px-3 py-3 w-24 sm:w-28 text-center">Status</th>
               <th className="hidden xl:table-cell px-2 py-3 w-24 text-center">Metrics</th>
               <th className="hidden sm:table-cell px-3 py-3 w-24 text-[#8F7855]">Date</th>
@@ -203,17 +203,25 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                         </span>
                       </td>
 
-                      {/* Featured (hidden on compact desktop) */}
-                      <td className="hidden lg:table-cell px-2 py-3 w-16 text-center">
+                      {/* Featured Toggle */}
+                      <td className="hidden md:table-cell px-2 py-3 w-16 text-center">
                         <button
                           type="button"
-                          onClick={() => toggleFeatured(art.id)}
+                          onClick={() => {
+                            toggleFeatured(art.id);
+                            showToast(
+                              art.isFeatured
+                                ? `Removed from Featured`
+                                : `Marked as Featured lead`,
+                              'success'
+                            );
+                          }}
                           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                             art.isFeatured
                               ? 'bg-amber-100 text-amber-600'
                               : 'text-[#DDD4BC] hover:text-amber-500'
                           }`}
-                          title={art.isFeatured ? 'Featured on home screen' : 'Mark as featured lead'}
+                          title={art.isFeatured ? 'Featured on home screen (Click to unfeature)' : 'Mark as featured lead'}
                         >
                           <Star
                             className={`w-4 h-4 mx-auto ${
@@ -376,7 +384,15 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                               </div>
                               <button
                                 type="button"
-                                onClick={() => toggleFeatured(art.id)}
+                                onClick={() => {
+                                  toggleFeatured(art.id);
+                                  showToast(
+                                    art.isFeatured
+                                      ? `Removed from Featured`
+                                      : `Marked as Featured lead`,
+                                    'success'
+                                  );
+                                }}
                                 className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                                   art.isFeatured
                                     ? 'bg-amber-100 text-amber-800 border-amber-300'
