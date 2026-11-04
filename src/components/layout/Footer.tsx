@@ -79,6 +79,10 @@ export const Footer: React.FC = () => {
             <Link to="/about" className="hover:text-[#BFDC28] transition-colors">
               Kan Chanchin (About)
             </Link>
+            <span>•</span>
+            <Link to="/archive" className="hover:text-[#BFDC28] transition-colors">
+              Thuziak Dahkhawm (Archive)
+            </Link>
           </div>
         </div>
       </div>

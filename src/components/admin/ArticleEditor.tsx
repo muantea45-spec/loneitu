@@ -33,44 +33,7 @@ import { useBlog } from '../../context/BlogContext';
 import { slugify } from '../../utils/slugify';
 import { calculateReadingTime } from '../../utils/readingTime';
 import { useToast } from '../common/Toast';
-
-function compressImage(file: File, maxWidth = 1200, quality = 0.82): Promise<{ dataUrl: string; sizeKb: number }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          const res = e.target?.result as string;
-          resolve({ dataUrl: res, sizeKb: Math.round(file.size / 1024) });
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        const sizeKb = Math.round((dataUrl.length * 3) / 4 / 1024);
-        resolve({ dataUrl, sizeKb });
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-}
+import { compressImage } from '../../utils/imageCompressor';
 
 interface ArticleEditorProps {
   articleId?: string | null;
@@ -87,6 +50,15 @@ const PRESET_COVERS = [
   { label: 'Rural Solar Microgrid', url: 'https://images.unsplash.com/photo-1592982537447-6f2a6a0c5c1b?auto=format&fit=crop&w=1600&q=80' },
   { label: 'Seedlings & Greenery', url: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=1600&q=80' },
   { label: 'Drone Crop Scouting', url: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=1600&q=80' },
+];
+
+const PRESET_AVATARS = [
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
 ];
 
 export const ArticleEditor: React.FC<ArticleEditorProps> = ({
@@ -143,6 +115,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [newAuthorInst, setNewAuthorInst] = useState('');
   const [newAuthorBio, setNewAuthorBio] = useState('');
   const [newAuthorAvatar, setNewAuthorAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80');
+  const [newAuthorAvatarTab, setNewAuthorAvatarTab] = useState<'upload' | 'embed'>('upload');
+  const [isNewAuthorAvatarUploading, setIsNewAuthorAvatarUploading] = useState(false);
+  const newAuthorAvatarInputRef = useRef<HTMLInputElement>(null);
 
   // Inline Image Insertion modal & Upload states
   const [showImageModal, setShowImageModal] = useState(false);
@@ -232,6 +207,29 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
       showToast('Failed to upload cover photo. Please try another file.', 'error');
     } finally {
       setIsCoverUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleNewAuthorAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (JPG, PNG, WebP)', 'error');
+      return;
+    }
+
+    setIsNewAuthorAvatarUploading(true);
+    try {
+      const result = await compressImage(file, 400, 0.85);
+      const cdnUrl = await uploadImage(result.dataUrl, file.name);
+      setNewAuthorAvatar(cdnUrl);
+      showToast('Author avatar photo uploaded successfully!', 'success');
+    } catch {
+      showToast('Failed to upload author photo. Please try again.', 'error');
+    } finally {
+      setIsNewAuthorAvatarUploading(false);
       if (e.target) e.target.value = '';
     }
   };
@@ -1335,17 +1333,107 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                  Avatar Photo URL
-                </label>
-                <input
-                  type="url"
-                  value={newAuthorAvatar}
-                  onChange={e => setNewAuthorAvatar(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                />
+              {/* Avatar Photo (Upload or Embed) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-[#6F5B3C]">
+                    Author Profile Avatar
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setNewAuthorAvatarTab('upload')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                        newAuthorAvatarTab === 'upload'
+                          ? 'bg-[#143520] text-white'
+                          : 'bg-[#F6F4EB] text-[#6F5B3C] hover:bg-[#EBE6D6]'
+                      }`}
+                    >
+                      Upload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewAuthorAvatarTab('embed')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                        newAuthorAvatarTab === 'embed'
+                          ? 'bg-[#143520] text-white'
+                          : 'bg-[#F6F4EB] text-[#6F5B3C] hover:bg-[#EBE6D6]'
+                      }`}
+                    >
+                      URL
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-2 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-[#256B3A]/40 shrink-0 bg-white flex items-center justify-center">
+                    {newAuthorAvatar ? (
+                      <img
+                        src={newAuthorAvatar}
+                        alt="Avatar preview"
+                        className="w-full h-full object-cover"
+                        onError={e => {
+                          (e.currentTarget as HTMLImageElement).src = PRESET_AVATARS[0];
+                        }}
+                      />
+                    ) : (
+                      <UserCheck className="w-5 h-5 text-[#8F7855]" />
+                    )}
+                    {isNewAuthorAvatarUploading && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <RefreshCw className="w-4 h-4 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    {newAuthorAvatarTab === 'upload' ? (
+                      <>
+                        <input
+                          ref={newAuthorAvatarInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          onChange={handleNewAuthorAvatarFileChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          disabled={isNewAuthorAvatarUploading}
+                          onClick={() => newAuthorAvatarInputRef.current?.click()}
+                          className="w-full py-1.5 px-2.5 bg-white hover:bg-[#FAF8F3] border border-dashed border-[#256B3A]/60 rounded-lg text-xs font-medium text-[#143520] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
+                          <span>{isNewAuthorAvatarUploading ? 'Uploading...' : 'Choose from Device'}</span>
+                        </button>
+                      </>
+                    ) : (
+                      <input
+                        type="url"
+                        value={newAuthorAvatar}
+                        onChange={e => setNewAuthorAvatar(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#DDD4BC] rounded-lg text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] text-[#8F7855] mr-1">Presets:</span>
+                  {PRESET_AVATARS.slice(0, 5).map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setNewAuthorAvatar(url)}
+                      className={`w-5 h-5 rounded-md overflow-hidden border cursor-pointer ${
+                        newAuthorAvatar === url ? 'ring-2 ring-[#256B3A] border-transparent' : 'border-[#DDD4BC]'
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#6F5B3C] mb-1">

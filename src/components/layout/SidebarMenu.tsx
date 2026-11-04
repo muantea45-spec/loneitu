@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree } from 'lucide-react';
+import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -89,6 +89,18 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               >
                 <Home className="w-4 h-4 text-[#256B3A]" />
                 <span>Kawtchhuah (Home)</span>
+              </Link>
+              <Link
+                to="/archive"
+                onClick={onClose}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  location.pathname.startsWith('/archive')
+                    ? 'bg-[#EBF1EA] text-[#143520]'
+                    : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
+                }`}
+              >
+                <Calendar className="w-4 h-4 text-[#256B3A]" />
+                <span>Thuziak Dahkhawm (Archive)</span>
               </Link>
               <Link
                 to="/about"

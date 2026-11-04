@@ -15,6 +15,7 @@ import { HomePage } from './pages/HomePage';
 const ArticleDetailPage = React.lazy(() => import('./pages/ArticleDetailPage').then(m => ({ default: m.ArticleDetailPage })));
 const CategoryArchivePage = React.lazy(() => import('./pages/CategoryArchivePage').then(m => ({ default: m.CategoryArchivePage })));
 const TagArchivePage = React.lazy(() => import('./pages/TagArchivePage').then(m => ({ default: m.TagArchivePage })));
+const ArchivePage = React.lazy(() => import('./pages/ArchivePage').then(m => ({ default: m.ArchivePage })));
 const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 
@@ -53,6 +54,11 @@ const AppLayout: React.FC = () => {
             <Route path="/article/:slug" element={<ArticleDetailPage />} />
             <Route path="/category/:slug" element={<CategoryArchivePage />} />
             <Route path="/tag/:slug" element={<TagArchivePage />} />
+            <Route path="/archive" element={<ArchivePage />} />
+            <Route path="/archive/:year" element={<ArchivePage />} />
+            <Route path="/archive/:year/:month" element={<ArchivePage />} />
+            <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
+            <Route path="/archives" element={<ArchivePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin/*" element={<AdminDashboardPage />} />
             <Route path="*" element={<HomePage />} />

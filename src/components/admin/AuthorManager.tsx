@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { UserCheck, Plus, Edit, Trash2, Check, Award, Building } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { UserCheck, Plus, Edit, Trash2, Check, Award, Building, Upload, Link2, RefreshCw } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { useToast } from '../common/Toast';
+import { compressImage } from '../../utils/imageCompressor';
 import type { Author } from '../../types/blog';
 
 const PRESET_AVATARS = [
@@ -14,7 +15,7 @@ const PRESET_AVATARS = [
 ];
 
 export const AuthorManager: React.FC = () => {
-  const { authors, articles, addAuthor, updateAuthor, deleteAuthor } = useBlog();
+  const { authors, articles, addAuthor, updateAuthor, deleteAuthor, uploadImage } = useBlog();
   const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,6 +23,9 @@ export const AuthorManager: React.FC = () => {
   const [role, setRole] = useState('');
   const [institution, setInstitution] = useState('');
   const [avatar, setAvatar] = useState(PRESET_AVATARS[0]);
+  const [avatarTab, setAvatarTab] = useState<'upload' | 'embed'>('upload');
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const [bio, setBio] = useState('');
 
   const handleStartEdit = (auth: Author) => {
@@ -40,6 +44,31 @@ export const AuthorManager: React.FC = () => {
     setInstitution('');
     setAvatar(PRESET_AVATARS[0]);
     setBio('');
+    setIsAvatarUploading(false);
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (JPG, PNG, WebP)', 'error');
+      return;
+    }
+
+    setIsAvatarUploading(true);
+    try {
+      // Compress avatar for optimal edge caching and retina sharpness
+      const result = await compressImage(file, 400, 0.85);
+      const cdnUrl = await uploadImage(result.dataUrl, file.name);
+      setAvatar(cdnUrl);
+      showToast('Author photo uploaded successfully!', 'success');
+    } catch {
+      showToast('Failed to upload author photo. Please try again.', 'error');
+    } finally {
+      setIsAvatarUploading(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -156,42 +185,135 @@ export const AuthorManager: React.FC = () => {
               />
             </div>
 
-            {/* Avatar URL + Presets */}
-            <div>
-              <label className="block text-xs font-semibold text-[#6F5B3C] mb-1">
-                Profile Avatar Photo
+            {/* Avatar Photo (Upload or Embed) */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-[#6F5B3C]">
+                Author Avatar / Photo
               </label>
-              <div className="flex items-center gap-3 mb-2">
-                <img
-                  src={avatar}
-                  alt="Avatar preview"
-                  className="w-12 h-12 rounded-xl object-cover border border-[#DDD4BC] shrink-0"
-                  onError={e => {
-                    (e.currentTarget as HTMLImageElement).src = PRESET_AVATARS[0];
-                  }}
-                />
-                <input
-                  type="url"
-                  value={avatar}
-                  onChange={e => setAvatar(e.target.value)}
-                  placeholder="https://..."
-                  className="flex-1 px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                />
+
+              {/* Mode switch */}
+              <div className="flex items-center gap-1.5 p-1 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]/60 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setAvatarTab('upload')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    avatarTab === 'upload'
+                      ? 'bg-[#143520] text-white shadow-xs'
+                      : 'text-[#54432C] hover:bg-[#EBE6D6]'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Photo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvatarTab('embed')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    avatarTab === 'embed'
+                      ? 'bg-[#143520] text-white shadow-xs'
+                      : 'text-[#54432C] hover:bg-[#EBE6D6]'
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Embed via Link</span>
+                </button>
               </div>
 
-              <div className="flex gap-2">
-                {PRESET_AVATARS.slice(0, 5).map((url, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setAvatar(url)}
-                    className={`w-7 h-7 rounded-lg overflow-hidden border cursor-pointer ${
-                      avatar === url ? 'ring-2 ring-[#256B3A] border-transparent' : 'border-[#DDD4BC]'
-                    }`}
-                  >
-                    <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
+              {/* Avatar Uploader / Embed Box */}
+              <div className="flex items-start gap-3.5 p-3.5 bg-[#FAF8F3] rounded-2xl border border-[#DDD4BC]">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#256B3A]/30 shrink-0 bg-[#EFECE1] flex items-center justify-center shadow-xs">
+                  {avatar ? (
+                    <img
+                      src={avatar}
+                      alt="Avatar preview"
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        (e.currentTarget as HTMLImageElement).src = PRESET_AVATARS[0];
+                      }}
+                    />
+                  ) : (
+                    <UserCheck className="w-6 h-6 text-[#8F7855]" />
+                  )}
+
+                  {isAvatarUploading && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-2">
+                  {avatarTab === 'upload' ? (
+                    <div>
+                      <input
+                        ref={avatarFileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        onChange={handleAvatarFileChange}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        disabled={isAvatarUploading}
+                        onClick={() => avatarFileInputRef.current?.click()}
+                        className="w-full py-2.5 px-3 bg-white hover:bg-[#F6F4EB] border border-dashed border-[#256B3A]/60 rounded-xl text-xs font-semibold text-[#143520] flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                      >
+                        {isAvatarUploading ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 text-[#256B3A] animate-spin" />
+                            <span>Compressing & Uploading to KV...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 text-[#256B3A]" />
+                            <span>Upload Photo from Device</span>
+                          </>
+                        )}
+                      </button>
+                      <p className="text-[10px] text-[#8F7855] mt-1">
+                        Select a JPG, PNG, or WebP photo from your phone or PC
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={avatar}
+                          onChange={e => setAvatar(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                        />
+                        <Link2 className="w-3.5 h-3.5 text-[#8F7855] absolute left-2.5 top-2.5" />
+                      </div>
+                      <p className="text-[10px] text-[#8F7855] mt-1">
+                        Paste any public image address (Unsplash, CDN, etc.)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Preset quick avatars */}
+                  <div className="pt-1 border-t border-[#DDD4BC]/50">
+                    <span className="text-[10px] font-semibold text-[#8F7855] uppercase tracking-wider block mb-1.5">
+                      Or Choose Preset
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {PRESET_AVATARS.map((url, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setAvatar(url)}
+                          className={`w-7 h-7 rounded-lg overflow-hidden border cursor-pointer transition-all ${
+                            avatar === url ? 'ring-2 ring-[#256B3A] scale-105 border-transparent' : 'border-[#DDD4BC] hover:opacity-80'
+                          }`}
+                          title={`Preset Avatar ${i + 1}`}
+                        >
+                          <img src={url} alt={`Preset ${i + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

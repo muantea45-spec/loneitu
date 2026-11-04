@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FileText, PlusCircle, FolderTree, Tags, Users, RotateCcw, Info, PanelBottom } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, FolderTree, Tags, Users, RotateCcw, Info, PanelBottom, Calendar } from 'lucide-react';
 
 export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'categories' | 'tags' | 'authors' | 'about' | 'footer' | 'settings';
 
@@ -99,6 +99,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </button>
           );
         })}
+      </div>
+
+      <div className="hidden md:block pt-4 mt-4 border-t border-[#EBE6D6] space-y-1">
+        <a
+          href="/archive"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#6F5B3C] hover:text-[#143520] hover:bg-[#F6F4EB] rounded-xl transition-colors"
+        >
+          <Calendar className="w-3.5 h-3.5 text-[#256B3A]" />
+          <span>View Public Archive ↗</span>
+        </a>
       </div>
     </aside>
   );

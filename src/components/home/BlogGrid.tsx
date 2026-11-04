@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BlogCard } from './BlogCard';
 import type { Article, SortOption } from '../../types/blog';
-import { BookOpen, RefreshCw, ArrowUpDown } from 'lucide-react';
+import { BookOpen, RefreshCw, ArrowUpDown, Calendar } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface BlogGridProps {
@@ -47,7 +48,15 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+          <Link
+            to="/archive"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] rounded-xl border border-[#DDD4BC] text-xs font-semibold transition-colors shadow-2xs"
+            title="Browse all posts by Year, Month, and Date"
+          >
+            <Calendar className="w-3.5 h-3.5 text-[#256B3A]" />
+            <span>Chanchinbu Dahkhawm (Archive)</span>
+          </Link>
           <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#DDD4BC] text-xs shadow-2xs">
             <ArrowUpDown className="w-3.5 h-3.5 text-[#256B3A] shrink-0" />
             <select

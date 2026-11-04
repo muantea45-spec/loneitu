@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, Search, Bookmark, Menu } from 'lucide-react';
+import { Sprout, Search, Bookmark, Menu, Calendar } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface NavbarProps {
@@ -54,6 +54,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Icons & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Chronological Archive Trigger */}
+          <Link
+            to="/archive"
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#143520] hover:text-[#256B3A] bg-[#F6F4EB] hover:bg-[#EBE6D6] rounded-xl border border-[#DDD4BC] transition-colors"
+            title="Thuziak Dahkhawm (Chronological Post Archive)"
+          >
+            <Calendar className="w-4 h-4 text-[#256B3A]" />
+            <span>Archive</span>
+          </Link>
+
           {/* Search Trigger */}
           <button
             onClick={onOpenSearch}

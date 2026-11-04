@@ -115,10 +115,14 @@ export const ArticleDetailPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4 text-xs text-[#6F5B3C]">
-              <span className="flex items-center gap-1.5">
+              <Link
+                to={`/archive?year=${new Date(article.publishedAt).getFullYear()}&month=${new Date(article.publishedAt).getMonth() + 1}`}
+                className="flex items-center gap-1.5 hover:text-[#256B3A] hover:underline transition-colors"
+                title="View in Date Archive"
+              >
                 <Calendar className="w-3.5 h-3.5 text-[#256B3A]" />
-                {formatDate(article.publishedAt)}
-              </span>
+                <span>{formatDate(article.publishedAt)}</span>
+              </Link>
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-[#256B3A]" />
                 {article.readingTimeMinutes} min read
