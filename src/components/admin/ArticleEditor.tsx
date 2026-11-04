@@ -59,30 +59,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [title, setTitle] = useState(existingArticle?.title || '');
   const [slug, setSlug] = useState(existingArticle?.slug || '');
   const [isSlugManual, setIsSlugManual] = useState(Boolean(existingArticle));
-  const [content, setContent] = useState(
-    existingArticle?.content ||
-      `## Introduction to the Field Study
-
-Provide an initial overview of the agronomic question, agro-ecological context, or rural challenge being investigated.
-
-### Core Agronomic Hypotheses & Mechanisms
-
-Explain the underlying biological, physical, or technical mechanisms at play:
-
-1. **First Principle:** Detailed soil, crop, or livestock physiology observation.
-2. **Second Principle:** Measured intervention and data points.
-
-> *"Direct field observation over multiple growing seasons remains the supreme judge of any theoretical agronomy model."*
-
-| Metric / Parameter | Control Field Pass | Regenerative Protocol | Observed Delta |
-| :--- | :--- | :--- | :--- |
-| **Water Infiltration** | 1.1 in/hr | 5.8 in/hr | **+427%** |
-| **Microbial Biomass** | 45 µg/g | 310 µg/g | **6.8x** |
-
-### Implementation Recommendations for Farm Gates
-
-Detail actionable protocols for agriculturalists, equipment adjustments, and seasonal timings.`
-  );
+  const [content, setContent] = useState(existingArticle?.content || '');
   const [coverImage, setCoverImage] = useState(
     existingArticle?.coverImage || PRESET_COVERS[0].url
   );
@@ -90,7 +67,7 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
     existingArticle?.category || (categories[0]?.name || 'Agronomy & Soil Health')
   );
   const [tagsList, setTagsList] = useState<string[]>(
-    existingArticle?.tags || ['SoilHealth', 'NoTill']
+    existingArticle?.tags || []
   );
   const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState<'published' | 'draft'>(
@@ -103,8 +80,8 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
     existingArticle?.author?.id || authors[0]?.id || ''
   );
 
-  // Editor View modes: 'split' | 'edit' | 'preview'
-  const [viewMode, setViewMode] = useState<'split' | 'edit' | 'preview'>('split');
+  // Editor View modes: 'split' | 'edit' | 'preview' - Default to 'edit'
+  const [viewMode, setViewMode] = useState<'split' | 'edit' | 'preview'>('edit');
 
   // Inline Category modal
   const [showNewCatModal, setShowNewCatModal] = useState(false);
@@ -233,7 +210,7 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
         content,
         coverImage,
         category,
-        tags: tagsList.length > 0 ? tagsList : ['Agronomy'],
+        tags: tagsList,
         author: selectedAuthor,
         status,
         isFeatured,
@@ -247,7 +224,7 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
         content,
         coverImage,
         category,
-        tags: tagsList.length > 0 ? tagsList : ['Agronomy'],
+        tags: tagsList,
         author: selectedAuthor,
         status,
         isFeatured,
@@ -265,39 +242,176 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
 
   return (
     <form onSubmit={handleSave} className="space-y-6 pb-24 md:pb-6">
-      {/* Top Header / Actions Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DDD4BC] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 sticky top-16 z-20">
-        <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#256B3A]">
-            {existingArticle ? 'Revising Publication' : 'New Investigation Draft'}
-          </span>
-          <h2 className="font-serif font-bold text-lg sm:text-2xl text-[#143520] truncate max-w-xl">
-            {title || 'Untitled Article'}
-          </h2>
-          <div className="flex items-center gap-3 text-xs text-[#8F7855] mt-0.5">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" /> {readingTime} min read
+      {/* Upper Control & Formatting Bar (Consolidated at the top so it never overlaps the text canvas) */}
+      <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs overflow-hidden relative sm:sticky sm:top-14 z-20">
+        {/* Upper Row: Status, Title Summary & Global Actions */}
+        <div className="p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EBE6D6]">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#256B3A]">
+              {existingArticle ? 'Revising Publication' : 'New Article Draft'}
             </span>
-            <span>•</span>
-            <span>{wordCount} words</span>
+            <h2 className="font-serif font-bold text-base sm:text-2xl text-[#143520] truncate max-w-xl">
+              {title || 'Untitled Article'}
+            </h2>
+            <div className="flex items-center gap-3 text-xs text-[#8F7855] mt-0.5">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> {readingTime} min read
+              </span>
+              <span>•</span>
+              <span>{wordCount} words</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2.5 rounded-xl border border-[#DDD4BC] text-[#54432C] hover:bg-[#F6F4EB] text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+            >
+              <Save className="w-4 h-4 text-[#BFDC28]" />
+              <span>{existingArticle ? 'Update Article' : 'Publish / Save Article'}</span>
+            </button>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-2.5 self-end sm:self-auto">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2.5 rounded-xl border border-[#DDD4BC] text-[#54432C] hover:bg-[#F6F4EB] text-xs font-semibold transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
-          >
-            <Save className="w-4 h-4 text-[#BFDC28]" />
-            <span>{existingArticle ? 'Update Article' : 'Publish / Save Article'}</span>
-          </button>
+        {/* Upper Formatting Tools Strip & View Mode Switcher */}
+        <div className="p-2 sm:p-2.5 bg-[#F6F4EB] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          {/* Quick Formatting Tools */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => insertFormatting('**', '**')}
+              className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer"
+              title="Bold (**text**)"
+            >
+              <Bold className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Bold</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('*', '*')}
+              className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs italic transition-colors cursor-pointer"
+              title="Italic (*text*)"
+            >
+              <Italic className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Italic</span>
+            </button>
+            <div className="h-4 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+            <button
+              type="button"
+              onClick={() => insertFormatting('\n## ')}
+              className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer"
+              title="Heading 2 (## Title)"
+            >
+              <Heading2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">H2</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('\n### ')}
+              className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer"
+              title="Heading 3 (### Title)"
+            >
+              <Heading3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">H3</span>
+            </button>
+            <div className="h-4 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+            <button
+              type="button"
+              onClick={() => insertFormatting('\n> ')}
+              className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
+              title="Blockquote (> quote)"
+            >
+              <Quote className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('\n- ')}
+              className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
+              title="Bullet list (- item)"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('```\n', '\n```')}
+              className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
+              title="Code block"
+            >
+              <Code className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                insertFormatting(
+                  '\n| Parameter | Baseline | Regenerative Protocol | Impact |\n| :--- | :--- | :--- | :--- |\n| Sample Metric | 10 units | 25 units | +150% |\n'
+                )
+              }
+              className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
+              title="Insert Comparison Table"
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                insertFormatting(
+                  '\n> 🌿 **Agronomy Field Note:** Soil organic matter increases of 1% allow soil to hold an additional 20,000 gallons of clean water per acre.\n'
+                )
+              }
+              className="h-8 px-2.5 text-[11px] font-semibold bg-[#EBF1EA] text-[#1E542E] hover:bg-[#DFEDE3] rounded-lg transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+              title="Insert Field Note Callout"
+            >
+              <Sparkles className="w-3 h-3 text-[#BFDC28]" />
+              <span>Note</span>
+            </button>
+          </div>
+
+          {/* View Mode Toggle: Edit | Split | Preview */}
+          <div className="flex items-center gap-0.5 bg-[#EBE6D6] p-0.5 rounded-lg shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('edit')}
+              className={`px-2.5 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === 'edit'
+                  ? 'bg-white text-[#143520] shadow-xs'
+                  : 'text-[#6F5B3C] hover:text-[#143520]'
+              }`}
+            >
+              <Edit className="w-3 h-3" />
+              <span>Edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('split')}
+              className={`hidden lg:flex px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === 'split'
+                  ? 'bg-white text-[#143520] shadow-xs'
+                  : 'text-[#6F5B3C] hover:text-[#143520]'
+              }`}
+            >
+              <Columns className="w-3 h-3" />
+              <span>Split</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('preview')}
+              className={`px-2.5 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === 'preview'
+                  ? 'bg-white text-[#143520] shadow-xs'
+                  : 'text-[#6F5B3C] hover:text-[#143520]'
+              }`}
+            >
+              <Eye className="w-3 h-3" />
+              <span>Preview</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -315,7 +429,7 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="e.g. Regenerative Nitrogen Partitioning in Winter Cereals"
+                placeholder="Enter article title..."
                 className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl font-serif font-bold text-lg sm:text-xl text-[#143520] placeholder:text-[#8F7855]/50 focus:outline-hidden focus:border-[#256B3A]"
                 required
               />
@@ -337,6 +451,7 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
                     setSlug(e.target.value);
                     setIsSlugManual(true);
                   }}
+                  placeholder="auto-generated-or-custom-slug"
                   className="flex-1 min-w-0 px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-r-xl text-xs font-mono text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
                   required
                 />
@@ -344,176 +459,69 @@ Detail actionable protocols for agriculturalists, equipment adjustments, and sea
             </div>
           </div>
 
-          {/* Markdown Content Editor */}
+          {/* Markdown Content Editor - Clean canvas with NO floating toolbar */}
           <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs overflow-hidden flex flex-col">
-            {/* Sticky & Touch-Friendly Toolbar & View Switcher */}
-            <div className="sticky top-16 md:top-20 z-10 p-2 sm:p-3 bg-[#F6F4EB] border-b border-[#DDD4BC] flex items-center justify-between gap-2 overflow-hidden shadow-2xs">
-              {/* Touch-Friendly Formatting tools strip */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1 px-0.5 touch-pan-x min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('**', '**')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Bold (**text**)"
-                >
-                  <Bold className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('*', '*')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Italic (*text*)"
-                >
-                  <Italic className="w-3.5 h-3.5" />
-                </button>
-                <div className="h-4 w-px bg-[#DDD4BC] mx-0.5 shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n## ')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Heading 2 (## Title)"
-                >
-                  <Heading2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n### ')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Heading 3 (### Title)"
-                >
-                  <Heading3 className="w-3.5 h-3.5" />
-                </button>
-                <div className="h-4 w-px bg-[#DDD4BC] mx-0.5 shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n> ')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Blockquote (> quote)"
-                >
-                  <Quote className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n- ')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Bullet list (- item)"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('```\n', '\n```')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Code block"
-                >
-                  <Code className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertFormatting(
-                      '\n| Parameter | Baseline | Regenerative Protocol | Impact |\n| :--- | :--- | :--- | :--- |\n| Sample Metric | 10 units | 25 units | +150% |\n'
-                    )
-                  }
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC]/70 rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Insert Comparison Table"
-                >
-                  <TableIcon className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertFormatting(
-                      '\n> 🌿 **Agronomy Field Note:** Soil organic matter increases of 1% allow soil to hold an additional 20,000 gallons of clean water per acre.\n'
-                    )
-                  }
-                  className="h-8 px-2.5 text-[10px] font-semibold bg-[#EBF1EA] text-[#1E542E] hover:bg-[#DFEDE3] rounded-lg transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
-                  title="Insert Field Note Callout"
-                >
-                  <Sparkles className="w-3 h-3 text-[#BFDC28]" />
-                  <span>Note</span>
-                </button>
-              </div>
-
-              {/* View mode toggle */}
-              <div className="flex items-center gap-0.5 bg-[#EBE6D6] p-0.5 rounded-lg shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('edit')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-semibold flex items-center gap-1 cursor-pointer ${
-                    viewMode === 'edit'
-                      ? 'bg-white text-[#143520] shadow-xs'
-                      : 'text-[#6F5B3C] hover:text-[#143520]'
-                  }`}
-                >
-                  <Edit className="w-3 h-3" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('split')}
-                  className={`hidden lg:flex px-2.5 py-1 rounded-md text-xs font-semibold items-center gap-1 cursor-pointer ${
-                    viewMode === 'split'
-                      ? 'bg-white text-[#143520] shadow-xs'
-                      : 'text-[#6F5B3C] hover:text-[#143520]'
-                  }`}
-                >
-                  <Columns className="w-3 h-3" />
-                  <span>Split</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('preview')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-semibold flex items-center gap-1 cursor-pointer ${
-                    viewMode === 'preview'
-                      ? 'bg-white text-[#143520] shadow-xs'
-                      : 'text-[#6F5B3C] hover:text-[#143520]'
-                  }`}
-                >
-                  <Eye className="w-3 h-3" />
-                  <span>Preview</span>
-                </button>
-              </div>
+            <div className="px-4 sm:px-6 py-2.5 bg-[#FBFBF8] border-b border-[#DDD4BC] flex items-center justify-between text-xs">
+              <label htmlFor="article-content-textarea" className="font-bold uppercase tracking-wider text-[#6F5B3C]">
+                Article Content & Body
+              </label>
+              <span className="text-[11px] text-[#8F7855]">
+                {viewMode === 'edit' && 'Edit Mode (Blank Canvas)'}
+                {viewMode === 'split' && 'Split View'}
+                {viewMode === 'preview' && 'Rendered Preview'}
+              </span>
             </div>
 
             {/* Split / Edit / Preview Workspace */}
-            <div className="min-h-[420px] sm:min-h-[500px]">
+            <div className="min-h-[450px] sm:min-h-[550px]">
               {viewMode === 'edit' && (
                 <textarea
                   id="article-content-textarea"
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  className="w-full min-h-[420px] sm:h-[600px] p-4 sm:p-6 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-y leading-relaxed"
-                  placeholder="Write research, markdown tables, headings, blockquotes..."
+                  className="w-full min-h-[450px] sm:h-[650px] p-4 sm:p-6 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-y leading-relaxed"
+                  placeholder="Start typing your article content here in Markdown..."
                   required
                 />
               )}
 
               {viewMode === 'preview' && (
-                <div className="p-5 sm:p-8 prose-agri max-w-none bg-white min-h-[420px] sm:min-h-[600px]">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {content}
-                  </ReactMarkdown>
+                <div className="p-5 sm:p-8 prose-agri max-w-none bg-white min-h-[450px] sm:min-h-[650px]">
+                  {content ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-sm text-[#8F7855] italic">
+                      Article content is empty. Type in Edit mode to preview your article.
+                    </p>
+                  )}
                 </div>
               )}
 
               {viewMode === 'split' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#DDD4BC] h-[600px]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#DDD4BC] h-[650px]">
                   <textarea
                     id="article-content-textarea"
                     value={content}
                     onChange={e => setContent(e.target.value)}
                     className="w-full h-full p-5 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-none leading-relaxed overflow-y-auto"
-                    placeholder="Write research in Markdown..."
+                    placeholder="Start typing your article content here in Markdown..."
                     required
                   />
                   <div className="p-6 prose-agri max-w-none bg-white overflow-y-auto h-full text-sm">
                     <div className="text-[10px] uppercase font-bold tracking-wider text-[#8F7855] pb-2 mb-3 border-b border-[#EBE6D6]">
                       Real-Time Rendered View
                     </div>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {content}
-                    </ReactMarkdown>
+                    {content ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {content}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-sm text-[#8F7855] italic">
+                        Preview will appear here as you type...
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
