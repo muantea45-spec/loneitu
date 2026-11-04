@@ -201,45 +201,46 @@ export default {
       );
 
       if (isSocialBot) {
-        const rawSlug = url.pathname.replace('/article/', '').split('/')[0].split('?')[0].trim();
-        const slug = decodeURIComponent(rawSlug);
+        try {
+          const rawSlug = url.pathname.replace('/article/', '').split('/')[0].split('?')[0].trim();
+          const slug = decodeURIComponent(rawSlug);
 
-        let db: any = null;
-        if (env.LONEITU_KV) {
-          db = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
-        }
-        if (!db && inMemoryFallback) {
-          db = inMemoryFallback;
-        }
-
-        const allArticles = (db && Array.isArray(db.articles) && db.articles.length > 0)
-          ? db.articles
-          : INITIAL_ARTICLES;
-
-        const article = allArticles.find((a: any) => a.slug === slug || a.id === slug);
-        if (article) {
-          const title = escapeHtml(article.title);
-
-          // Clean excerpt stripped of markdown characters
-          let rawExcerpt = article.excerpt || article.content || '';
-          let cleanExcerpt = stripMarkdown(rawExcerpt);
-          if (cleanExcerpt.length > 180) {
-            cleanExcerpt = cleanExcerpt.substring(0, 177).trim() + '...';
+          let db: any = null;
+          if (env.LONEITU_KV) {
+            db = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
           }
-          if (!cleanExcerpt) {
-            cleanExcerpt = article.title;
-          }
-          const desc = escapeHtml(cleanExcerpt);
-
-          // Ensure absolute cover URL for WhatsApp & Social crawlers
-          let cover = article.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80';
-          if (cover.startsWith('/')) {
-            cover = `${url.origin}${cover}`;
+          if (!db && inMemoryFallback) {
+            db = inMemoryFallback;
           }
 
-          const fullUrl = `${url.origin}/article/${slug}`;
+          const allArticles = (db && Array.isArray(db.articles) && db.articles.length > 0)
+            ? db.articles
+            : (INITIAL_ARTICLES || []);
 
-          const botHtml = `<!DOCTYPE html>
+          const article = allArticles.find((a: any) => a.slug === slug || a.id === slug);
+          if (article) {
+            const title = escapeHtml(article.title);
+
+            // Clean excerpt stripped of markdown characters
+            let rawExcerpt = article.excerpt || article.content || '';
+            let cleanExcerpt = stripMarkdown(rawExcerpt);
+            if (cleanExcerpt.length > 180) {
+              cleanExcerpt = cleanExcerpt.substring(0, 177).trim() + '...';
+            }
+            if (!cleanExcerpt) {
+              cleanExcerpt = article.title;
+            }
+            const desc = escapeHtml(cleanExcerpt);
+
+            // Ensure absolute cover URL for WhatsApp & Social crawlers
+            let cover = article.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80';
+            if (cover.startsWith('/')) {
+              cover = `${url.origin}${cover}`;
+            }
+
+            const fullUrl = `${url.origin}/article/${slug}`;
+
+            const botHtml = `<!DOCTYPE html>
 <html lang="en" prefix="og: https://ogp.me/ns#">
 <head>
   <meta charset="utf-8" />
@@ -276,12 +277,15 @@ export default {
   <img src="${cover}" alt="${title}" style="max-width: 100%; border-radius: 12px; margin-top: 16px; border: 1px solid #ddd4bc;" />
 </body>
 </html>`;
-          return new Response(botHtml, {
-            headers: {
-              'Content-Type': 'text/html; charset=utf-8',
-              'Cache-Control': 'public, max-age=3600, s-maxage=86400',
-            },
-          });
+            return new Response(botHtml, {
+              headers: {
+                'Content-Type': 'text/html; charset=utf-8',
+                'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+              },
+            });
+          }
+        } catch (err: any) {
+          console.error('Social preview error', err);
         }
       }
     }

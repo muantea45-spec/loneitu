@@ -113,3 +113,4 @@ export const onRequest: PagesFunction = async (context) => {
   // Fallback to normal SPA handling
   return context.next();
 };
+
