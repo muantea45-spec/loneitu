@@ -43,12 +43,22 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
-    const payload = await context.request.json();
+    const rawText = await context.request.text();
+    let payload: any = null;
+    try {
+      payload = JSON.parse(rawText);
+    } catch {
+      payload = rawText;
+    }
+
     cachedDbState = payload;
 
     let kvSaved = false;
     if (context.env.LONEITU_KV) {
-      await context.env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(payload));
+      await context.env.LONEITU_KV.put(
+        'loneitu_global_db_v1',
+        typeof payload === 'string' ? payload : JSON.stringify(payload)
+      );
       kvSaved = true;
     }
 
@@ -75,3 +85,4 @@ export const onRequestOptions: PagesFunction = async () => {
     },
   });
 };
+
