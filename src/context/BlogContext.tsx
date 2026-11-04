@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
-import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
+import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, AboutPageData } from '../types/blog';
+import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA } from '../data/initialData';
 import { DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
@@ -18,6 +18,8 @@ interface BlogContextType {
   primaryOwnerEmail: string;
   authorizedEmails: string[];
   authors: Author[];
+  aboutData: AboutPageData;
+  updateAboutData: (updates: Partial<AboutPageData>) => void;
   adminSecurityKey: string;
   googleClientId: string;
   isCloudSyncing: boolean;
@@ -90,6 +92,7 @@ const STORAGE_KEYS = {
   PRIMARY_OWNER: 'loneitu_primary_owner_email_v1',
   SECURITY_KEY: 'loneitu_admin_security_key_v2',
   GOOGLE_CLIENT_ID: 'loneitu_google_client_id_v2',
+  ABOUT_PAGE: 'loneitu_mizo_about_page_v1',
 };
 
 const CLOUD_API_ENDPOINTS = [
@@ -197,6 +200,15 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
+  const [aboutData, setAboutData] = useState<AboutPageData>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.ABOUT_PAGE);
+      return stored ? JSON.parse(stored) : INITIAL_ABOUT_DATA;
+    } catch {
+      return INITIAL_ABOUT_DATA;
+    }
+  });
+
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
@@ -262,6 +274,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to sync authors', e);
     }
   }, [authors]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(aboutData));
+    } catch (e) {
+      console.error('Failed to sync about data locally', e);
+    }
+  }, [aboutData]);
 
   useEffect(() => {
     try {
@@ -373,6 +393,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     categories,
     tags,
     authors,
+    aboutData,
   });
 
   useEffect(() => {
@@ -384,8 +405,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       categories,
       tags,
       authors,
+      aboutData,
     };
-  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors]);
+  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors, aboutData]);
 
   // Pull latest database from cloud on load and when switching devices
   const fetchCloudDb = async () => {
@@ -455,6 +477,13 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch {}
       }
 
+      if (cloudData.aboutData && typeof cloudData.aboutData === 'object') {
+        setAboutData(cloudData.aboutData);
+        try {
+          localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(cloudData.aboutData));
+        } catch {}
+      }
+
       setCloudSyncStatus('synced');
     } catch (e) {
       console.warn('Initial cloud db fetch skipped', e);
@@ -503,6 +532,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } else if (type === 'ARTICLES' && Array.isArray(payload)) {
         setArticles(payload);
         try { localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(payload)); } catch {}
+      } else if (type === 'ABOUT_DATA' && payload && typeof payload === 'object') {
+        setAboutData(payload);
+        try { localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(payload)); } catch {}
       }
     };
     return () => {
@@ -522,6 +554,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         categories: overrideData?.categories ?? current.categories,
         tags: overrideData?.tags ?? current.tags,
         authors: overrideData?.authors ?? current.authors,
+        aboutData: overrideData?.aboutData ?? current.aboutData,
         updatedAt: new Date().toISOString(),
       };
 
@@ -542,6 +575,22 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setIsCloudSyncing(false);
     }
+  };
+
+  const updateAboutData = (updates: Partial<AboutPageData>) => {
+    setAboutData(prev => {
+      const updated = { ...prev, ...updates };
+      lastMutationTimeRef.current = Date.now();
+      latestDbStateRef.current.aboutData = updated;
+      try {
+        localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to sync about data locally', e);
+      }
+      pushToCloudDatabase({ aboutData: updated });
+      broadcastLocalChange('ABOUT_DATA', updated);
+      return updated;
+    });
   };
 
   const setPrimaryOwnerEmail = (email: string) => {
@@ -1073,6 +1122,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCategories(INITIAL_CATEGORIES);
     setTags(INITIAL_TAGS);
     setAuthors(INITIAL_AUTHORS);
+    setAboutData(INITIAL_ABOUT_DATA);
     setBookmarks([]);
     setLikedArticles([]);
     try {
@@ -1080,6 +1130,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
       localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(INITIAL_TAGS));
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(INITIAL_AUTHORS));
+      localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(INITIAL_ABOUT_DATA));
       localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
       localStorage.removeItem(STORAGE_KEYS.LIKES);
     } catch {}
@@ -1088,6 +1139,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       categories: INITIAL_CATEGORIES,
       tags: INITIAL_TAGS,
       authors: INITIAL_AUTHORS,
+      aboutData: INITIAL_ABOUT_DATA,
     });
   };
 
@@ -1166,6 +1218,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         primaryOwnerEmail,
         authorizedEmails,
         authors,
+        aboutData,
+        updateAboutData,
         adminSecurityKey,
         googleClientId,
         isCloudSyncing,

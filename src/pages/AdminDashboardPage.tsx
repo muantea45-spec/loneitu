@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useBlog } from '../context/BlogContext';
 import { AdminLoginPage } from './AdminLoginPage';
 import { AdminHeader } from '../components/admin/AdminHeader';
@@ -9,6 +10,7 @@ import { ArticleEditor } from '../components/admin/ArticleEditor';
 import { CategoryManager } from '../components/admin/CategoryManager';
 import { TagManager } from '../components/admin/TagManager';
 import { AuthorManager } from '../components/admin/AuthorManager';
+import { AboutEditor } from '../components/admin/AboutEditor';
 import { RotateCcw, Download, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/common/Toast';
 
@@ -28,13 +30,30 @@ export const AdminDashboardPage: React.FC = () => {
     setAdminSecurityKey,
     googleClientId,
     setGoogleClientId,
+    aboutData,
     isCloudSyncing,
     cloudSyncStatus,
     pushToCloudDatabase,
   } = useBlog();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
 
-  const [currentTab, setCurrentTab] = useState<AdminTab>('overview');
+  const tabParam = searchParams.get('tab') as AdminTab | null;
+  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'categories', 'tags', 'authors', 'about', 'settings'];
+
+  const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
+    if (tabParam && validTabs.includes(tabParam)) {
+      return tabParam;
+    }
+    return 'overview';
+  });
+
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam) && tabParam !== currentTab) {
+      setCurrentTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [makePrimaryImmediately, setMakePrimaryImmediately] = useState(false);
@@ -76,6 +95,7 @@ export const AdminDashboardPage: React.FC = () => {
       articles,
       categories,
       tags,
+      aboutData,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -141,6 +161,8 @@ export const AdminDashboardPage: React.FC = () => {
           {currentTab === 'tags' && <TagManager />}
 
           {currentTab === 'authors' && <AuthorManager />}
+
+          {currentTab === 'about' && <AboutEditor />}
 
           {currentTab === 'settings' && (
             <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs p-8 max-w-2xl space-y-6">

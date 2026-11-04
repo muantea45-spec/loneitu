@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, FileText, PlusCircle, FolderTree, Tags, Users, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, FolderTree, Tags, Users, RotateCcw, Info } from 'lucide-react';
 
-export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'categories' | 'tags' | 'authors' | 'settings';
+export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'categories' | 'tags' | 'authors' | 'about' | 'settings';
 
 interface AdminSidebarProps {
   currentTab: AdminTab;
@@ -46,6 +46,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       id: 'authors' as AdminTab,
       label: 'Authors & Contributors',
       icon: Users,
+    },
+    {
+      id: 'about' as AdminTab,
+      label: 'Edit About Page',
+      icon: Info,
     },
     {
       id: 'settings' as AdminTab,

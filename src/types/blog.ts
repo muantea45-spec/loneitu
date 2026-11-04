@@ -64,3 +64,24 @@ export interface FilterState {
   sortBy: SortOption;
 }
 
+export interface PillarItem {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface AboutPageData {
+  badge: string;
+  heroTitle: string;
+  heroDescription: string;
+  editorialTag: string;
+  editorialTitle: string;
+  editorialBody: string;
+  quote: string;
+  pillarsTitle: string;
+  pillarsSubtitle: string;
+  pillars: PillarItem[];
+  authorsTitle: string;
+  authorsSubtitle: string;
+}
+

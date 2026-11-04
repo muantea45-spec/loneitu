@@ -1,4 +1,4 @@
-import type { Article, Category, Tag, Author } from '../types/blog';
+import type { Article, Category, Tag, Author, AboutPageData } from '../types/blog';
 
 export const INITIAL_AUTHORS: Author[] = [
   {
@@ -443,3 +443,41 @@ Loneitu inzawmkhawm ten he cold storage an neih hian:
 - **Hlawkna:** Loneitu chhungkuate sum hmuh za zela **31.4-in a pung nghal a ni**.`
   }
 ];
+
+export const INITIAL_ABOUT_DATA: AboutPageData = {
+  badge: 'The Loneitu Manifesto — MIZORAM TAN',
+  heroTitle: 'Empowering Mizoram Farmers with Sustainable Agronomy & Agro-Tech.',
+  heroDescription: 'Loneitu is a dedicated agricultural platform built for Mizoram—fostering climate-smart hill agronomy, high-value horticulture, livestock care, and rural prosperity.',
+  editorialTag: 'Our Editorial Purpose',
+  editorialTitle: 'Why Modern Agriculture Requires a New Reading Standard',
+  editorialBody: `For over half a century, mainstream agricultural communication was dominated by chemical input catalogs and subsidized monoculture advice. Soil was simplified into a dead sponge to be force-fed soluble NPK, while pests and weeds were met with escalating sprays that bred resistant biotypes.
+
+Today, a quiet agricultural revolution is underway. Farmers worldwide are demonstrating that by fostering subterranean mycorrhizal fungal webs, crimping dense cover crops, deploying low-power wireless tension sensors, and integrating timber trees with livestock, farms can thrive through extreme weather while slashing overhead costs.`,
+  quote: 'To heal the climate and nourish human communities, we must first restore the microbial dignity of the soil beneath our feet.',
+  pillarsTitle: 'The Four Agronomic Pillars',
+  pillarsSubtitle: 'Guiding standards for every article, investigation, and field protocol we publish',
+  pillars: [
+    {
+      id: 'p-1',
+      title: 'Empirical Field Verification',
+      description: 'We do not publish theoretical models ungrounded in real acreage. Every technique must be tested across real growing seasons in diverse soil types.',
+    },
+    {
+      id: 'p-2',
+      title: 'Biological Regeneration over Chemical Crutches',
+      description: 'We prioritize mycorrhizal restoration, diverse cover crop cocktails, and multi-trophic biocontrols before synthetic intervention.',
+    },
+    {
+      id: 'p-3',
+      title: 'Appropriate Agro-Technology',
+      description: 'Technology must serve the farmstead, not indebt it. We champion open-source LoRa telemetry, solar cold chains, and modular hardware.',
+    },
+    {
+      id: 'p-4',
+      title: 'Rural Community Self-Reliance',
+      description: 'Farming is the economic cornerstone of rural civilization. We advocate for decentralized processing hubs and generational equity.',
+    },
+  ],
+  authorsTitle: 'Contributing Agronomists & Field Researchers',
+  authorsSubtitle: 'Researchers and farmers authoring our peer-informed investigations',
+};
