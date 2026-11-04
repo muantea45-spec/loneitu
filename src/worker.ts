@@ -59,7 +59,10 @@ export default {
         } catch (err: any) {
           return new Response(JSON.stringify({ success: false, error: err.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
           });
         }
       }

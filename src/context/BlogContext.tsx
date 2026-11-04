@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
@@ -91,6 +91,50 @@ const STORAGE_KEYS = {
   SECURITY_KEY: 'loneitu_admin_security_key_v2',
   GOOGLE_CLIENT_ID: 'loneitu_google_client_id_v2',
 };
+
+const CLOUD_API_ENDPOINTS = [
+  'https://loneitu.ddvktp.workers.dev/api/db',
+  '/api/db',
+];
+
+async function fetchRemoteDatabase(): Promise<any> {
+  for (const endpoint of CLOUD_API_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch {
+      // try fallback endpoint
+    }
+  }
+  return null;
+}
+
+async function saveRemoteDatabase(payload: any): Promise<boolean> {
+  let saved = false;
+  for (const endpoint of CLOUD_API_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        saved = true;
+        break;
+      }
+    } catch {
+      // try fallback endpoint
+    }
+  }
+  return saved;
+}
 
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Load initial states from localStorage with graceful fallback
@@ -297,56 +341,147 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
-  // Pull latest database from cloud on load (syncs Desktop <-> Mobile automatically)
+  // Reference tracking latest state to prevent stale closures during cloud sync
+  const latestDbStateRef = useRef({
+    authorizedEmails,
+    primaryOwnerEmail,
+    adminSecurityKey,
+    articles,
+    categories,
+    tags,
+    authors,
+  });
+
+  useEffect(() => {
+    latestDbStateRef.current = {
+      authorizedEmails,
+      primaryOwnerEmail,
+      adminSecurityKey,
+      articles,
+      categories,
+      tags,
+      authors,
+    };
+  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors]);
+
+  // Pull latest database from cloud on load and when switching devices
+  const fetchCloudDb = async () => {
+    try {
+      const cloudData = await fetchRemoteDatabase();
+      if (!cloudData) return;
+
+      if (Array.isArray(cloudData.authorizedEmails) && cloudData.authorizedEmails.length > 0) {
+        const mergedEmails = Array.from(
+          new Set([
+            ...DEFAULT_AUTHORIZED_EMAILS.map(e => e.trim().toLowerCase()),
+            ...cloudData.authorizedEmails.map((e: string) => e.trim().toLowerCase()),
+          ])
+        );
+        setAuthorizedEmails(mergedEmails);
+        try {
+          localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(mergedEmails));
+        } catch {}
+      }
+
+      if (cloudData.primaryOwnerEmail) {
+        const owner = cloudData.primaryOwnerEmail.trim().toLowerCase();
+        setPrimaryOwnerEmailState(owner);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRIMARY_OWNER, owner);
+        } catch {}
+      }
+
+      if (cloudData.adminSecurityKey) {
+        setAdminSecurityKeyState(cloudData.adminSecurityKey);
+        try {
+          localStorage.setItem(STORAGE_KEYS.SECURITY_KEY, cloudData.adminSecurityKey);
+        } catch {}
+      }
+
+      if (Array.isArray(cloudData.articles) && cloudData.articles.length > 0) {
+        setArticles(cloudData.articles);
+        try {
+          localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(cloudData.articles));
+        } catch {}
+      }
+
+      if (Array.isArray(cloudData.categories) && cloudData.categories.length > 0) {
+        setCategories(cloudData.categories);
+        try {
+          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(cloudData.categories));
+        } catch {}
+      }
+
+      if (Array.isArray(cloudData.tags) && cloudData.tags.length > 0) {
+        setTags(cloudData.tags);
+        try {
+          localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(cloudData.tags));
+        } catch {}
+      }
+
+      if (Array.isArray(cloudData.authors) && cloudData.authors.length > 0) {
+        setAuthors(cloudData.authors);
+        try {
+          localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(cloudData.authors));
+        } catch {}
+      }
+
+      setCloudSyncStatus('synced');
+    } catch (e) {
+      console.warn('Initial cloud db fetch skipped', e);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
-    const fetchCloudDb = async () => {
-      try {
-        const res = await fetch('/api/db');
-        if (!res.ok) return;
-        const result = await res.json();
-        if (result && result.data && isMounted) {
-          const cloudData = result.data;
-          if (Array.isArray(cloudData.authorizedEmails) && cloudData.authorizedEmails.length > 0) {
-            setAuthorizedEmails(prev => Array.from(new Set([...prev, ...cloudData.authorizedEmails])));
-          }
-          if (cloudData.primaryOwnerEmail) {
-            setPrimaryOwnerEmailState(cloudData.primaryOwnerEmail);
-          }
-          if (cloudData.adminSecurityKey) {
-            setAdminSecurityKeyState(cloudData.adminSecurityKey);
-          }
-          if (Array.isArray(cloudData.articles) && cloudData.articles.length > 0) {
-            setArticles(cloudData.articles);
-          }
-          setCloudSyncStatus('synced');
-        }
-      } catch (e) {
-        console.warn('Initial cloud db fetch skipped', e);
+    fetchCloudDb();
+
+    // Re-sync instantly when tab gains focus or visibility (Desktop <-> Mobile sync)
+    const handleSyncOnVisible = () => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        fetchCloudDb();
       }
     };
-    fetchCloudDb();
+
+    window.addEventListener('visibilitychange', handleSyncOnVisible);
+    window.addEventListener('focus', handleSyncOnVisible);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        fetchCloudDb();
+      }
+    }, 45000);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('visibilitychange', handleSyncOnVisible);
+      window.removeEventListener('focus', handleSyncOnVisible);
+      clearInterval(interval);
     };
   }, []);
 
   const pushToCloudDatabase = async (overrideData?: any) => {
     setIsCloudSyncing(true);
     try {
+      const current = latestDbStateRef.current;
       const payload = {
-        authorizedEmails: overrideData?.authorizedEmails || authorizedEmails,
-        primaryOwnerEmail: overrideData?.primaryOwnerEmail || primaryOwnerEmail,
-        adminSecurityKey: overrideData?.adminSecurityKey || adminSecurityKey,
-        articles: overrideData?.articles || articles,
+        authorizedEmails: overrideData?.authorizedEmails ?? current.authorizedEmails,
+        primaryOwnerEmail: overrideData?.primaryOwnerEmail ?? current.primaryOwnerEmail,
+        adminSecurityKey: overrideData?.adminSecurityKey ?? current.adminSecurityKey,
+        articles: overrideData?.articles ?? current.articles,
+        categories: overrideData?.categories ?? current.categories,
+        tags: overrideData?.tags ?? current.tags,
+        authors: overrideData?.authors ?? current.authors,
         updatedAt: new Date().toISOString(),
       };
-      const res = await fetch('/api/db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
+
+      latestDbStateRef.current = {
+        ...current,
+        ...payload,
+      };
+
+      const success = await saveRemoteDatabase(payload);
+      if (success) {
         setCloudSyncStatus('synced');
       } else {
         setCloudSyncStatus('error');
@@ -522,41 +657,62 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       comments: [],
     };
 
-    setArticles(prev => [newArticle, ...prev]);
+    const updatedArticles = [newArticle, ...articles];
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ articles: updatedArticles });
     return newArticle;
   };
 
   const updateArticle = (id: string, updates: Partial<Article>) => {
-    setArticles(prev =>
-      prev.map(art => {
-        if (art.id !== id) return art;
-        const updated = { ...art, ...updates, updatedAt: new Date().toISOString() };
-        if (updates.content && !updates.readingTimeMinutes) {
-          updated.readingTimeMinutes = calculateReadingTime(updates.content);
-        }
-        return updated;
-      })
-    );
+    const updatedArticles = articles.map(art => {
+      if (art.id !== id) return art;
+      const updated = { ...art, ...updates, updatedAt: new Date().toISOString() };
+      if (updates.content && !updates.readingTimeMinutes) {
+        updated.readingTimeMinutes = calculateReadingTime(updates.content);
+      }
+      return updated;
+    });
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ articles: updatedArticles });
   };
 
   const deleteArticle = (id: string) => {
-    setArticles(prev => prev.filter(a => a.id !== id));
+    const updatedArticles = articles.filter(a => a.id !== id);
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ articles: updatedArticles });
   };
 
   const toggleFeatured = (id: string) => {
-    setArticles(prev =>
-      prev.map(a => (a.id === id ? { ...a, isFeatured: !a.isFeatured } : a))
+    const updatedArticles = articles.map(a =>
+      a.id === id ? { ...a, isFeatured: !a.isFeatured } : a
     );
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ articles: updatedArticles });
   };
 
   const toggleStatus = (id: string) => {
-    setArticles(prev =>
-      prev.map(a =>
-        a.id === id
-          ? { ...a, status: a.status === 'published' ? 'draft' : 'published' }
-          : a
-      )
+    const updatedArticles = articles.map(a =>
+      a.id === id
+        ? { ...a, status: (a.status === 'published' ? 'draft' : 'published') as 'draft' | 'published' }
+        : a
     );
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ articles: updatedArticles });
   };
 
   const incrementViews = (id: string) => {
@@ -595,15 +751,18 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       createdAt: new Date().toISOString(),
     };
 
-    setArticles(prev =>
-      prev.map(art => {
-        if (art.id !== articleId) return art;
-        return {
-          ...art,
-          comments: [...(art.comments || []), newComment],
-        };
-      })
-    );
+    const updatedArticles = articles.map(art => {
+      if (art.id !== articleId) return art;
+      return {
+        ...art,
+        comments: [...(art.comments || []), newComment],
+      };
+    });
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ articles: updatedArticles });
   };
 
   // Taxonomy actions
@@ -616,43 +775,62 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       color: cat.color || '#2D6A4F',
       icon: cat.icon || 'Sprout',
     };
-    setCategories(prev => [...prev, newCat]);
+    const updatedCats = [...categories, newCat];
+    setCategories(updatedCats);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updatedCats));
+    } catch {}
+    pushToCloudDatabase({ categories: updatedCats });
     return newCat;
   };
 
   const updateCategory = (id: string, updates: Partial<Category>) => {
     const oldCat = categories.find(c => c.id === id);
-    setCategories(prev =>
-      prev.map(c => (c.id === id ? { ...c, ...updates } : c))
-    );
-    // If category name changed, propagate to all articles using this category
+    const updatedCats = categories.map(c => (c.id === id ? { ...c, ...updates } : c));
+    setCategories(updatedCats);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updatedCats));
+    } catch {}
+
+    let updatedArticles = articles;
     if (oldCat && updates.name && updates.name.toLowerCase() !== oldCat.name.toLowerCase()) {
       const oldName = oldCat.name.toLowerCase();
       const newName = updates.name;
-      setArticles(prev =>
-        prev.map(art =>
-          art.category.toLowerCase() === oldName
-            ? { ...art, category: newName }
-            : art
-        )
+      updatedArticles = articles.map(art =>
+        art.category.toLowerCase() === oldName
+          ? { ...art, category: newName }
+          : art
       );
+      setArticles(updatedArticles);
+      try {
+        localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+      } catch {}
     }
+    pushToCloudDatabase({ categories: updatedCats, articles: updatedArticles });
   };
 
   const deleteCategory = (id: string) => {
     const catToDelete = categories.find(c => c.id === id);
-    setCategories(prev => prev.filter(c => c.id !== id));
+    const remaining = categories.filter(c => c.id !== id);
+    setCategories(remaining);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(remaining));
+    } catch {}
+
+    let updatedArticles = articles;
     if (catToDelete) {
-      const remaining = categories.filter(c => c.id !== id);
       const fallback = remaining[0]?.name || 'General';
-      setArticles(prev =>
-        prev.map(art =>
-          art.category.toLowerCase() === catToDelete.name.toLowerCase()
-            ? { ...art, category: fallback }
-            : art
-        )
+      updatedArticles = articles.map(art =>
+        art.category.toLowerCase() === catToDelete.name.toLowerCase()
+          ? { ...art, category: fallback }
+          : art
       );
+      setArticles(updatedArticles);
+      try {
+        localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+      } catch {}
     }
+    pushToCloudDatabase({ categories: remaining, articles: updatedArticles });
   };
 
   const addTag = (tag: { name: string; description?: string; slug?: string }): Tag => {
@@ -663,39 +841,61 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       slug: tag.slug || slugify(cleanName),
       description: tag.description || `Articles tagged with #${cleanName}`,
     };
-    setTags(prev => [...prev, newTag]);
+    const updatedTags = [...tags, newTag];
+    setTags(updatedTags);
+    try {
+      localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(updatedTags));
+    } catch {}
+    pushToCloudDatabase({ tags: updatedTags });
     return newTag;
   };
 
   const updateTag = (id: string, updates: Partial<Tag>) => {
     const oldTag = tags.find(t => t.id === id);
-    setTags(prev =>
-      prev.map(t => (t.id === id ? { ...t, ...updates } : t))
-    );
-    // If tag name changed, propagate to all articles using this tag
+    const updatedTags = tags.map(t => (t.id === id ? { ...t, ...updates } : t));
+    setTags(updatedTags);
+    try {
+      localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(updatedTags));
+    } catch {}
+
+    let updatedArticles = articles;
     if (oldTag && updates.name && updates.name.toLowerCase() !== oldTag.name.toLowerCase()) {
       const oldName = oldTag.name.toLowerCase();
       const newName = updates.name;
-      setArticles(prev =>
-        prev.map(art => ({
-          ...art,
-          tags: art.tags.map(t => (t.toLowerCase() === oldName ? newName : t)),
-        }))
-      );
+      updatedArticles = articles.map(art => ({
+        ...art,
+        tags: art.tags.map(t => (t.toLowerCase() === oldName ? newName : t)),
+      }));
+      setArticles(updatedArticles);
+      try {
+        localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+      } catch {}
     }
+    pushToCloudDatabase({ tags: updatedTags, articles: updatedArticles });
   };
 
   const deleteTag = (id: string) => {
     const tagToDelete = tags.find(t => t.id === id);
     if (!tagToDelete) return;
-    setTags(prev => prev.filter(t => t.id !== id));
-    // Also remove from articles tags list
-    setArticles(prev =>
-      prev.map(a => ({
-        ...a,
-        tags: a.tags.filter(t => t.toLowerCase() !== tagToDelete.name.toLowerCase() && t.toLowerCase() !== tagToDelete.slug.toLowerCase()),
-      }))
-    );
+    const remainingTags = tags.filter(t => t.id !== id);
+    setTags(remainingTags);
+    try {
+      localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(remainingTags));
+    } catch {}
+
+    const updatedArticles = articles.map(a => ({
+      ...a,
+      tags: a.tags.filter(
+        t =>
+          t.toLowerCase() !== tagToDelete.name.toLowerCase() &&
+          t.toLowerCase() !== tagToDelete.slug.toLowerCase()
+      ),
+    }));
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch {}
+    pushToCloudDatabase({ tags: remainingTags, articles: updatedArticles });
   };
 
   // Author actions
@@ -708,32 +908,48 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       bio: auth.bio.trim(),
       institution: auth.institution?.trim() || 'Mizoram Agronomy Collective',
     };
-    setAuthors(prev => [...prev, newAuthor]);
+    const updatedAuthors = [...authors, newAuthor];
+    setAuthors(updatedAuthors);
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(updatedAuthors));
+    } catch {}
+    pushToCloudDatabase({ authors: updatedAuthors });
     return newAuthor;
   };
 
   const updateAuthor = (id: string, updates: Partial<Author>) => {
-    setAuthors(prev =>
-      prev.map(a => (a.id === id ? { ...a, ...updates } : a))
-    );
-    // Propagate to articles by this author
+    const updatedAuthors = authors.map(a => (a.id === id ? { ...a, ...updates } : a));
+    setAuthors(updatedAuthors);
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(updatedAuthors));
+    } catch {}
+
+    let updatedArticles = articles;
     if (updates.name || updates.role || updates.avatar) {
-      setArticles(prev =>
-        prev.map(art => {
-          if (art.author.id === id) {
-            return {
-              ...art,
-              author: { ...art.author, ...updates },
-            };
-          }
-          return art;
-        })
-      );
+      updatedArticles = articles.map(art => {
+        if (art.author.id === id) {
+          return {
+            ...art,
+            author: { ...art.author, ...updates },
+          };
+        }
+        return art;
+      });
+      setArticles(updatedArticles);
+      try {
+        localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+      } catch {}
     }
+    pushToCloudDatabase({ authors: updatedAuthors, articles: updatedArticles });
   };
 
   const deleteAuthor = (id: string) => {
-    setAuthors(prev => prev.filter(a => a.id !== id));
+    const remainingAuthors = authors.filter(a => a.id !== id);
+    setAuthors(remainingAuthors);
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(remainingAuthors));
+    } catch {}
+    pushToCloudDatabase({ authors: remainingAuthors });
   };
 
   // Filter setters
@@ -769,12 +985,20 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthors(INITIAL_AUTHORS);
     setBookmarks([]);
     setLikedArticles([]);
-    localStorage.removeItem(STORAGE_KEYS.ARTICLES);
-    localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
-    localStorage.removeItem(STORAGE_KEYS.TAGS);
-    localStorage.removeItem(STORAGE_KEYS.AUTHORS);
-    localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
-    localStorage.removeItem(STORAGE_KEYS.LIKES);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(INITIAL_ARTICLES));
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
+      localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(INITIAL_TAGS));
+      localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(INITIAL_AUTHORS));
+      localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
+      localStorage.removeItem(STORAGE_KEYS.LIKES);
+    } catch {}
+    pushToCloudDatabase({
+      articles: INITIAL_ARTICLES,
+      categories: INITIAL_CATEGORIES,
+      tags: INITIAL_TAGS,
+      authors: INITIAL_AUTHORS,
+    });
   };
 
   // Derived filtered articles

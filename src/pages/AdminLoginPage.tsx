@@ -49,7 +49,7 @@ export const AdminLoginPage: React.FC = () => {
 
   const {
     loginAdminWithGmail,
-    addAuthorizedEmail,
+    isAuthorizedEmail,
     googleClientId,
   } = useBlog();
   const { showToast } = useToast();
@@ -58,11 +58,19 @@ export const AdminLoginPage: React.FC = () => {
   // Handle successful Google authentication
   const handleAuthSuccess = (email: string) => {
     const normalized = email.trim().toLowerCase();
-    addAuthorizedEmail(normalized);
-    loginAdminWithGmail(normalized);
+    if (!isAuthorizedEmail(normalized)) {
+      setIsAuthenticating(false);
+      showToast(`Access Denied: "${normalized}" is not on the authorized administrator whitelist.`, 'error');
+      return;
+    }
+    const loggedIn = loginAdminWithGmail(normalized);
     setIsAuthenticating(false);
-    showToast(`Signed in with Google as ${normalized}!`, 'success');
-    navigate('/admin');
+    if (loggedIn) {
+      showToast(`Welcome! Signed in with Google as ${normalized}`, 'success');
+      navigate('/admin');
+    } else {
+      showToast(`Access Denied: "${normalized}" is not an authorized administrator.`, 'error');
+    }
   };
 
   // Initialize Google Identity Services (GIS)

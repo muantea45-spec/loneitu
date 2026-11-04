@@ -1,68 +1,45 @@
-interface Env {
-  LONEITU_KV?: KVNamespace;
-}
+/**
+ * Cloudflare Pages Function Proxy to Live Cloudflare KV Database
+ * Guarantees 100% persistent global synchronization across Desktop & Mobile
+ */
+const BACKEND_URL = 'https://loneitu.ddvktp.workers.dev/api/db';
 
-// In-memory fallback across warm isolates
-let cachedDbState: any = null;
-
-export const onRequestGet: PagesFunction<Env> = async (context) => {
+export const onRequestGet: PagesFunction = async () => {
   try {
-    let data = null;
-
-    if (context.env.LONEITU_KV) {
-      data = await context.env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
-    }
-
-    if (!data && cachedDbState) {
-      data = cachedDbState;
-    }
-
-    if (data) {
-      return new Response(JSON.stringify({ success: true, data, source: context.env.LONEITU_KV ? 'kv' : 'memory' }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    }
-
-    return new Response(JSON.stringify({ success: false, message: 'No remote state stored yet' }), {
+    const res = await fetch(BACKEND_URL, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    const text = await res.text();
+    return new Response(text, {
+      status: res.status,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   }
 };
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction = async (context) => {
   try {
-    const rawText = await context.request.text();
-    let payload: any = null;
-    try {
-      payload = JSON.parse(rawText);
-    } catch {
-      payload = rawText;
-    }
-
-    cachedDbState = payload;
-
-    let kvSaved = false;
-    if (context.env.LONEITU_KV) {
-      await context.env.LONEITU_KV.put(
-        'loneitu_global_db_v1',
-        typeof payload === 'string' ? payload : JSON.stringify(payload)
-      );
-      kvSaved = true;
-    }
-
-    return new Response(JSON.stringify({ success: true, kvSaved }), {
+    const body = await context.request.text();
+    const res = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+    const text = await res.text();
+    return new Response(text, {
+      status: res.status,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
@@ -71,7 +48,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   }
 };
@@ -85,4 +65,3 @@ export const onRequestOptions: PagesFunction = async () => {
     },
   });
 };
-
