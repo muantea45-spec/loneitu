@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Sprout, Edit } from 'lucide-react';
+import { Sprout } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useBlog } from '../context/BlogContext';
 import { SocialIconsRow } from '../components/common/SocialIcons';
 
 export const AboutPage: React.FC = () => {
-  const { aboutData, authors, isAdminLoggedIn } = useBlog();
+  const { aboutData, authors } = useBlog();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -19,25 +18,6 @@ export const AboutPage: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
-      {/* Admin Quick Edit Bar (only visible when logged in as admin) */}
-      {isAdminLoggedIn && (
-        <div className="bg-[#BFDC28] text-[#143520] px-4 py-2.5 text-xs font-bold border-b border-[#256B3A]/20">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#143520] animate-pulse" />
-              <span>Admin Mode: You can edit this page directly from the console</span>
-            </span>
-            <Link
-              to="/admin?tab=about"
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#143520] text-white hover:bg-[#1E542E] rounded-lg transition-colors cursor-pointer text-xs font-bold"
-            >
-              <Edit className="w-3.5 h-3.5 text-[#BFDC28]" />
-              <span>Edit About Page</span>
-            </Link>
-          </div>
-        </div>
-      )}
-
       {/* Hero Header */}
       <div className="w-full bg-[#143520] text-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
         <div className="max-w-4xl mx-auto space-y-6 text-center">
