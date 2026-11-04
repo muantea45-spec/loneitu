@@ -209,6 +209,22 @@ export const ArticleDetailPage: React.FC = () => {
                       .replace(/\s+/g, '-');
                     return <h3 id={id} {...props} />;
                   },
+                  img: ({ node, ...props }) => (
+                    <figure className="my-8 block">
+                      <div className="overflow-hidden rounded-2xl border border-[#DDD4BC] bg-[#F6F4EB] shadow-xs">
+                        <img
+                          {...props}
+                          className="w-full max-h-[600px] object-cover block"
+                          loading="lazy"
+                        />
+                      </div>
+                      {props.alt && (
+                        <figcaption className="text-center text-xs text-[#8F7855] mt-2.5 italic">
+                          {props.alt}
+                        </figcaption>
+                      )}
+                    </figure>
+                  ),
                 }}
               >
                 {article.content}
