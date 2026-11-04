@@ -1,0 +1,237 @@
+import React, { useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import {
+  Calendar,
+  Clock,
+  ArrowLeft,
+  ChevronRight,
+  Eye,
+  BookOpen
+} from 'lucide-react';
+import { useBlog } from '../context/BlogContext';
+import { formatDate } from '../utils/formatDate';
+import { ReadingProgress } from '../components/layout/ReadingProgress';
+import { TableOfContents } from '../components/article/TableOfContents';
+import { AuthorBio } from '../components/article/AuthorBio';
+import { ShareButtons } from '../components/article/ShareButtons';
+import { RelatedPosts } from '../components/article/RelatedPosts';
+import { CommentsSection } from '../components/article/CommentsSection';
+
+export const ArticleDetailPage: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const { articles, incrementViews, setFilterTag } = useBlog();
+  const navigate = useNavigate();
+
+  const article = articles.find(a => a.slug === slug);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (article) {
+      incrementViews(article.id);
+      document.title = `${article.title} — Loneitu (MIZORAM TAN)`;
+    }
+  }, [slug]);
+
+  if (!article) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <div className="text-center max-w-md bg-white p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
+          <BookOpen className="w-12 h-12 mx-auto text-[#8F7855]" />
+          <h2 className="font-serif font-bold text-2xl text-[#143520]">
+            Field Article Not Found
+          </h2>
+          <p className="text-xs sm:text-sm text-[#6F5B3C]">
+            The article you requested could not be located in the current publication index. It may have been archived or renamed.
+          </p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#143520] text-white text-xs font-semibold hover:bg-[#1E542E]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Journal Home</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleTagClick = (tag: string) => {
+    setFilterTag(tag.toLowerCase());
+    navigate(`/tag/${tag.toLowerCase()}`);
+  };
+
+  return (
+    <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
+      {/* Top Reading Progress Bar */}
+      <ReadingProgress />
+
+      {/* Header Container */}
+      <div className="w-full bg-[#F6F4EB] border-b border-[#EBE6D6] py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Breadcrumb Navigation */}
+          <nav className="flex items-center gap-2 text-xs text-[#8F7855]">
+            <Link to="/" className="hover:text-[#143520] transition-colors">
+              Journal
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="text-[#256B3A] font-semibold">{article.category}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[200px] sm:max-w-xs text-[#6F5B3C]">
+              {article.title}
+            </span>
+          </nav>
+
+          {/* Category Pill */}
+          <div>
+            <span className="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#143520] text-[#BFDC28]">
+              {article.category}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#143520] leading-[1.2]">
+            {article.title}
+          </h1>
+
+          {/* Author & Publication Metadata */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#DDD4BC]">
+            <div className="flex items-center gap-3">
+              <img
+                src={article.author.avatar}
+                alt={article.author.name}
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-[#256B3A]/30"
+              />
+              <div>
+                <div className="font-semibold text-sm text-[#143520]">
+                  {article.author.name}
+                </div>
+                <div className="text-xs text-[#8F7855]">
+                  {article.author.role}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 text-xs text-[#6F5B3C]">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#256B3A]" />
+                {formatDate(article.publishedAt)}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#256B3A]" />
+                {article.readingTimeMinutes} min read
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-[#256B3A]" />
+                {article.views || 1} views
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Full-Width Content Container with Ergonomic Constraints */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
+        {/* Cover Image banner */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="relative aspect-16/9 rounded-3xl overflow-hidden shadow-lg border border-[#DDD4BC] bg-[#EBE6D6]">
+            <img
+              src={article.coverImage}
+              alt={article.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="text-[11px] text-[#8F7855] text-right mt-2 italic">
+            Field photography: Verified agrarian site documentation
+          </div>
+        </div>
+
+        {/* Content Layout: 12-Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 max-w-5xl mx-auto">
+          {/* Left Column: Sticky Table of Contents on Desktop (4 cols) */}
+          <aside className="lg:col-span-4 order-2 lg:order-1 space-y-6">
+            <div className="sticky top-24 space-y-6">
+              <TableOfContents content={article.content} />
+
+              {/* Quick Author Snippet */}
+              <div className="p-5 bg-white rounded-2xl border border-[#EBE6D6] space-y-2">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855]">
+                  Lead Investigator
+                </div>
+                <div className="font-serif font-bold text-sm text-[#143520]">
+                  {article.author.name}
+                </div>
+                <p className="text-xs text-[#6F5B3C] line-clamp-3 leading-relaxed">
+                  {article.author.bio}
+                </p>
+              </div>
+
+              {/* Tag Cloud in Sidebar */}
+              <div className="p-5 bg-white rounded-2xl border border-[#EBE6D6] space-y-2">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855]">
+                  Field Practice Tags
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {article.tags.map(t => (
+                    <button
+                      key={t}
+                      onClick={() => handleTagClick(t)}
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-[#F2F7F3] text-[#1E542E] hover:bg-[#256B3A] hover:text-white transition-colors cursor-pointer"
+                    >
+                      #{t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Right Column: Markdown Article Body (8 cols) */}
+          <main className="lg:col-span-8 order-1 lg:order-2">
+            <article className="prose-agri bg-white p-6 sm:p-10 rounded-3xl border border-[#EBE6D6] shadow-xs">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h2: ({ node, ...props }) => {
+                    const text = String(props.children);
+                    const id = text
+                      .toLowerCase()
+                      .replace(/[^\w\s-]/g, '')
+                      .replace(/\s+/g, '-');
+                    return <h2 id={id} {...props} />;
+                  },
+                  h3: ({ node, ...props }) => {
+                    const text = String(props.children);
+                    const id = text
+                      .toLowerCase()
+                      .replace(/[^\w\s-]/g, '')
+                      .replace(/\s+/g, '-');
+                    return <h3 id={id} {...props} />;
+                  },
+                }}
+              >
+                {article.content}
+              </ReactMarkdown>
+            </article>
+
+            {/* Share & Like actions */}
+            <ShareButtons title={article.title} articleId={article.id} />
+
+            {/* Full Author Bio Card */}
+            <AuthorBio author={article.author} />
+
+            {/* Community Field Observations / Comments */}
+            <CommentsSection
+              articleId={article.id}
+              comments={article.comments || []}
+            />
+
+            {/* Related Research Articles */}
+            <RelatedPosts currentArticle={article} allArticles={articles} />
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+};
