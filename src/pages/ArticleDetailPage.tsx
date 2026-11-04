@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import {
   Calendar,
   Clock,
@@ -192,6 +193,7 @@ export const ArticleDetailPage: React.FC = () => {
             <article className="prose-agri bg-white p-6 sm:p-10 rounded-3xl border border-[#EBE6D6] shadow-xs">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                   h2: ({ node, ...props }) => {
                     const text = String(props.children);

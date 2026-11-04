@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import {
   Save,
   Eye,
@@ -19,6 +20,7 @@ import {
   Clock,
   Bold,
   Italic,
+  AlignJustify,
   Heading2,
   Heading3,
   Quote,
@@ -124,6 +126,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
 
   // Editor View modes: 'split' | 'edit' | 'preview' - Default to 'edit'
   const [viewMode, setViewMode] = useState<'split' | 'edit' | 'preview'>('edit');
+  const [isCanvasJustified, setIsCanvasJustified] = useState(false);
 
   // Inline Category modal
   const [showNewCatModal, setShowNewCatModal] = useState(false);
@@ -296,6 +299,43 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     }, 50);
   };
 
+  const handleJustifyText = () => {
+    const textarea = document.getElementById('article-content-textarea') as HTMLTextAreaElement | null;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+
+    if (selectedText.trim()) {
+      const justifyMatch =
+        selectedText.match(/^<div align="justify">\s*\n*([\s\S]*?)\s*\n*<\/div>$/i) ||
+        selectedText.match(/^<div style="text-align:\s*justify;?">\s*\n*([\s\S]*?)\s*\n*<\/div>$/i);
+
+      let replacement: string;
+      if (justifyMatch) {
+        replacement = justifyMatch[1];
+        showToast('Justified alignment removed', 'info');
+      } else {
+        replacement = `<div align="justify">\n\n${selectedText.trim()}\n\n</div>`;
+        showToast('Text justified!', 'success');
+      }
+
+      const newContent = content.substring(0, start) + replacement + content.substring(end);
+      setContent(newContent);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start, start + replacement.length);
+      }, 50);
+    } else {
+      setIsCanvasJustified(prev => {
+        const next = !prev;
+        showToast(next ? 'Text canvas justified!' : 'Text canvas left-aligned', 'info');
+        return next;
+      });
+    }
+  };
+
   // Inline Category creation
   const handleCreateCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -451,6 +491,17 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                 >
                   <Italic className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline text-[11px]">Italic</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleJustifyText}
+                  className={`h-8 px-2.5 hover:bg-[#EBE6D6] active:bg-[#DDD4BC] border rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                    isCanvasJustified ? 'bg-[#EBF1EA] text-[#1E542E] border-[#256B3A]' : 'bg-white text-[#54432C] border-[#DDD4BC]'
+                  }`}
+                  title="Justify Text: Wrap selected text in justified alignment, or toggle canvas justification"
+                >
+                  <AlignJustify className="w-3.5 h-3.5 text-[#256B3A]" />
+                  <span className="hidden sm:inline text-[11px]">Justify</span>
                 </button>
                 <div className="h-4 w-px bg-[#DDD4BC] mx-1 shrink-0" />
                 <button
@@ -648,7 +699,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                   onChange={e => setContent(e.target.value)}
                   onDrop={handleTextareaDrop}
                   onPaste={handleTextareaPaste}
-                  className="w-full min-h-[450px] sm:h-[650px] p-4 sm:p-6 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-y leading-relaxed"
+                  className={`w-full min-h-[450px] sm:h-[650px] p-4 sm:p-6 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-y leading-relaxed ${
+                    isCanvasJustified ? 'text-justify [text-align:justify]' : ''
+                  }`}
                   placeholder="Start typing your article content here in Markdown... (Tip: Click '+ Insert / Upload Photo', paste screenshots directly with Ctrl+V, or drag & drop pictures here!)"
                   required
                 />
@@ -659,6 +712,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                   {content ? (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
                       components={{
                         img: ({ node, ...props }) => (
                           <figure className="my-6 block">
@@ -696,7 +750,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                     onChange={e => setContent(e.target.value)}
                     onDrop={handleTextareaDrop}
                     onPaste={handleTextareaPaste}
-                    className="w-full h-full p-5 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-none leading-relaxed overflow-y-auto"
+                    className={`w-full h-full p-5 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-none leading-relaxed overflow-y-auto ${
+                      isCanvasJustified ? 'text-justify [text-align:justify]' : ''
+                    }`}
                     placeholder="Start typing your article content here in Markdown... (Tip: Click '+ Insert / Upload Photo', paste screenshots directly with Ctrl+V, or drag & drop pictures here!)"
                     required
                   />
@@ -707,6 +763,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                     {content ? (
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
                         components={{
                           img: ({ node, ...props }) => (
                             <figure className="my-6 block">

@@ -77,13 +77,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`flex items-center justify-between px-3.5 py-2 md:py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 md:w-full cursor-pointer whitespace-nowrap ${
-                isActive
-                  ? 'bg-[#143520] text-white shadow-xs'
-                  : item.highlight
+              className={`flex items-center justify-between px-3.5 py-2 md:py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 md:w-full cursor-pointer whitespace-nowrap ${isActive
+                ? 'bg-[#143520] text-white shadow-xs'
+                : item.highlight
                   ? 'bg-[#F2F7F3] text-[#256B3A] hover:bg-[#DFEDE3]'
                   : 'text-[#54432C] hover:bg-[#F6F4EB] hover:text-[#143520]'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2 md:gap-2.5">
                 <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#BFDC28]' : ''}`} />
@@ -91,9 +90,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               </div>
               {item.badge !== undefined && (
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ml-2 ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-[#EBE6D6] text-[#6F5B3C]'
-                  }`}
+                  className={`text-[10px] px-2 py-0.5 rounded-full ml-2 ${isActive ? 'bg-white/20 text-white' : 'bg-[#EBE6D6] text-[#6F5B3C]'
+                    }`}
                 >
                   {item.badge}
                 </span>
