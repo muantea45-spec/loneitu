@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
-import { DEFAULT_AUTHORIZED_EMAILS } from '../config/authConfig';
+import { DEFAULT_AUTHORIZED_EMAILS, isDefaultAuthorizedEmail } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
 
@@ -15,11 +15,13 @@ interface BlogContextType {
   filterState: FilterState;
   isAdminLoggedIn: boolean;
   adminEmail: string | null;
+  primaryOwnerEmail: string;
   authorizedEmails: string[];
   authors: Author[];
   
   // Auth actions
   loginAdminWithGmail: (email: string) => boolean;
+  setPrimaryOwnerEmail: (email: string) => void;
   addAuthorizedEmail: (email: string) => boolean;
   removeAuthorizedEmail: (email: string) => boolean;
   isAuthorizedEmail: (email: string) => boolean;
@@ -76,6 +78,7 @@ const STORAGE_KEYS = {
   ADMIN_AUTH: 'loneitu_admin_auth_v1',
   ADMIN_EMAIL: 'loneitu_admin_email_v1',
   AUTHORIZED_EMAILS: 'loneitu_authorized_admin_emails_v1',
+  PRIMARY_OWNER: 'loneitu_primary_owner_email_v1',
 };
 
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -226,6 +229,34 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [adminEmail]);
 
+  const [primaryOwnerEmail, setPrimaryOwnerEmailState] = useState<string>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.PRIMARY_OWNER) || 'muantea45@gmail.com';
+    } catch {
+      return 'muantea45@gmail.com';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.PRIMARY_OWNER, primaryOwnerEmail);
+    } catch (e) {
+      console.error('Failed to sync primary owner email', e);
+    }
+  }, [primaryOwnerEmail]);
+
+  const setPrimaryOwnerEmail = (email: string) => {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes('@')) return;
+    setAuthorizedEmails(prev => {
+      if (!prev.includes(normalized)) {
+        return [...prev, normalized];
+      }
+      return prev;
+    });
+    setPrimaryOwnerEmailState(normalized);
+  };
+
   const [authorizedEmails, setAuthorizedEmails] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.AUTHORIZED_EMAILS);
@@ -255,7 +286,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isAuthorizedEmail = (email: string): boolean => {
     const normalized = email.trim().toLowerCase();
-    return authorizedEmails.some(e => e.trim().toLowerCase() === normalized);
+    return (
+      normalized === primaryOwnerEmail.toLowerCase() ||
+      authorizedEmails.some(e => e.trim().toLowerCase() === normalized) ||
+      isDefaultAuthorizedEmail(normalized)
+    );
   };
 
   const addAuthorizedEmail = (email: string): boolean => {
@@ -268,8 +303,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const removeAuthorizedEmail = (email: string): boolean => {
     const normalized = email.trim().toLowerCase();
-    // Cannot delete the primary journal owner
-    if (normalized === 'muantea45@gmail.com') return false;
+    // Cannot delete the current primary journal owner
+    if (normalized === primaryOwnerEmail.toLowerCase()) return false;
     setAuthorizedEmails(prev => prev.filter(e => e.toLowerCase() !== normalized));
     return true;
   };
@@ -278,7 +313,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginAdmin = (password: string) => {
     if (password === 'admin' || password === 'agri2026' || password === 'roots' || password === 'admin123') {
       setIsAdminLoggedIn(true);
-      setAdminEmail('muantea45@gmail.com');
+      setAdminEmail(primaryOwnerEmail);
       return true;
     }
     return false;
@@ -656,9 +691,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         filterState,
         isAdminLoggedIn,
         adminEmail,
+        primaryOwnerEmail,
         authorizedEmails,
         authors,
         loginAdminWithGmail,
+        setPrimaryOwnerEmail,
         addAuthorizedEmail,
         removeAuthorizedEmail,
         isAuthorizedEmail,

@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, ExternalLink, LogOut, Mail } from 'lucide-react';
+import { Sprout, ExternalLink, LogOut, Mail, Crown } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 export const AdminHeader: React.FC = () => {
-  const { logoutAdmin, adminEmail } = useBlog();
+  const { logoutAdmin, adminEmail, primaryOwnerEmail } = useBlog();
+  const isPrimary = (adminEmail || '').toLowerCase() === primaryOwnerEmail.toLowerCase();
 
   return (
     <header className="bg-[#143520] text-white border-b border-[#1E542E] px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-md">
@@ -40,7 +41,13 @@ export const AdminHeader: React.FC = () => {
             <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[#D7E3D5] bg-[#1E542E] px-3 py-1.5 rounded-full border border-[#256B3A]">
               <span className="w-2 h-2 rounded-full bg-[#BFDC28] animate-pulse" />
               <Mail className="w-3.5 h-3.5 text-[#BFDC28]" />
-              <span className="font-mono text-[11px]">{adminEmail || 'muantea45@gmail.com'}</span>
+              <span className="font-mono text-[11px]">{adminEmail || primaryOwnerEmail}</span>
+              {isPrimary && (
+                <span className="flex items-center gap-0.5 text-[10px] text-[#BFDC28] font-bold bg-[#143520] px-1.5 py-0.5 rounded-full border border-[#256B3A]/80" title="Primary Journal Owner">
+                  <Crown className="w-2.5 h-2.5 text-[#BFDC28]" />
+                  <span>Owner</span>
+                </span>
+              )}
             </div>
             <button
               onClick={logoutAdmin}

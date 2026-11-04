@@ -13,3 +13,4 @@ export const isDefaultAuthorizedEmail = (email: string): boolean => {
     e => e.trim().toLowerCase() === normalized
   );
 };
+
