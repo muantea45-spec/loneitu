@@ -478,10 +478,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (cloudData.aboutData && typeof cloudData.aboutData === 'object') {
-        setAboutData(cloudData.aboutData);
-        try {
-          localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(cloudData.aboutData));
-        } catch {}
+        const newStr = JSON.stringify(cloudData.aboutData);
+        const oldStr = JSON.stringify(latestDbStateRef.current.aboutData);
+        if (newStr !== oldStr) {
+          setAboutData(cloudData.aboutData);
+          try {
+            localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, newStr);
+          } catch {}
+        }
       }
 
       setCloudSyncStatus('synced');

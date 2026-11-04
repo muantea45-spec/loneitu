@@ -64,10 +64,12 @@ export interface FilterState {
   sortBy: SortOption;
 }
 
-export interface PillarItem {
-  id: string;
-  title: string;
-  description: string;
+export interface SocialLinks {
+  instagram?: string;
+  facebook?: string;
+  whatsapp?: string;
+  youtube?: string;
+  twitter?: string;
 }
 
 export interface AboutPageData {
@@ -77,11 +79,9 @@ export interface AboutPageData {
   editorialTag: string;
   editorialTitle: string;
   editorialBody: string;
-  quote: string;
-  pillarsTitle: string;
-  pillarsSubtitle: string;
-  pillars: PillarItem[];
+  quote?: string;
   authorsTitle: string;
   authorsSubtitle: string;
+  socialLinks?: SocialLinks;
 }
 

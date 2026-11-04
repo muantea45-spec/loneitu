@@ -454,30 +454,13 @@ export const INITIAL_ABOUT_DATA: AboutPageData = {
 
 Today, a quiet agricultural revolution is underway. Farmers worldwide are demonstrating that by fostering subterranean mycorrhizal fungal webs, crimping dense cover crops, deploying low-power wireless tension sensors, and integrating timber trees with livestock, farms can thrive through extreme weather while slashing overhead costs.`,
   quote: 'To heal the climate and nourish human communities, we must first restore the microbial dignity of the soil beneath our feet.',
-  pillarsTitle: 'The Four Agronomic Pillars',
-  pillarsSubtitle: 'Guiding standards for every article, investigation, and field protocol we publish',
-  pillars: [
-    {
-      id: 'p-1',
-      title: 'Empirical Field Verification',
-      description: 'We do not publish theoretical models ungrounded in real acreage. Every technique must be tested across real growing seasons in diverse soil types.',
-    },
-    {
-      id: 'p-2',
-      title: 'Biological Regeneration over Chemical Crutches',
-      description: 'We prioritize mycorrhizal restoration, diverse cover crop cocktails, and multi-trophic biocontrols before synthetic intervention.',
-    },
-    {
-      id: 'p-3',
-      title: 'Appropriate Agro-Technology',
-      description: 'Technology must serve the farmstead, not indebt it. We champion open-source LoRa telemetry, solar cold chains, and modular hardware.',
-    },
-    {
-      id: 'p-4',
-      title: 'Rural Community Self-Reliance',
-      description: 'Farming is the economic cornerstone of rural civilization. We advocate for decentralized processing hubs and generational equity.',
-    },
-  ],
   authorsTitle: 'Contributing Agronomists & Field Researchers',
   authorsSubtitle: 'Researchers and farmers authoring our peer-informed investigations',
+  socialLinks: {
+    instagram: '',
+    facebook: '',
+    whatsapp: '',
+    youtube: '',
+    twitter: '',
+  },
 };
