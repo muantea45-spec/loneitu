@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
+import { DEFAULT_AUTHORIZED_EMAILS } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
 
@@ -14,10 +15,14 @@ interface BlogContextType {
   filterState: FilterState;
   isAdminLoggedIn: boolean;
   adminEmail: string | null;
+  authorizedEmails: string[];
   authors: Author[];
   
   // Auth actions
   loginAdminWithGmail: (email: string) => boolean;
+  addAuthorizedEmail: (email: string) => boolean;
+  removeAuthorizedEmail: (email: string) => boolean;
+  isAuthorizedEmail: (email: string) => boolean;
   
   // Article CRUD & Actions
   addArticle: (data: Partial<Article> & { title: string; content: string; category: string }) => Article;
@@ -70,6 +75,7 @@ const STORAGE_KEYS = {
   LIKES: 'loneitu_likes_v2',
   ADMIN_AUTH: 'loneitu_admin_auth_v1',
   ADMIN_EMAIL: 'loneitu_admin_email_v1',
+  AUTHORIZED_EMAILS: 'loneitu_authorized_admin_emails_v1',
 };
 
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -220,6 +226,54 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [adminEmail]);
 
+  const [authorizedEmails, setAuthorizedEmails] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.AUTHORIZED_EMAILS);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const list = parsed.map((e: string) => e.trim().toLowerCase());
+          if (!list.includes('muantea45@gmail.com')) {
+            list.unshift('muantea45@gmail.com');
+          }
+          return list;
+        }
+      }
+      return DEFAULT_AUTHORIZED_EMAILS;
+    } catch {
+      return DEFAULT_AUTHORIZED_EMAILS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(authorizedEmails));
+    } catch (e) {
+      console.error('Failed to sync authorized emails', e);
+    }
+  }, [authorizedEmails]);
+
+  const isAuthorizedEmail = (email: string): boolean => {
+    const normalized = email.trim().toLowerCase();
+    return authorizedEmails.some(e => e.trim().toLowerCase() === normalized);
+  };
+
+  const addAuthorizedEmail = (email: string): boolean => {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes('@')) return false;
+    if (isAuthorizedEmail(normalized)) return false;
+    setAuthorizedEmails(prev => [...prev, normalized]);
+    return true;
+  };
+
+  const removeAuthorizedEmail = (email: string): boolean => {
+    const normalized = email.trim().toLowerCase();
+    // Cannot delete the primary journal owner
+    if (normalized === 'muantea45@gmail.com') return false;
+    setAuthorizedEmails(prev => prev.filter(e => e.toLowerCase() !== normalized));
+    return true;
+  };
+
   // Auth methods
   const loginAdmin = (password: string) => {
     if (password === 'admin' || password === 'agri2026' || password === 'roots' || password === 'admin123') {
@@ -232,7 +286,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const loginAdminWithGmail = (email: string) => {
     const trimmed = email.trim().toLowerCase();
-    if (trimmed.includes('@gmail.com') || trimmed.includes('@')) {
+    // Whitelist Authorization Check
+    if (isAuthorizedEmail(trimmed)) {
       setIsAdminLoggedIn(true);
       setAdminEmail(trimmed);
       return true;
@@ -601,8 +656,12 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         filterState,
         isAdminLoggedIn,
         adminEmail,
+        authorizedEmails,
         authors,
         loginAdminWithGmail,
+        addAuthorizedEmail,
+        removeAuthorizedEmail,
+        isAuthorizedEmail,
         addArticle,
         updateArticle,
         deleteArticle,

@@ -27,7 +27,7 @@ export const AdminLoginPage: React.FC = () => {
         showToast(`Signed in as ${email} (Journal Administrator)`, 'success');
         navigate('/admin');
       } else {
-        setError('Failed to authenticate with Google. Please check your Gmail address.');
+        setError(`Access Denied: "${email}" is not on the authorized Loneitu administrator whitelist. Access is strictly restricted to approved accounts (such as muantea45@gmail.com).`);
       }
     }, 600);
   };
