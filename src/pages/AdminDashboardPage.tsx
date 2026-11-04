@@ -11,6 +11,7 @@ import { CategoryManager } from '../components/admin/CategoryManager';
 import { TagManager } from '../components/admin/TagManager';
 import { AuthorManager } from '../components/admin/AuthorManager';
 import { AboutEditor } from '../components/admin/AboutEditor';
+import { FooterEditor } from '../components/admin/FooterEditor';
 import { RotateCcw, Download, Upload, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/common/Toast';
 
@@ -33,6 +34,7 @@ export const AdminDashboardPage: React.FC = () => {
     googleClientId,
     setGoogleClientId,
     aboutData,
+    footerData,
     isCloudSyncing,
     cloudSyncStatus,
     pushToCloudDatabase,
@@ -41,7 +43,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as AdminTab | null;
-  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'categories', 'tags', 'authors', 'about', 'settings'];
+  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'categories', 'tags', 'authors', 'about', 'footer', 'settings'];
 
   const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
     if (tabParam && validTabs.includes(tabParam)) {
@@ -104,6 +106,7 @@ export const AdminDashboardPage: React.FC = () => {
         tags,
         authors,
         aboutData,
+        footerData,
         authorizedEmails,
         primaryOwnerEmail,
         adminSecurityKey,
@@ -208,6 +211,8 @@ export const AdminDashboardPage: React.FC = () => {
           {currentTab === 'authors' && <AuthorManager />}
 
           {currentTab === 'about' && <AboutEditor />}
+
+          {currentTab === 'footer' && <FooterEditor />}
 
           {currentTab === 'settings' && (
             <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs p-8 max-w-2xl space-y-6">

@@ -85,3 +85,15 @@ export interface AboutPageData {
   socialLinks?: SocialLinks;
 }
 
+export interface FooterData {
+  tagline: string;
+  copyrightText: string;
+  dedicationText: string;
+  bannerEnabled?: boolean;
+  bannerBadge?: string;
+  bannerTitle?: string;
+  bannerText?: string;
+  bannerButtonText?: string;
+  bannerButtonLink?: string;
+}
+

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, AboutPageData } from '../types/blog';
-import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA } from '../data/initialData';
+import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, AboutPageData, FooterData } from '../types/blog';
+import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA, INITIAL_FOOTER_DATA } from '../data/initialData';
 import { DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
@@ -20,6 +20,8 @@ interface BlogContextType {
   authors: Author[];
   aboutData: AboutPageData;
   updateAboutData: (updates: Partial<AboutPageData>) => void;
+  footerData: FooterData;
+  updateFooterData: (updates: Partial<FooterData>) => void;
   adminSecurityKey: string;
   googleClientId: string;
   isCloudSyncing: boolean;
@@ -95,6 +97,7 @@ const STORAGE_KEYS = {
   SECURITY_KEY: 'loneitu_admin_security_key_v2',
   GOOGLE_CLIENT_ID: 'loneitu_google_client_id_v2',
   ABOUT_PAGE: 'loneitu_mizo_about_page_v1',
+  FOOTER: 'loneitu_mizo_footer_v1',
 };
 
 const CLOUD_API_ENDPOINTS = [
@@ -248,6 +251,15 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
+  const [footerData, setFooterData] = useState<FooterData>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FOOTER);
+      return stored ? JSON.parse(stored) : INITIAL_FOOTER_DATA;
+    } catch {
+      return INITIAL_FOOTER_DATA;
+    }
+  });
+
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
@@ -321,6 +333,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to sync about data locally', e);
     }
   }, [aboutData]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.FOOTER, JSON.stringify(footerData));
+    } catch (e) {
+      console.error('Failed to sync footer data locally', e);
+    }
+  }, [footerData]);
 
   useEffect(() => {
     try {
@@ -433,6 +453,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     tags,
     authors,
     aboutData,
+    footerData,
   });
 
   useEffect(() => {
@@ -445,8 +466,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       tags,
       authors,
       aboutData,
+      footerData,
     };
-  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors, aboutData]);
+  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors, aboutData, footerData]);
 
   // Pull latest database from cloud on load and when switching devices
   const fetchCloudDb = async () => {
@@ -527,6 +549,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
+      if (cloudData.footerData && typeof cloudData.footerData === 'object') {
+        const newFooterStr = JSON.stringify(cloudData.footerData);
+        const oldFooterStr = JSON.stringify(latestDbStateRef.current.footerData);
+        if (newFooterStr !== oldFooterStr) {
+          setFooterData(cloudData.footerData);
+          try {
+            localStorage.setItem(STORAGE_KEYS.FOOTER, newFooterStr);
+          } catch {}
+        }
+      }
+
       setCloudSyncStatus('synced');
     } catch (e) {
       console.warn('Initial cloud db fetch skipped', e);
@@ -598,6 +631,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         tags: overrideData?.tags ?? current.tags,
         authors: overrideData?.authors ?? current.authors,
         aboutData: overrideData?.aboutData ?? current.aboutData,
+        footerData: overrideData?.footerData ?? current.footerData,
         updatedAt: new Date().toISOString(),
       };
 
@@ -632,6 +666,22 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       pushToCloudDatabase({ aboutData: updated });
       broadcastLocalChange('ABOUT_DATA', updated);
+      return updated;
+    });
+  };
+
+  const updateFooterData = (updates: Partial<FooterData>) => {
+    setFooterData(prev => {
+      const updated = { ...prev, ...updates };
+      lastMutationTimeRef.current = Date.now();
+      latestDbStateRef.current.footerData = updated;
+      try {
+        localStorage.setItem(STORAGE_KEYS.FOOTER, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to sync footer data locally', e);
+      }
+      pushToCloudDatabase({ footerData: updated });
+      broadcastLocalChange('FOOTER_DATA', updated);
       return updated;
     });
   };
@@ -1166,6 +1216,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTags(INITIAL_TAGS);
     setAuthors(INITIAL_AUTHORS);
     setAboutData(INITIAL_ABOUT_DATA);
+    setFooterData(INITIAL_FOOTER_DATA);
     setBookmarks([]);
     setLikedArticles([]);
     try {
@@ -1174,6 +1225,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(INITIAL_TAGS));
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(INITIAL_AUTHORS));
       localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(INITIAL_ABOUT_DATA));
+      localStorage.setItem(STORAGE_KEYS.FOOTER, JSON.stringify(INITIAL_FOOTER_DATA));
       localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
       localStorage.removeItem(STORAGE_KEYS.LIKES);
     } catch {}
@@ -1183,6 +1235,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       tags: INITIAL_TAGS,
       authors: INITIAL_AUTHORS,
       aboutData: INITIAL_ABOUT_DATA,
+      footerData: INITIAL_FOOTER_DATA,
     });
   };
 
@@ -1201,6 +1254,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (Array.isArray(payload.tags)) setTags(payload.tags);
       if (Array.isArray(payload.authors)) setAuthors(payload.authors);
       if (payload.aboutData) setAboutData(payload.aboutData);
+      if (payload.footerData) setFooterData(payload.footerData);
       if (Array.isArray(payload.authorizedEmails) && payload.authorizedEmails.length > 0) {
         setAuthorizedEmails(payload.authorizedEmails);
       }
@@ -1217,6 +1271,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         tags: payload.tags || tags,
         authors: payload.authors || authors,
         aboutData: payload.aboutData || aboutData,
+        footerData: payload.footerData || footerData,
         authorizedEmails: payload.authorizedEmails || authorizedEmails,
         primaryOwnerEmail: payload.primaryOwnerEmail || primaryOwnerEmail,
         adminSecurityKey: payload.adminSecurityKey || adminSecurityKey,
@@ -1316,6 +1371,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         authors,
         aboutData,
         updateAboutData,
+        footerData,
+        updateFooterData,
         adminSecurityKey,
         googleClientId,
         isCloudSyncing,

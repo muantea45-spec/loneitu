@@ -1,4 +1,4 @@
-import type { Article, Category, Tag, Author, AboutPageData } from '../types/blog';
+import type { Article, Category, Tag, Author, AboutPageData, FooterData } from '../types/blog';
 
 export const INITIAL_AUTHORS: Author[] = [
   {
@@ -463,4 +463,16 @@ Today, a quiet agricultural revolution is underway. Farmers worldwide are demons
     youtube: '',
     twitter: '',
   },
+};
+
+export const INITIAL_FOOTER_DATA: FooterData = {
+  tagline: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
+  copyrightText: 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.',
+  dedicationText: 'Loneitute leh zirtirtute tana duhsakna nen',
+  bannerEnabled: false,
+  bannerBadge: 'HRIATTIRNA',
+  bannerTitle: 'Loneitu Field Advisory & Community Journal',
+  bannerText: 'Mizoram loneitute tana chanchin thar, sik leh sa inthlakthleng mila hmalak dan leh zirtirna tha ber ber te.',
+  bannerButtonText: 'Kan Chanchin Chhiar Rawh',
+  bannerButtonLink: '/about',
 };
