@@ -73,23 +73,23 @@ export const AboutPage: React.FC = () => {
             {aboutData.editorialTitle}
           </h2>
 
-          <div className="text-sm sm:text-base text-[#4A584E] leading-relaxed space-y-4">
+          <div className="text-sm sm:text-base text-[#4A584E] leading-relaxed space-y-4 text-justify [text-align:justify]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
+                p: ({ node, ...props }) => <p className="mb-4 leading-relaxed text-justify [text-align:justify]" {...props} />,
                 strong: ({ node, ...props }) => <strong className="font-bold text-[#143520]" {...props} />,
                 em: ({ node, ...props }) => <em className="italic text-[#143520]" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-3" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 space-y-1.5 my-3" {...props} />,
-                li: ({ node, ...props }) => <li className="text-[#4A584E]" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-3 text-justify [text-align:justify]" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 space-y-1.5 my-3 text-justify [text-align:justify]" {...props} />,
+                li: ({ node, ...props }) => <li className="text-[#4A584E] text-justify [text-align:justify]" {...props} />,
               }}
             >
               {aboutData.editorialBody}
             </ReactMarkdown>
 
             {aboutData.quote && (
-              <blockquote className="border-l-4 border-[#256B3A] pl-4 py-3 my-4 italic text-[#143520] bg-[#F6F4EB] rounded-r-xl">
+              <blockquote className="border-l-4 border-[#256B3A] pl-4 py-3 my-4 italic text-[#143520] bg-[#F6F4EB] rounded-r-xl text-justify [text-align:justify]">
                 "{aboutData.quote}"
               </blockquote>
             )}
@@ -106,9 +106,6 @@ export const AboutPage: React.FC = () => {
               <h3 className="font-serif font-bold text-lg sm:text-xl text-[#143520] mt-0.5">
                 Official Channels & Social Communities
               </h3>
-              <p className="text-xs text-[#8F7855] mt-0.5">
-                Stay connected with Loneitu across our digital networks and farmer communities.
-              </p>
             </div>
             <div className="pt-2 sm:pt-0 shrink-0">
               <SocialIconsRow links={aboutData.socialLinks} variant="light" />

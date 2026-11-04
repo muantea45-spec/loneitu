@@ -247,7 +247,7 @@ export const AboutEditor: React.FC = () => {
               value={formData.editorialBody}
               onChange={e => handleChange('editorialBody', e.target.value)}
               placeholder="Write the editorial manifesto..."
-              className="w-full p-4 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-mono text-[#143520] leading-relaxed focus:outline-hidden focus:border-[#256B3A]"
+              className="w-full p-4 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-mono text-[#143520] leading-relaxed text-justify [text-align:justify] focus:outline-hidden focus:border-[#256B3A]"
               required
             />
           </div>
