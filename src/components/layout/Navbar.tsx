@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, Search, Bookmark, Menu, Shield } from 'lucide-react';
+import { Sprout, Search, Bookmark, Menu } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface NavbarProps {
@@ -14,7 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBookmarks,
   onOpenSidebarMenu,
 }) => {
-  const { bookmarks, isAdminLoggedIn } = useBlog();
+  const { bookmarks } = useBlog();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -81,19 +81,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             )}
           </button>
-
-          {/* Admin Portal Quick Link */}
-          <Link
-            to="/admin"
-            className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all ${
-              isAdminLoggedIn
-                ? 'bg-[#143520] text-[#F7FAF6] hover:bg-[#1E542E]'
-                : 'bg-[#EBE6D6] text-[#3B2E1D] hover:bg-[#DDD4BC]'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5 text-[#BFDC28]" />
-            <span>Admin</span>
-          </Link>
 
           {/* Universal Sidebar Menu Trigger (Desktop & Mobile) */}
           <button

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Heart, Sprout } from 'lucide-react';
+import { Heart, Sprout } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -28,11 +28,6 @@ export const Footer: React.FC = () => {
           <span>•</span>
           <Link to="/about" className="hover:text-[#BFDC28] transition-colors">
             Kan Chanchin (About)
-          </Link>
-          <span>•</span>
-          <Link to="/admin" className="hover:text-[#BFDC28] flex items-center gap-1 transition-colors">
-            <Shield className="w-3.5 h-3.5 text-[#BFDC28]" />
-            <span>Admin Portal</span>
           </Link>
         </div>
       </div>

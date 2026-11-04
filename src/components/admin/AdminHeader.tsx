@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, ExternalLink, LogOut, Shield } from 'lucide-react';
+import { Sprout, ExternalLink, LogOut, Mail } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 export const AdminHeader: React.FC = () => {
-  const { logoutAdmin } = useBlog();
+  const { logoutAdmin, adminEmail } = useBlog();
 
   return (
     <header className="bg-[#143520] text-white border-b border-[#1E542E] px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-md">
@@ -36,10 +36,11 @@ export const AdminHeader: React.FC = () => {
 
           <div className="h-4 w-px bg-white/20 hidden sm:block" />
 
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[#D7E3D5]">
-              <Shield className="w-3.5 h-3.5 text-[#BFDC28]" />
-              <span>Chief Editor</span>
+          <div className="flex items-center gap-2.5">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[#D7E3D5] bg-[#1E542E] px-3 py-1.5 rounded-full border border-[#256B3A]">
+              <span className="w-2 h-2 rounded-full bg-[#BFDC28] animate-pulse" />
+              <Mail className="w-3.5 h-3.5 text-[#BFDC28]" />
+              <span className="font-mono text-[11px]">{adminEmail || 'muantea45@gmail.com'}</span>
             </div>
             <button
               onClick={logoutAdmin}

@@ -13,7 +13,11 @@ interface BlogContextType {
   likedArticles: string[];
   filterState: FilterState;
   isAdminLoggedIn: boolean;
+  adminEmail: string | null;
   authors: Author[];
+  
+  // Auth actions
+  loginAdminWithGmail: (email: string) => boolean;
   
   // Article CRUD & Actions
   addArticle: (data: Partial<Article> & { title: string; content: string; category: string }) => Article;
@@ -65,6 +69,7 @@ const STORAGE_KEYS = {
   BOOKMARKS: 'loneitu_bookmarks_v2',
   LIKES: 'loneitu_likes_v2',
   ADMIN_AUTH: 'loneitu_admin_auth_v1',
+  ADMIN_EMAIL: 'loneitu_admin_email_v1',
 };
 
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -187,6 +192,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [likedArticles]);
 
+  const [adminEmail, setAdminEmail] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) || null;
+    } catch {
+      return null;
+    }
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, isAdminLoggedIn ? 'true' : 'false');
@@ -195,10 +208,33 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [isAdminLoggedIn]);
 
+  useEffect(() => {
+    try {
+      if (adminEmail) {
+        localStorage.setItem(STORAGE_KEYS.ADMIN_EMAIL, adminEmail);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_EMAIL);
+      }
+    } catch (e) {
+      console.error('Failed to sync admin email', e);
+    }
+  }, [adminEmail]);
+
   // Auth methods
   const loginAdmin = (password: string) => {
     if (password === 'admin' || password === 'agri2026' || password === 'roots' || password === 'admin123') {
       setIsAdminLoggedIn(true);
+      setAdminEmail('muantea45@gmail.com');
+      return true;
+    }
+    return false;
+  };
+
+  const loginAdminWithGmail = (email: string) => {
+    const trimmed = email.trim().toLowerCase();
+    if (trimmed.includes('@gmail.com') || trimmed.includes('@')) {
+      setIsAdminLoggedIn(true);
+      setAdminEmail(trimmed);
       return true;
     }
     return false;
@@ -206,6 +242,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logoutAdmin = () => {
     setIsAdminLoggedIn(false);
+    setAdminEmail(null);
   };
 
   // Article Actions
@@ -563,7 +600,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         likedArticles,
         filterState,
         isAdminLoggedIn,
+        adminEmail,
         authors,
+        loginAdminWithGmail,
         addArticle,
         updateArticle,
         deleteArticle,

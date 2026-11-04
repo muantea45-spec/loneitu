@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Shield, Bookmark, Search, ArrowRight, Tag as TagIcon } from 'lucide-react';
+import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface MobileDrawerProps {
@@ -16,7 +16,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onOpenSearch,
   onOpenBookmarks,
 }) => {
-  const { categories, tags, bookmarks, isAdminLoggedIn } = useBlog();
+  const { categories, tags, bookmarks } = useBlog();
   const location = useLocation();
 
   if (!isOpen) return null;
@@ -135,18 +135,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Bottom admin drawer link */}
-          <div className="p-4 border-t border-[#EBE6D6] bg-[#F6F4EB]">
-            <Link
-              to="/admin"
-              onClick={onClose}
-              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-[#143520] text-white text-xs font-semibold hover:bg-[#1E542E] transition-colors shadow-xs"
-            >
-              <Shield className="w-4 h-4 text-[#BFDC28]" />
-              <span>{isAdminLoggedIn ? 'Go to Admin Dashboard' : 'Editor Admin Portal'}</span>
-            </Link>
           </div>
         </div>
       </div>
