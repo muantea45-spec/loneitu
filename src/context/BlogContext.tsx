@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment } from '../types/blog';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS } from '../data/initialData';
-import { DEFAULT_AUTHORIZED_EMAILS, isDefaultAuthorizedEmail } from '../config/authConfig';
+import { DEFAULT_AUTHORIZED_EMAILS, DEFAULT_ADMIN_KEY, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
 
@@ -18,9 +18,15 @@ interface BlogContextType {
   primaryOwnerEmail: string;
   authorizedEmails: string[];
   authors: Author[];
+  adminSecurityKey: string;
+  googleClientId: string;
   
   // Auth actions
   loginAdminWithGmail: (email: string) => boolean;
+  verifyAndLoginAdmin: (email: string, passkey: string) => { ok: boolean; error?: string };
+  verifyAndLoginWithGoogleJwt: (jwtToken: string) => { ok: boolean; email?: string; error?: string };
+  setAdminSecurityKey: (newKey: string) => void;
+  setGoogleClientId: (clientId: string) => void;
   setPrimaryOwnerEmail: (email: string) => void;
   addAuthorizedEmail: (email: string) => boolean;
   removeAuthorizedEmail: (email: string) => boolean;
@@ -79,6 +85,8 @@ const STORAGE_KEYS = {
   ADMIN_EMAIL: 'loneitu_admin_email_v1',
   AUTHORIZED_EMAILS: 'loneitu_authorized_admin_emails_v1',
   PRIMARY_OWNER: 'loneitu_primary_owner_email_v1',
+  SECURITY_KEY: 'loneitu_admin_security_key_v2',
+  GOOGLE_CLIENT_ID: 'loneitu_google_client_id_v2',
 };
 
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -309,7 +317,81 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return true;
   };
 
+  const [adminSecurityKey, setAdminSecurityKeyState] = useState<string>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) || DEFAULT_ADMIN_KEY;
+    } catch {
+      return DEFAULT_ADMIN_KEY;
+    }
+  });
+
+  const setAdminSecurityKey = (newKey: string) => {
+    const trimmed = newKey.trim();
+    if (!trimmed) return;
+    setAdminSecurityKeyState(trimmed);
+    try {
+      localStorage.setItem(STORAGE_KEYS.SECURITY_KEY, trimmed);
+    } catch (e) {
+      console.error('Failed to sync security key', e);
+    }
+  };
+
+  const [googleClientId, setGoogleClientIdState] = useState<string>(() => {
+    try {
+      return (
+        import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+        localStorage.getItem(STORAGE_KEYS.GOOGLE_CLIENT_ID) ||
+        ''
+      );
+    } catch {
+      return '';
+    }
+  });
+
+  const setGoogleClientId = (clientId: string) => {
+    const trimmed = clientId.trim();
+    setGoogleClientIdState(trimmed);
+    try {
+      localStorage.setItem(STORAGE_KEYS.GOOGLE_CLIENT_ID, trimmed);
+    } catch (e) {
+      console.error('Failed to sync google client id', e);
+    }
+  };
+
   // Auth methods
+  const verifyAndLoginAdmin = (email: string, passkey: string): { ok: boolean; error?: string } => {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes('@')) {
+      return { ok: false, error: 'Please enter a valid Gmail address.' };
+    }
+    if (!isAuthorizedEmail(normalized)) {
+      return { ok: false, error: 'Access Denied: This account is not authorized on Loneitu.' };
+    }
+    if (passkey.trim() !== adminSecurityKey.trim()) {
+      return { ok: false, error: 'Invalid Security Key. Access rejected.' };
+    }
+    setIsAdminLoggedIn(true);
+    setAdminEmail(normalized);
+    return { ok: true };
+  };
+
+  const verifyAndLoginWithGoogleJwt = (jwtToken: string): { ok: boolean; email?: string; error?: string } => {
+    const payload = parseGoogleJwtCredential(jwtToken);
+    if (!payload || !payload.email) {
+      return { ok: false, error: 'Unable to verify Google Identity credential.' };
+    }
+    if (!payload.email_verified) {
+      return { ok: false, error: 'Google account email is not verified.' };
+    }
+    const normalized = payload.email.trim().toLowerCase();
+    if (!isAuthorizedEmail(normalized)) {
+      return { ok: false, error: `Access Denied: Google account "${payload.email}" is not an authorized administrator.` };
+    }
+    setIsAdminLoggedIn(true);
+    setAdminEmail(normalized);
+    return { ok: true, email: normalized };
+  };
+
   const loginAdmin = (password: string) => {
     if (password === 'admin' || password === 'agri2026' || password === 'roots' || password === 'admin123') {
       setIsAdminLoggedIn(true);
@@ -694,7 +776,13 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         primaryOwnerEmail,
         authorizedEmails,
         authors,
+        adminSecurityKey,
+        googleClientId,
         loginAdminWithGmail,
+        verifyAndLoginAdmin,
+        verifyAndLoginWithGoogleJwt,
+        setAdminSecurityKey,
+        setGoogleClientId,
         setPrimaryOwnerEmail,
         addAuthorizedEmail,
         removeAuthorizedEmail,
