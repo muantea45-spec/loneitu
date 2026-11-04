@@ -7,6 +7,12 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application"
   },
+  "kv_namespaces": [
+    {
+      "binding": "LONEITU_KV",
+      "id": "ae8aa0eaf70f499a85e7f4b5fb523f92"
+    }
+  ],
   "build": {
     "command": "npm run build"
   }

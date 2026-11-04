@@ -20,6 +20,9 @@ interface BlogContextType {
   authors: Author[];
   adminSecurityKey: string;
   googleClientId: string;
+  isCloudSyncing: boolean;
+  cloudSyncStatus: 'idle' | 'synced' | 'error';
+  pushToCloudDatabase: (overrideData?: any) => Promise<void>;
   
   // Auth actions
   loginAdminWithGmail: (email: string) => boolean;
@@ -237,6 +240,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [adminEmail]);
 
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'synced' | 'error'>('idle');
+
   const [primaryOwnerEmail, setPrimaryOwnerEmailState] = useState<string>(() => {
     try {
       return localStorage.getItem(STORAGE_KEYS.PRIMARY_OWNER) || 'muantea45@gmail.com';
@@ -252,18 +258,6 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to sync primary owner email', e);
     }
   }, [primaryOwnerEmail]);
-
-  const setPrimaryOwnerEmail = (email: string) => {
-    const normalized = email.trim().toLowerCase();
-    if (!normalized.includes('@')) return;
-    setAuthorizedEmails(prev => {
-      if (!prev.includes(normalized)) {
-        return [...prev, normalized];
-      }
-      return prev;
-    });
-    setPrimaryOwnerEmailState(normalized);
-  };
 
   const [authorizedEmails, setAuthorizedEmails] = useState<string[]>(() => {
     try {
@@ -292,6 +286,88 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [authorizedEmails]);
 
+  const [adminSecurityKey, setAdminSecurityKeyState] = useState<string>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) || DEFAULT_ADMIN_KEY;
+    } catch {
+      return DEFAULT_ADMIN_KEY;
+    }
+  });
+
+  // Pull latest database from cloud on load (syncs Desktop <-> Mobile automatically)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCloudDb = async () => {
+      try {
+        const res = await fetch('/api/db');
+        if (!res.ok) return;
+        const result = await res.json();
+        if (result && result.data && isMounted) {
+          const cloudData = result.data;
+          if (Array.isArray(cloudData.authorizedEmails) && cloudData.authorizedEmails.length > 0) {
+            setAuthorizedEmails(prev => Array.from(new Set([...prev, ...cloudData.authorizedEmails])));
+          }
+          if (cloudData.primaryOwnerEmail) {
+            setPrimaryOwnerEmailState(cloudData.primaryOwnerEmail);
+          }
+          if (cloudData.adminSecurityKey) {
+            setAdminSecurityKeyState(cloudData.adminSecurityKey);
+          }
+          if (Array.isArray(cloudData.articles) && cloudData.articles.length > 0) {
+            setArticles(cloudData.articles);
+          }
+          setCloudSyncStatus('synced');
+        }
+      } catch (e) {
+        console.warn('Initial cloud db fetch skipped', e);
+      }
+    };
+    fetchCloudDb();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const pushToCloudDatabase = async (overrideData?: any) => {
+    setIsCloudSyncing(true);
+    try {
+      const payload = {
+        authorizedEmails: overrideData?.authorizedEmails || authorizedEmails,
+        primaryOwnerEmail: overrideData?.primaryOwnerEmail || primaryOwnerEmail,
+        adminSecurityKey: overrideData?.adminSecurityKey || adminSecurityKey,
+        articles: overrideData?.articles || articles,
+        updatedAt: new Date().toISOString(),
+      };
+      const res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setCloudSyncStatus('synced');
+      } else {
+        setCloudSyncStatus('error');
+      }
+    } catch (e) {
+      console.warn('Cloud sync write failed', e);
+      setCloudSyncStatus('error');
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  const setPrimaryOwnerEmail = (email: string) => {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes('@')) return;
+    let updatedEmails = authorizedEmails;
+    if (!authorizedEmails.includes(normalized)) {
+      updatedEmails = [...authorizedEmails, normalized];
+      setAuthorizedEmails(updatedEmails);
+    }
+    setPrimaryOwnerEmailState(normalized);
+    pushToCloudDatabase({ primaryOwnerEmail: normalized, authorizedEmails: updatedEmails });
+  };
+
   const isAuthorizedEmail = (email: string): boolean => {
     const normalized = email.trim().toLowerCase();
     return (
@@ -305,7 +381,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const normalized = email.trim().toLowerCase();
     if (!normalized.includes('@')) return false;
     if (isAuthorizedEmail(normalized)) return false;
-    setAuthorizedEmails(prev => [...prev, normalized]);
+    const updated = [...authorizedEmails, normalized];
+    setAuthorizedEmails(updated);
+    pushToCloudDatabase({ authorizedEmails: updated });
     return true;
   };
 
@@ -313,17 +391,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const normalized = email.trim().toLowerCase();
     // Cannot delete the current primary journal owner
     if (normalized === primaryOwnerEmail.toLowerCase()) return false;
-    setAuthorizedEmails(prev => prev.filter(e => e.toLowerCase() !== normalized));
+    const updated = authorizedEmails.filter(e => e.toLowerCase() !== normalized);
+    setAuthorizedEmails(updated);
+    pushToCloudDatabase({ authorizedEmails: updated });
     return true;
   };
-
-  const [adminSecurityKey, setAdminSecurityKeyState] = useState<string>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) || DEFAULT_ADMIN_KEY;
-    } catch {
-      return DEFAULT_ADMIN_KEY;
-    }
-  });
 
   const setAdminSecurityKey = (newKey: string) => {
     const trimmed = newKey.trim();
@@ -334,6 +406,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (e) {
       console.error('Failed to sync security key', e);
     }
+    pushToCloudDatabase({ adminSecurityKey: trimmed });
   };
 
   const [googleClientId, setGoogleClientIdState] = useState<string>(() => {
@@ -778,6 +851,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         authors,
         adminSecurityKey,
         googleClientId,
+        isCloudSyncing,
+        cloudSyncStatus,
+        pushToCloudDatabase,
         loginAdminWithGmail,
         verifyAndLoginAdmin,
         verifyAndLoginWithGoogleJwt,

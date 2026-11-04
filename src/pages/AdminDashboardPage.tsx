@@ -9,7 +9,7 @@ import { ArticleEditor } from '../components/admin/ArticleEditor';
 import { CategoryManager } from '../components/admin/CategoryManager';
 import { TagManager } from '../components/admin/TagManager';
 import { AuthorManager } from '../components/admin/AuthorManager';
-import { RotateCcw, Download, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound } from 'lucide-react';
+import { RotateCcw, Download, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/common/Toast';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -28,6 +28,9 @@ export const AdminDashboardPage: React.FC = () => {
     setAdminSecurityKey,
     googleClientId,
     setGoogleClientId,
+    isCloudSyncing,
+    cloudSyncStatus,
+    pushToCloudDatabase,
   } = useBlog();
   const { showToast } = useToast();
 
@@ -148,6 +151,41 @@ export const AdminDashboardPage: React.FC = () => {
                 <p className="text-xs text-[#8F7855] mt-0.5">
                   Manage administrator access whitelists, database snapshots, and demo datasets
                 </p>
+              </div>
+
+              {/* Multi-Device Cloud Database Sync Card */}
+              <div className="p-5 bg-[#F2F7F3] rounded-2xl border border-[#B7CEB4] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-bold text-[#143520]">
+                    <Cloud className="w-5 h-5 text-[#256B3A]" />
+                    <span>Multi-Device Database Synchronization</span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                    cloudSyncStatus === 'synced'
+                      ? 'bg-[#143520] text-[#BFDC28]'
+                      : 'bg-[#C2623D]/20 text-[#A84C2A]'
+                  }`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                    {cloudSyncStatus === 'synced' ? 'Live Cloud Synced' : 'Ready to Sync'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#4A584E] leading-relaxed">
+                  Automatically syncs your administrator whitelist, primary owner, and articles between your Desktop PC and Mobile Phone. Clicking <strong>Sync to Cloud</strong> commits all changes to the central Cloudflare database so your mobile phone can log in immediately.
+                </p>
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    disabled={isCloudSyncing}
+                    onClick={async () => {
+                      await pushToCloudDatabase();
+                      showToast('Database successfully synced to cloud! Mobile phone can now sign in.', 'success');
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-60"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#BFDC28] ${isCloudSyncing ? 'animate-spin' : ''}`} />
+                    <span>{isCloudSyncing ? 'Syncing...' : 'Sync Database to Cloud Now'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Authorized Admin Emails Whitelist */}
