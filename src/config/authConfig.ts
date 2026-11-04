@@ -5,6 +5,7 @@
 
 export const DEFAULT_AUTHORIZED_EMAILS: string[] = [
   'muantea45@gmail.com', // Primary Owner & Journal Administrator
+  'ddvktp@gmail.com',    // Journal Administrator
 ];
 
 export const DEFAULT_ADMIN_KEY = 'agri2026';

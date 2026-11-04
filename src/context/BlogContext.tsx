@@ -266,9 +266,12 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const list = parsed.map((e: string) => e.trim().toLowerCase());
-          if (!list.includes('muantea45@gmail.com')) {
-            list.unshift('muantea45@gmail.com');
-          }
+          DEFAULT_AUTHORIZED_EMAILS.forEach(defaultEmail => {
+            const normalized = defaultEmail.trim().toLowerCase();
+            if (!list.includes(normalized)) {
+              list.push(normalized);
+            }
+          });
           return list;
         }
       }
