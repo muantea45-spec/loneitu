@@ -4,6 +4,8 @@ import { Clock, Calendar, ArrowRight, Sparkles, Bookmark, Heart } from 'lucide-r
 import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
+import { WhatsAppIcon } from '../common/SocialIcons';
+import { shareToWhatsApp } from '../../utils/shareUtils';
 
 interface HeroFeaturedProps {
   article: Article;
@@ -80,6 +82,19 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ article }) => {
               </Link>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fullUrl = `${window.location.origin}/article/${article.slug}`;
+                    shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
+                  }}
+                  className="px-3.5 py-3 rounded-xl bg-[#25D366] hover:bg-[#20be5a] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all hover:scale-102 cursor-pointer"
+                  title="Share directly to WhatsApp"
+                >
+                  <WhatsAppIcon className="w-4 h-4 text-white" />
+                  <span>WhatsApp</span>
+                </button>
+
                 <button
                   onClick={() => toggleLike(article.id)}
                   className={`p-3 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-semibold ${

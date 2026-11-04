@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatDate } from '../utils/formatDate';
+import { WhatsAppIcon } from '../components/common/SocialIcons';
+import { shareToWhatsApp } from '../utils/shareUtils';
 import type { Article } from '../types/blog';
 
 // Mizo & English Month Data
@@ -802,6 +804,17 @@ export const ArchivePage: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                               <button
                                                 type="button"
+                                                onClick={() => {
+                                                  const fullUrl = `${window.location.origin}/article/${article.slug}`;
+                                                  shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
+                                                }}
+                                                className="p-1.5 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer"
+                                                title="Share to WhatsApp"
+                                              >
+                                                <WhatsAppIcon className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                type="button"
                                                 onClick={() => toggleBookmark(article.id)}
                                                 className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                                                   bookmarks.includes(article.id)
@@ -903,13 +916,26 @@ export const ArchivePage: React.FC = () => {
                             </div>
                           </div>
 
-                          <Link
-                            to={`/article/${article.slug}`}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-[#256B3A] group-hover:translate-x-1 transition-transform"
-                          >
-                            <span>Read</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const fullUrl = `${window.location.origin}/article/${article.slug}`;
+                                shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
+                              }}
+                              className="p-1.5 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer"
+                              title="Share to WhatsApp"
+                            >
+                              <WhatsAppIcon className="w-3.5 h-3.5" />
+                            </button>
+                            <Link
+                              to={`/article/${article.slug}`}
+                              className="inline-flex items-center gap-1 text-xs font-bold text-[#256B3A] group-hover:translate-x-1 transition-transform"
+                            >
+                              <span>Read</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </article>
@@ -960,13 +986,27 @@ export const ArchivePage: React.FC = () => {
                               {art.author.name}
                             </td>
                             <td className="py-3 px-4 text-right whitespace-nowrap">
-                              <Link
-                                to={`/article/${art.slug}`}
-                                className="inline-flex items-center gap-1 font-bold text-[#256B3A] hover:underline"
-                              >
-                                <span>Open</span>
-                                <ArrowRight className="w-3 h-3" />
-                              </Link>
+                              <div className="inline-flex items-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const fullUrl = `${window.location.origin}/article/${art.slug}`;
+                                    shareToWhatsApp(art.title, art.excerpt || art.content, fullUrl);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1e8341] hover:text-[#25D366] cursor-pointer"
+                                  title="Share to WhatsApp"
+                                >
+                                  <WhatsAppIcon className="w-3 h-3 text-[#25D366]" />
+                                  <span>WhatsApp</span>
+                                </button>
+                                <Link
+                                  to={`/article/${art.slug}`}
+                                  className="inline-flex items-center gap-1 font-bold text-[#256B3A] hover:underline"
+                                >
+                                  <span>Open</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </Link>
+                              </div>
                             </td>
                           </tr>
                         ))

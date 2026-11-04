@@ -19,6 +19,8 @@ import { AuthorBio } from '../components/article/AuthorBio';
 import { ShareButtons } from '../components/article/ShareButtons';
 import { RelatedPosts } from '../components/article/RelatedPosts';
 import { CommentsSection } from '../components/article/CommentsSection';
+import { WhatsAppIcon } from '../components/common/SocialIcons';
+import { shareToWhatsApp } from '../utils/shareUtils';
 
 export const ArticleDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -114,7 +116,7 @@ export const ArticleDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs text-[#6F5B3C]">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-[#6F5B3C]">
               <Link
                 to={`/archive?year=${new Date(article.publishedAt).getFullYear()}&month=${new Date(article.publishedAt).getMonth() + 1}`}
                 className="flex items-center gap-1.5 hover:text-[#256B3A] hover:underline transition-colors"
@@ -131,6 +133,17 @@ export const ArticleDetailPage: React.FC = () => {
                 <Eye className="w-3.5 h-3.5 text-[#256B3A]" />
                 {article.views || 1} views
               </span>
+
+              {/* Direct WhatsApp Share button in article header */}
+              <button
+                type="button"
+                onClick={() => shareToWhatsApp(article.title, article.excerpt || article.content)}
+                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20be5a] text-white text-xs font-bold shadow-2xs transition-all hover:scale-102 cursor-pointer"
+                title="Share this article directly to WhatsApp"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
+                <span>Share to WhatsApp</span>
+              </button>
             </div>
           </div>
         </div>

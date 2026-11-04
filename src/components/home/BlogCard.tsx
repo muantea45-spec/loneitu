@@ -4,6 +4,8 @@ import { Clock, Calendar, Bookmark, Heart, ArrowUpRight } from 'lucide-react';
 import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
+import { WhatsAppIcon } from '../common/SocialIcons';
+import { shareToWhatsApp } from '../../utils/shareUtils';
 
 interface BlogCardProps {
   article: Article;
@@ -50,6 +52,21 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
 
         {/* Action icons floating top right */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+          {/* Direct WhatsApp Share button */}
+          <button
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              const fullUrl = `${window.location.origin}/article/${article.slug}`;
+              shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
+            }}
+            className="p-2 rounded-full backdrop-blur-md bg-[#25D366] text-white hover:bg-[#20be5a] shadow-xs transition-all hover:scale-105 cursor-pointer"
+            title="Share directly to WhatsApp"
+            aria-label="Share to WhatsApp"
+          >
+            <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
+          </button>
+
           <button
             onClick={() => toggleLike(article.id)}
             className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${isLiked
@@ -119,13 +136,30 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
               </div>
             </div>
 
-            <Link
-              to={`/article/${article.slug}`}
-              className="w-8 h-8 rounded-full bg-[#F6F4EB] group-hover:bg-[#143520] text-[#143520] group-hover:text-[#BFDC28] flex items-center justify-center transition-all duration-200 shrink-0 ml-2"
-              aria-label={`Read ${article.title}`}
-            >
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+              <button
+                type="button"
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const fullUrl = `${window.location.origin}/article/${article.slug}`;
+                  shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
+                }}
+                className="w-8 h-8 rounded-full bg-[#25D366]/10 hover:bg-[#25D366] text-[#143520] hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                title="Share to WhatsApp"
+                aria-label="Share to WhatsApp"
+              >
+                <WhatsAppIcon className="w-4 h-4 text-[#1e8341] hover:text-white" />
+              </button>
+
+              <Link
+                to={`/article/${article.slug}`}
+                className="w-8 h-8 rounded-full bg-[#F6F4EB] group-hover:bg-[#143520] text-[#143520] group-hover:text-[#BFDC28] flex items-center justify-center transition-all duration-200"
+                aria-label={`Read ${article.title}`}
+              >
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
