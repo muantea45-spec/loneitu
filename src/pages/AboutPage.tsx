@@ -130,44 +130,65 @@ export const AboutPage: React.FC = () => {
           </div>
         )}
 
-        {/* Contributing Agronomists & Researchers */}
-        <div className="space-y-8">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#256B3A]">
-              Editorial Advisory
+        {/* Staff & Specialists of the Firm */}
+        <div className="space-y-8 pt-4">
+          <div className="border-b border-[#EBE6D6] pb-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#256B3A] flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#256B3A] animate-pulse" />
+              <span>Our Team & Specialists</span>
             </span>
-            <h3 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] mt-1">
-              {aboutData.authorsTitle}
+            <h3 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] mt-1.5">
+              {aboutData.authorsTitle || 'Staff & Agricultural Specialists'}
             </h3>
             <p className="text-xs sm:text-sm text-[#8F7855] mt-1">
-              {aboutData.authorsSubtitle}
+              {aboutData.authorsSubtitle || 'The dedicated agronomists, researchers, and field specialists of the firm.'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {authors.map(author => (
               <div
                 key={author.id}
-                className="bg-white p-6 rounded-2xl border border-[#EBE6D6] shadow-xs flex gap-4 items-start"
+                className="group bg-white p-6 rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col sm:flex-row gap-5 items-start relative overflow-hidden"
               >
-                <img
-                  src={author.avatar}
-                  alt={author.name}
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-[#256B3A]/20 shrink-0"
-                />
-                <div className="space-y-1">
-                  <h4 className="font-serif font-bold text-base text-[#143520]">
-                    {author.name}
-                  </h4>
-                  <div className="text-xs font-semibold text-[#256B3A]">
-                    {author.role}
+                {/* Decorative background glow on hover */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#BFDC28]/10 to-transparent rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform duration-300" />
+
+                {/* Staff Photo */}
+                <div className="relative shrink-0">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-3 ring-[#256B3A]/15 group-hover:ring-[#256B3A]/40 transition-all shadow-xs bg-[#F6F4EB]">
+                    <img
+                      src={author.avatar}
+                      alt={author.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
                   </div>
-                  <div className="text-[11px] text-[#8F7855]">
-                    {author.institution}
+                </div>
+
+                {/* Staff Details */}
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div>
+                    <h4 className="font-serif font-bold text-lg sm:text-xl text-[#143520] leading-tight group-hover:text-[#1E542E] transition-colors">
+                      {author.name}
+                    </h4>
+                    <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#EBF1EA] text-[#1E542E] border border-[#256B3A]/20">
+                      <span>{author.role}</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-[#54432C] pt-2 line-clamp-3 leading-relaxed">
-                    {author.bio}
-                  </p>
+
+                  {author.institution && (
+                    <div className="text-xs font-semibold text-[#8F7855] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#8F7855]/60" />
+                      <span className="truncate">{author.institution}</span>
+                    </div>
+                  )}
+
+                  {author.bio && (
+                    <p className="text-xs text-[#54432C] pt-1 leading-relaxed text-justify [text-align:justify]">
+                      {author.bio}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

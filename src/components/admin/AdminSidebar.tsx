@@ -88,8 +88,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     },
     {
       id: 'authors' as AdminTab,
-      label: 'Authors & Contributors',
-      shortLabel: 'Authors',
+      label: 'Staff & Team Members',
+      shortLabel: 'Staff',
       icon: Users,
     },
     {

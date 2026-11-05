@@ -36,7 +36,8 @@ import {
   Info,
   AlignLeft,
   AlignCenter,
-  AlignRight
+  AlignRight,
+  Users
 } from 'lucide-react';
 import {
   InstagramIcon,
@@ -462,6 +463,25 @@ ${rowsHtml}
     insertTextAtCursor(tableHtml);
     showToast(`Table with ${customCols} custom-width columns inserted!`, 'success');
     setIsCustomTableModalOpen(false);
+  };
+
+  const insertStaffCardTemplate = () => {
+    const template = `\n<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 24px 0;">
+  <div style="background: white; border: 1px solid #DDD4BC; border-radius: 20px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80" style="width: 72px; height: 72px; border-radius: 16px; object-fit: cover;" alt="Staff Photo" />
+      <div>
+        <h4 style="margin: 0; font-weight: bold; color: #143520; font-size: 16px;">Staff Member Name</h4>
+        <div style="color: #256B3A; font-weight: 700; font-size: 12px; margin-top: 4px;">Role / Designation</div>
+        <div style="color: #8F7855; font-size: 11px;">Department / Specialization</div>
+      </div>
+    </div>
+    <p style="margin: 12px 0 0 0; font-size: 12px; color: #54432C; line-height: 1.6;">Brief profile describing field responsibilities, agricultural expertise, or qualifications.</p>
+  </div>
+</div>\n\n`;
+    insertTextAtCursor(template);
+    showToast('Interactive Staff Card template inserted into canvas!', 'success');
+    setIsTableDropdownOpen(false);
   };
 
   const insertTable = (_cols?: number, _rows?: number, presetType: 'standard' | 'comparison' | 'agronomy' = 'standard') => {
@@ -1025,6 +1045,20 @@ ${rowsHtml}
                       <Plus className="w-3.5 h-3.5" />
                       <span>Custom Table Builder...</span>
                     </button>
+
+                    <div className="border-t border-[#EBE6D6] my-1" />
+
+                    <button
+                      type="button"
+                      onClick={insertStaffCardTemplate}
+                      className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-bold text-[#143520] hover:bg-[#F6F4EB] flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-[#256B3A]" />
+                        <span>Staff Card Template</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-800 font-bold">Photo+Role</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -1230,7 +1264,7 @@ ${rowsHtml}
         </div>
       </div>
 
-      {/* Section 4: Editorial Advisory & Research Team Headers */}
+      {/* Section 4: Staff & Team Specialists Headers */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-5">
         <div className="flex items-center gap-2 border-b border-[#EBE6D6] pb-3">
           <div className="w-8 h-8 rounded-lg bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center font-bold">
@@ -1238,10 +1272,10 @@ ${rowsHtml}
           </div>
           <div>
             <h2 className="font-serif font-bold text-lg text-[#143520]">
-              4. Authors & Researchers Section Headers
+              4. Staff & Specialists Section Headers
             </h2>
             <p className="text-xs text-[#8F7855]">
-              Section titles for the contributing researcher cards rendered at the bottom of the About page
+              Section titles for the staff and team member cards rendered at the bottom of the About page
             </p>
           </div>
         </div>
@@ -1255,7 +1289,7 @@ ${rowsHtml}
               type="text"
               value={formData.authorsTitle}
               onChange={e => handleChange('authorsTitle', e.target.value)}
-              placeholder="e.g. Contributing Agronomists & Field Researchers"
+              placeholder="e.g. Staff & Agricultural Specialists of the Firm"
               className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-medium text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
               required
             />
@@ -1268,7 +1302,7 @@ ${rowsHtml}
               type="text"
               value={formData.authorsSubtitle}
               onChange={e => handleChange('authorsSubtitle', e.target.value)}
-              placeholder="e.g. Researchers and farmers authoring our peer-informed investigations"
+              placeholder="e.g. The dedicated agronomists, researchers, and field specialists of the firm."
               className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
               required
             />
@@ -1278,7 +1312,7 @@ ${rowsHtml}
         <div className="p-4 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl flex items-start gap-3">
           <Info className="w-4 h-4 text-[#256B3A] shrink-0 mt-0.5" />
           <p className="text-xs text-[#54432C] leading-relaxed">
-            <strong>Note:</strong> The individual author profiles, photos, and credentials displayed in this section are managed separately under the <strong>Authors & Contributors</strong> tab on the left sidebar.
+            <strong>Note:</strong> The individual staff profiles, photos, and credentials displayed in this section are managed separately under the <strong>Staff & Team Members</strong> tab on the left sidebar.
           </p>
         </div>
       </div>

@@ -117,10 +117,10 @@ export const AuthorManager: React.FC = () => {
       {/* Header */}
       <div>
         <h2 className="font-serif font-bold text-2xl text-[#143520]">
-          Contributing Authors & Agronomists ({authors.length})
+          Staff & Team Members of the Firm ({authors.length})
         </h2>
         <p className="text-xs text-[#8F7855] mt-0.5">
-          Manage research contributors, institutions, credentials, and bios displayed on article bylines
+          Manage staff members, roles, departments, bios, and contributors displayed across the site and About page
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export const AuthorManager: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="font-serif font-bold text-lg text-[#143520] flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-[#256B3A]" />
-              <span>{editingId ? 'Edit Contributor Profile' : 'Add New Contributor'}</span>
+              <span>{editingId ? 'Edit Staff Profile' : 'Add New Staff Member'}</span>
             </h3>
             {editingId && (
               <button
@@ -160,7 +160,7 @@ export const AuthorManager: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-[#6F5B3C] mb-1">
-                Agronomic Role / Specialty *
+                Role / Designation *
               </label>
               <input
                 type="text"
@@ -174,13 +174,13 @@ export const AuthorManager: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-[#6F5B3C] mb-1">
-                Institution / Farm / Station
+                Department / Division / Station
               </label>
               <input
                 type="text"
                 value={institution}
                 onChange={e => setInstitution(e.target.value)}
-                placeholder="e.g. ICAR Research Complex / College of Agriculture, Selesih"
+                placeholder="e.g. Horticulture Division / ICAR Research Station"
                 className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
               />
             </div>
@@ -319,13 +319,13 @@ export const AuthorManager: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-[#6F5B3C] mb-1">
-                Brief Bio / Research Focus
+                Bio / Profile Summary
               </label>
               <textarea
                 rows={3}
                 value={bio}
                 onChange={e => setBio(e.target.value)}
-                placeholder="Key research areas, field trial experience, or rural farming focus..."
+                placeholder="Key responsibilities, field experience, background, or specialization..."
                 className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
               />
             </div>
@@ -335,7 +335,7 @@ export const AuthorManager: React.FC = () => {
               className="w-full py-3 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
               {editingId ? <Check className="w-4 h-4 text-[#BFDC28]" /> : <Plus className="w-4 h-4 text-[#BFDC28]" />}
-              <span>{editingId ? 'Save Author Changes' : 'Create Author Profile'}</span>
+              <span>{editingId ? 'Save Staff Changes' : 'Add Staff Member'}</span>
             </button>
           </form>
         </div>
@@ -344,10 +344,10 @@ export const AuthorManager: React.FC = () => {
         <div className="lg:col-span-7 bg-white rounded-2xl border border-[#DDD4BC] shadow-xs overflow-hidden">
           <div className="p-5 border-b border-[#EBE6D6]">
             <h3 className="font-serif font-bold text-base text-[#143520]">
-              Active Editorial Authors
+              Firm Staff & Specialists
             </h3>
             <p className="text-xs text-[#8F7855]">
-              Contributors available to assign to articles and field investigations
+              Team members displayed in the Interactive Staff Cards on the About page and article bylines
             </p>
           </div>
 
