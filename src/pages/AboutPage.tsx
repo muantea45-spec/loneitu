@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Sprout, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sprout, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -19,7 +19,6 @@ function getStaffCardDetails(card: any) {
 
 export const AboutPage: React.FC = () => {
   const { aboutData, authors } = useBlog();
-  const [cardSearchQuery, setCardSearchQuery] = useState('');
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -34,20 +33,8 @@ export const AboutPage: React.FC = () => {
   const customCardsSection = aboutData.customCardsSection || INITIAL_ABOUT_DATA.customCardsSection;
 
   const filteredCards = useMemo(() => {
-    if (!customCardsSection?.cards) return [];
-    if (!cardSearchQuery.trim()) return customCardsSection.cards;
-    const q = cardSearchQuery.toLowerCase();
-    return customCardsSection.cards.filter(c => {
-      const details = getStaffCardDetails(c);
-      return (
-        details.name.toLowerCase().includes(q) ||
-        details.designation.toLowerCase().includes(q) ||
-        details.portfolio.toLowerCase().includes(q) ||
-        details.qualification.toLowerCase().includes(q) ||
-        details.experience.toLowerCase().includes(q)
-      );
-    });
-  }, [customCardsSection, cardSearchQuery]);
+    return customCardsSection?.cards || [];
+  }, [customCardsSection]);
 
   const handleCarouselScroll = useCallback(() => {
     const container = carouselRef.current;
@@ -173,48 +160,9 @@ export const AboutPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Custom Dynamic Card View Section (Editable Title & Dynamic Columns) */}
+        {/* 3. Custom Dynamic Card View Section */}
         {customCardsSection && customCardsSection.enabled !== false && customCardsSection.cards && customCardsSection.cards.length > 0 && (
-          <div className="space-y-6 pt-2">
-            <div className="border-b border-[#EBE6D6] pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#256B3A] flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#256B3A] animate-pulse" />
-                  <span>{customCardsSection.tag || 'Specialist Directory'}</span>
-                </span>
-                <h3 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] mt-1.5">
-                  {customCardsSection.title || 'Our Specialist Units & Field Stations'}
-                </h3>
-                {customCardsSection.subtitle && (
-                  <p className="text-xs sm:text-sm text-[#8F7855] mt-1">
-                    {customCardsSection.subtitle}
-                  </p>
-                )}
-              </div>
-
-              {/* Instant Search Bar (if 3 or more cards) */}
-              {customCardsSection.cards.length >= 3 && (
-                <div className="relative w-full sm:w-64 shrink-0">
-                  <Search className="w-4 h-4 text-[#8F7855] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={cardSearchQuery}
-                    onChange={e => setCardSearchQuery(e.target.value)}
-                    placeholder="Search cards..."
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A] shadow-2xs"
-                  />
-                  {cardSearchQuery && (
-                    <button
-                      onClick={() => setCardSearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8F7855] hover:text-[#143520]"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
+          <div className="space-y-4 pt-2">
             {/* Mobile Slide Hint (when multiple cards exist) */}
             {filteredCards.length > 1 && (
               <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#8F7855] font-medium">
@@ -224,10 +172,9 @@ export const AboutPage: React.FC = () => {
             )}
 
             {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
-            {filteredCards.length > 0 ? (
-              <div className="space-y-4">
-                <div
-                  ref={carouselRef}
+            <div className="space-y-4">
+              <div
+                ref={carouselRef}
                   className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none"
                 >
                   {filteredCards.map(card => {
@@ -363,11 +310,6 @@ export const AboutPage: React.FC = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="p-8 text-center bg-white rounded-3xl border border-[#EBE6D6] text-xs text-[#8F7855]">
-                No cards match your search "{cardSearchQuery}".
-              </div>
-            )}
           </div>
         )}
 
@@ -389,21 +331,9 @@ export const AboutPage: React.FC = () => {
         )}
 
         {/* Staff & Specialists of the Firm */}
-        <div className="space-y-8 pt-4">
-          <div className="border-b border-[#EBE6D6] pb-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#256B3A] flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#256B3A] animate-pulse" />
-              <span>Our Team & Specialists</span>
-            </span>
-            <h3 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] mt-1.5">
-              {aboutData.authorsTitle || 'Staff & Agricultural Specialists'}
-            </h3>
-            <p className="text-xs sm:text-sm text-[#8F7855] mt-1">
-              {aboutData.authorsSubtitle || 'The dedicated agronomists, researchers, and field specialists of the firm.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {authors && authors.length > 0 && (
+          <div className="pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {authors.map(author => (
               <div
                 key={author.id}
@@ -452,7 +382,8 @@ export const AboutPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
