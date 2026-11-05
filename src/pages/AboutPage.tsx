@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Sprout, Search } from 'lucide-react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { Sprout, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -20,6 +20,8 @@ function getStaffCardDetails(card: any) {
 export const AboutPage: React.FC = () => {
   const { aboutData, authors } = useBlog();
   const [cardSearchQuery, setCardSearchQuery] = useState('');
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -46,6 +48,34 @@ export const AboutPage: React.FC = () => {
       );
     });
   }, [customCardsSection, cardSearchQuery]);
+
+  const handleCarouselScroll = useCallback(() => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const scrollLeft = container.scrollLeft;
+    const firstChild = container.firstElementChild as HTMLElement;
+    if (!firstChild) return;
+    const cardWidth = firstChild.offsetWidth + 16; // 16px is gap-4
+    const newIndex = Math.round(scrollLeft / cardWidth);
+    setActiveCardIndex(Math.max(0, Math.min(newIndex, filteredCards.length - 1)));
+  }, [filteredCards.length]);
+
+  useEffect(() => {
+    const container = carouselRef.current;
+    if (!container) return;
+    container.addEventListener('scroll', handleCarouselScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleCarouselScroll);
+  }, [handleCarouselScroll]);
+
+  const scrollToCard = (index: number) => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const children = container.querySelectorAll<HTMLElement>('[data-staff-card]');
+    if (children[index]) {
+      children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      setActiveCardIndex(index);
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
@@ -195,89 +225,140 @@ export const AboutPage: React.FC = () => {
 
             {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
             {filteredCards.length > 0 ? (
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none">
-                {filteredCards.map(card => {
-                  const details = getStaffCardDetails(card);
-                  return (
-                    <div
-                      key={card.id}
-                      className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-6 space-y-4"
-                    >
-                      {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0 pr-1">
-                          <h4 className="font-serif font-bold text-xl sm:text-2xl text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight tracking-tight break-words">
-                            {details.name}
-                          </h4>
+              <div className="space-y-4">
+                <div
+                  ref={carouselRef}
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none"
+                >
+                  {filteredCards.map(card => {
+                    const details = getStaffCardDetails(card);
+                    return (
+                      <div
+                        key={card.id}
+                        data-staff-card="true"
+                        className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-6 space-y-4"
+                      >
+                        {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0 pr-1">
+                            <h4 className="font-serif font-bold text-xl sm:text-2xl text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight tracking-tight break-words">
+                              {details.name}
+                            </h4>
+                          </div>
+
+                          {/* Small Circular Avatar at the right corner */}
+                          <div className="shrink-0 relative">
+                            {details.avatar ? (
+                              <img
+                                src={details.avatar}
+                                alt={details.name}
+                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-base shadow-2xs">
+                                {details.name ? details.name.charAt(0).toUpperCase() : 'L'}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Small Circular Avatar at the right corner */}
-                        <div className="shrink-0 relative">
-                          {details.avatar ? (
-                            <img
-                              src={details.avatar}
-                              alt={details.name}
-                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-base shadow-2xs">
-                              {details.name ? details.name.charAt(0).toUpperCase() : 'L'}
+                        {/* Aligned Fields: DESIGNATION, PORTFOLIO, QUALIFICATION */}
+                        <div className="pt-2.5 border-t border-[#EBE6D6] space-y-2 text-xs">
+                          {details.designation && (
+                            <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                DESIGNATION:
+                              </span>
+                              <span className="font-semibold text-[#143520] text-left break-words">
+                                {details.designation}
+                              </span>
+                            </div>
+                          )}
+
+                          {details.portfolio && (
+                            <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                PORTFOLIO:
+                              </span>
+                              <span className="font-semibold text-[#143520] text-left break-words">
+                                {details.portfolio}
+                              </span>
+                            </div>
+                          )}
+
+                          {details.qualification && (
+                            <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                QUALIFICATION:
+                              </span>
+                              <span className="font-semibold text-[#143520] text-left break-words">
+                                {details.qualification}
+                              </span>
                             </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Aligned Fields: DESIGNATION, PORTFOLIO, QUALIFICATION */}
-                      <div className="pt-2.5 border-t border-[#EBE6D6] space-y-2 text-xs">
-                        {details.designation && (
-                          <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
-                              DESIGNATION:
+                        {/* PROFESSIONAL EXPERIENCE: All text in a new line, perfectly aligned in the whole width */}
+                        {details.experience && (
+                          <div className="pt-2.5 border-t border-[#EBE6D6]">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] block mb-1.5 text-left">
+                              PROFESSIONAL EXPERIENCE:
                             </span>
-                            <span className="font-semibold text-[#143520] text-left break-words">
-                              {details.designation}
-                            </span>
-                          </div>
-                        )}
-
-                        {details.portfolio && (
-                          <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
-                              PORTFOLIO:
-                            </span>
-                            <span className="font-semibold text-[#143520] text-left break-words">
-                              {details.portfolio}
-                            </span>
-                          </div>
-                        )}
-
-                        {details.qualification && (
-                          <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
-                              QUALIFICATION:
-                            </span>
-                            <span className="font-semibold text-[#143520] text-left break-words">
-                              {details.qualification}
-                            </span>
+                            <p className="w-full text-justify [text-align:justify] text-xs text-[#54432C] leading-relaxed whitespace-pre-line">
+                              {details.experience}
+                            </p>
                           </div>
                         )}
                       </div>
+                    );
+                  })}
+                </div>
 
-                      {/* PROFESSIONAL EXPERIENCE: All text in a new line, perfectly aligned in the whole width */}
-                      {details.experience && (
-                        <div className="pt-2.5 border-t border-[#EBE6D6]">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] block mb-1.5 text-left">
-                            PROFESSIONAL EXPERIENCE:
-                          </span>
-                          <p className="w-full text-justify [text-align:justify] text-xs text-[#54432C] leading-relaxed whitespace-pre-line">
-                            {details.experience}
-                          </p>
-                        </div>
-                      )}
+                {/* Mobile Dot Indicators & Carousel Navigation Bar */}
+                {filteredCards.length > 1 && (
+                  <div className="flex sm:hidden items-center justify-between px-2 pt-1">
+                    <button
+                      onClick={() => scrollToCard(Math.max(0, activeCardIndex - 1))}
+                      disabled={activeCardIndex === 0}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer"
+                      aria-label="Previous staff member"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    {/* Interactive Dots Pagination */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-xs rounded-full border border-[#DDD4BC] shadow-2xs">
+                      {filteredCards.map((card, i) => {
+                        const isActive = activeCardIndex === i;
+                        return (
+                          <button
+                            key={card.id || i}
+                            onClick={() => scrollToCard(i)}
+                            aria-label={`Go to staff card ${i + 1}`}
+                            className={`transition-all duration-300 rounded-full cursor-pointer ${
+                              isActive
+                                ? 'w-6 h-2.5 bg-[#256B3A] shadow-xs'
+                                : 'w-2.5 h-2.5 bg-[#DDD4BC] hover:bg-[#8F7855]'
+                            }`}
+                          />
+                        );
+                      })}
+                      <span className="text-[10px] font-bold text-[#8F7855] ml-1 select-none">
+                        {activeCardIndex + 1}/{filteredCards.length}
+                      </span>
                     </div>
-                  );
-                })}
+
+                    <button
+                      onClick={() => scrollToCard(Math.min(filteredCards.length - 1, activeCardIndex + 1))}
+                      disabled={activeCardIndex === filteredCards.length - 1}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer"
+                      aria-label="Next staff member"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-8 text-center bg-white rounded-3xl border border-[#EBE6D6] text-xs text-[#8F7855]">

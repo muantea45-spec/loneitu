@@ -1,12 +1,13 @@
 import React, { useState, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { BlogProvider } from './context/BlogContext';
+import { BlogProvider, useBlog } from './context/BlogContext';
 import { ToastProvider } from './components/common/Toast';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { SidebarMenu } from './components/layout/SidebarMenu';
 import { SearchModal } from './components/common/SearchModal';
 import { OfflineBanner } from './components/common/OfflineBanner';
+import { PullToRefresh } from './components/common/PullToRefresh';
 
 // Fast Initial Load: Primary homepage is statically imported
 import { HomePage } from './pages/HomePage';
@@ -82,63 +83,66 @@ class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { 
 const AppLayout: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { fetchCloudDb } = useBlog();
 
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FBFBF8] text-[#1E2922]">
-      {/* Public Navbar (omitted on admin pages for distraction-free console) */}
-      {!isAdminRoute && (
-        <Navbar
-          onOpenSearch={() => setIsSearchOpen(true)}
-          onOpenSidebarMenu={() => setIsSidebarOpen(true)}
+    <PullToRefresh onRefresh={fetchCloudDb} disabled={isAdminRoute}>
+      <div className="min-h-screen flex flex-col bg-[#FBFBF8] text-[#1E2922]">
+        {/* Public Navbar (omitted on admin pages for distraction-free console) */}
+        {!isAdminRoute && (
+          <Navbar
+            onOpenSearch={() => setIsSearchOpen(true)}
+            onOpenSidebarMenu={() => setIsSidebarOpen(true)}
+          />
+        )}
+
+        {/* Main Page Routing with Suspense and ErrorBoundary */}
+        <div className="flex-1">
+          <AppErrorBoundary>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/thuziak-thar" element={<HomePage />} />
+                <Route path="/article/:slug" element={<ArticleDetailPage />} />
+                <Route path="/category/:slug" element={<CategoryArchivePage />} />
+                <Route path="/tag/:slug" element={<TagArchivePage />} />
+                <Route path="/archive" element={<ArchivePage />} />
+                <Route path="/archive/:year" element={<ArchivePage />} />
+                <Route path="/archive/:year/:month" element={<ArchivePage />} />
+                <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
+                <Route path="/archives" element={<ArchivePage />} />
+                <Route path="/farmers" element={<Navigate to="/admin" replace />} />
+                <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/admin/*" element={<AdminDashboardPage />} />
+                <Route path="*" element={<HomePage />} />
+              </Routes>
+            </Suspense>
+          </AppErrorBoundary>
+        </div>
+
+        {/* Public Footer */}
+        {!isAdminRoute && <Footer />}
+
+        {/* Modals & Drawers */}
+        <SearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
         />
-      )}
 
-      {/* Main Page Routing with Suspense and ErrorBoundary */}
-      <div className="flex-1">
-        <AppErrorBoundary>
-          <Suspense fallback={<PageLoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/thuziak-thar" element={<HomePage />} />
-              <Route path="/article/:slug" element={<ArticleDetailPage />} />
-              <Route path="/category/:slug" element={<CategoryArchivePage />} />
-              <Route path="/tag/:slug" element={<TagArchivePage />} />
-              <Route path="/archive" element={<ArchivePage />} />
-              <Route path="/archive/:year" element={<ArchivePage />} />
-              <Route path="/archive/:year/:month" element={<ArchivePage />} />
-              <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
-              <Route path="/archives" element={<ArchivePage />} />
-              <Route path="/farmers" element={<Navigate to="/admin" replace />} />
-              <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/admin/*" element={<AdminDashboardPage />} />
-              <Route path="*" element={<HomePage />} />
-            </Routes>
-          </Suspense>
-        </AppErrorBoundary>
+        <SidebarMenu
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onOpenSearch={() => setIsSearchOpen(true)}
+        />
+
+        {/* Offline Field Connectivity Monitor */}
+        <OfflineBanner />
       </div>
-
-      {/* Public Footer */}
-      {!isAdminRoute && <Footer />}
-
-      {/* Modals & Drawers */}
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
-
-      <SidebarMenu
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onOpenSearch={() => setIsSearchOpen(true)}
-      />
-
-      {/* Offline Field Connectivity Monitor */}
-      <OfflineBanner />
-    </div>
+    </PullToRefresh>
   );
 };
 

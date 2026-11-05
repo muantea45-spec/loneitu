@@ -92,6 +92,7 @@ interface BlogContextType {
   logoutAdmin: () => void;
 
   // Maintenance & Cloud utilities
+  fetchCloudDb: () => Promise<void>;
   resetToInitialData: () => void;
   restoreFullDatabase: (backupData: any) => Promise<boolean>;
   uploadImage: (dataUrl: string, filename?: string) => Promise<string>;
@@ -1850,6 +1851,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         clearFilters,
         loginAdmin,
         logoutAdmin,
+        fetchCloudDb,
         resetToInitialData,
         restoreFullDatabase,
         uploadImage,
