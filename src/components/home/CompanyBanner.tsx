@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, ArrowRight, MapPin } from 'lucide-react';
+import { ArrowRight, MapPin } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { DEFAULT_COMPANY_BANNER } from '../../data/initialData';
 
@@ -36,29 +36,38 @@ export const CompanyBanner: React.FC = () => {
       <div className="max-w-7xl mx-auto relative z-10">
         <div className={`grid grid-cols-1 ${picture ? 'lg:grid-cols-12 gap-8 lg:gap-12 items-center' : ''}`}>
           {/* Main Content Column */}
-          <div className={`${picture ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} flex flex-col justify-center space-y-4`}>
+          <div className={`${picture ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} flex flex-col justify-center space-y-3.5`}>
             
-            {/* Company Badge / Tag Pill (Option to display the Company's) - Centered in mobile view */}
-            {showCompanyName && (
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 w-full">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#BFDC28] text-[#143520] shadow-sm text-center">
-                  <Building2 className="w-3.5 h-3.5 text-[#143520] shrink-0" />
-                  <span>{companyName}</span>
-                </span>
+            {showCompanyName ? (
+              <div className="space-y-2 w-full">
+                {/* Standout Header: MIZO FARM SOLUTIONS (Font, size, color matching previous ABOUT US) */}
+                <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.15] text-center sm:text-left uppercase">
+                  {companyName}
+                </h1>
 
-                {badge && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide bg-white/10 text-[#DFEDE3] border border-white/15 text-center">
-                    <MapPin className="w-3 h-3 text-[#BFDC28] shrink-0" />
-                    <span>{badge}</span>
-                  </span>
-                )}
+                {/* Sub-header just below it: ABOUT US in another font (font-sans) and smaller */}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-3">
+                  <h2 className="font-sans text-xs sm:text-sm lg:text-[15px] font-extrabold uppercase tracking-widest text-[#BFDC28] text-center sm:text-left">
+                    {heading}
+                  </h2>
+
+                  {badge && (
+                    <>
+                      <span className="text-white/30 hidden sm:inline-block">•</span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] sm:text-xs font-sans font-medium tracking-wide bg-white/10 text-[#DFEDE3] border border-white/15 text-center">
+                        <MapPin className="w-3.5 h-3.5 text-[#BFDC28] shrink-0" />
+                        <span>{badge}</span>
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
+            ) : (
+              /* Fallback if company name is disabled */
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.15] text-center sm:text-left">
+                {heading}
+              </h2>
             )}
-
-            {/* Heading: ABOUT US - Centered in mobile view */}
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.15] text-center sm:text-left">
-              {heading}
-            </h2>
 
             {/* Paragraphs Copy */}
             <div className="space-y-3.5 pt-1 text-sm sm:text-[15px] lg:text-base text-[#E5EFE7] leading-relaxed">
