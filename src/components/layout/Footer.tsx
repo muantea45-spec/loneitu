@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Sprout, ArrowRight } from 'lucide-react';
+import { Heart, ArrowRight } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -56,8 +56,8 @@ export const Footer: React.FC = () => {
       <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-[#BFDC28] text-[#143520] flex items-center justify-center font-bold shadow-xs">
-              <Sprout className="w-5 h-5 text-[#143520]" />
+            <div className="w-10 h-10 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-xs overflow-hidden">
+              <img src="/logo.png" alt="Mizo Farm Solutions" className="w-full h-full object-contain" />
             </div>
             <span className="font-serif font-bold text-2xl text-white">Loneitu</span>
             <span className="text-[10px] font-bold text-[#BFDC28] tracking-widest uppercase ml-1">

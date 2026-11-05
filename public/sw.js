@@ -3,13 +3,16 @@
  * Ensures agronomists and farmers can read articles, guides, and registry records without internet.
  */
 
-const CACHE_NAME = 'loneitu-offline-v1';
+const CACHE_NAME = 'loneitu-offline-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.svg',
-  '/icons.svg',
+  '/favicon.png',
+  '/favicon.ico',
+  '/logo.png',
+  '/logo.jpg',
+  '/pwa-512x512.png',
 ];
 
 // 1. Install event: Pre-cache core shell

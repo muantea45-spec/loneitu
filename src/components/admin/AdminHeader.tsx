@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, ExternalLink, LogOut, Mail, Crown } from 'lucide-react';
+import { ExternalLink, LogOut, Mail, Crown } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 export const AdminHeader: React.FC = () => {
@@ -14,8 +14,8 @@ export const AdminHeader: React.FC = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-[#BFDC28] text-[#143520] flex items-center justify-center font-bold">
-              <Sprout className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center overflow-hidden">
+              <img src="/logo.png" alt="Mizo Farm Solutions" className="w-full h-full object-contain" />
             </div>
             <div>
               <span className="font-serif font-bold text-lg text-white">Loneitu</span>

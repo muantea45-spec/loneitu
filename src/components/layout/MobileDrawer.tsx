@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon } from 'lucide-react';
+import { X, Bookmark, Search, ArrowRight, Tag as TagIcon } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface MobileDrawerProps {
@@ -29,8 +29,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           <div>
             <div className="p-4 border-b border-[#EBE6D6] flex items-center justify-between bg-white">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#143520] text-white flex items-center justify-center">
-                  <Sprout className="w-4 h-4 text-[#BFDC28]" />
+                <div className="w-9 h-9 rounded-xl bg-white p-0.5 border border-[#DDD4BC] flex items-center justify-center shadow-xs overflow-hidden">
+                  <img src="/logo.png" alt="Mizo Farm Solutions" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <span className="font-serif font-bold text-lg text-[#143520] block leading-none">Loneitu</span>

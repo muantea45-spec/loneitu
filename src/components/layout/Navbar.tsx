@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, Search, Menu } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -32,19 +32,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       {/* Main Navbar */}
       <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto h-20 flex items-center justify-between">
-        {/* Brand / Logo with perfectly aligned typography */}
-        <Link to="/" className="flex items-center gap-3.5 group">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1E542E] to-[#143520] text-[#F7FAF6] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200 shrink-0">
-            <Sprout className="w-6 h-6 text-[#BFDC28]" />
-          </div>
-          <div className="flex flex-col items-start justify-center leading-none">
-            <span className="font-serif font-bold text-2xl tracking-tight text-[#143520] leading-none block">
-              Lone<span className="text-[#32864A]">itu</span>
-            </span>
-            <span className="text-[9.5px] uppercase font-bold tracking-[0.25em] text-[#256B3A] leading-none mt-1.5 block">
-              MIZORAM TAN
-            </span>
-          </div>
+        {/* Brand / Logo replaced with the new picture */}
+        <Link to="/" className="flex items-center group py-1" aria-label="Mizo Farm Solutions">
+          <img
+            src="/logo.png"
+            alt="Mizo Farm Solutions"
+            className="h-14 sm:h-16 w-auto max-w-[220px] sm:max-w-none object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-200"
+          />
         </Link>
 
         {/* Right Action Icons & Controls */}
