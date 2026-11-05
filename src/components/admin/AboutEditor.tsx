@@ -1519,7 +1519,7 @@ ${rowsHtml}
                   </div>
                 )}
 
-                <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-3 -mx-2 px-2 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 sm:overflow-visible scrollbar-none">
+                <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-3 -mx-2 px-2 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-4 sm:overflow-visible scrollbar-none">
                   {filtered.map((card, idx) => {
                     const details = getStaffCardDetails(card);
                     return (
@@ -1529,9 +1529,12 @@ ${rowsHtml}
                       >
                         <div className="p-4 space-y-3">
                           {/* Top Row: Name on Left + Circular Avatar on Top-Right */}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0 pr-1">
-                              <h4 className="font-serif font-bold text-base sm:text-lg text-[#143520] leading-snug tracking-tight break-words">
+                          <div className="flex items-center justify-between gap-3 min-w-0">
+                            <div className="flex-1 min-w-0">
+                              <h4
+                                title={details.name}
+                                className="font-serif font-bold text-base sm:text-lg text-[#143520] leading-snug tracking-tight whitespace-nowrap truncate"
+                              >
                                 {details.name}
                               </h4>
                             </div>
@@ -1542,10 +1545,10 @@ ${rowsHtml}
                                 <img
                                   src={details.avatar}
                                   alt={details.name}
-                                  className="w-12 h-12 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
+                                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
                                 />
                               ) : (
-                                <div className="w-12 h-12 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-sm">
+                                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-xs sm:text-sm">
                                   {details.name ? details.name.charAt(0).toUpperCase() : 'S'}
                                 </div>
                               )}

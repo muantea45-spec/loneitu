@@ -228,7 +228,7 @@ export const AboutPage: React.FC = () => {
               <div className="space-y-4">
                 <div
                   ref={carouselRef}
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none"
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none"
                 >
                   {filteredCards.map(card => {
                     const details = getStaffCardDetails(card);
@@ -236,12 +236,15 @@ export const AboutPage: React.FC = () => {
                       <div
                         key={card.id}
                         data-staff-card="true"
-                        className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-6 space-y-4"
+                        className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-5 sm:p-6 space-y-4"
                       >
                         {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0 pr-1">
-                            <h4 className="font-serif font-bold text-xl sm:text-2xl text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight tracking-tight break-words">
+                        <div className="flex items-center justify-between gap-3 min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <h4
+                              title={details.name}
+                              className="font-serif font-bold text-lg sm:text-xl lg:text-[19px] text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight tracking-tight whitespace-nowrap truncate"
+                            >
                               {details.name}
                             </h4>
                           </div>
@@ -252,11 +255,11 @@ export const AboutPage: React.FC = () => {
                               <img
                                 src={details.avatar}
                                 alt={details.name}
-                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
+                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
                                 loading="lazy"
                               />
                             ) : (
-                              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-base shadow-2xs">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-sm sm:text-base shadow-2xs">
                                 {details.name ? details.name.charAt(0).toUpperCase() : 'L'}
                               </div>
                             )}
