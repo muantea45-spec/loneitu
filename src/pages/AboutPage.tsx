@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Sprout } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { useBlog } from '../context/BlogContext';
 import { SocialIconsRow } from '../components/common/SocialIcons';
 
@@ -56,6 +57,7 @@ export const AboutPage: React.FC = () => {
           <div className="text-sm sm:text-base text-[#4A584E] leading-relaxed space-y-4 text-justify [text-align:justify]">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
               components={{
                 p: ({ node, ...props }) => <p className="mb-4 leading-relaxed text-justify [text-align:justify]" {...props} />,
                 strong: ({ node, ...props }) => <strong className="font-bold text-[#143520]" {...props} />,
@@ -63,6 +65,41 @@ export const AboutPage: React.FC = () => {
                 ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-3 text-justify [text-align:justify]" {...props} />,
                 ol: ({ node, ...props }) => <ol className="list-decimal pl-5 space-y-1.5 my-3 text-justify [text-align:justify]" {...props} />,
                 li: ({ node, ...props }) => <li className="text-[#4A584E] text-justify [text-align:justify]" {...props} />,
+                table: ({ node, ...props }) => (
+                  <div className="w-full overflow-x-auto my-6 rounded-2xl border border-[#DDD4BC] shadow-xs bg-white">
+                    <table className="w-full text-left text-xs sm:text-sm border-collapse" {...props} />
+                  </div>
+                ),
+                thead: ({ node, ...props }) => (
+                  <thead className="bg-[#143520] text-[#BFDC28] font-bold uppercase tracking-wider text-[11px] sm:text-xs" {...props} />
+                ),
+                tbody: ({ node, ...props }) => (
+                  <tbody className="divide-y divide-[#EBE6D6]" {...props} />
+                ),
+                tr: ({ node, ...props }) => (
+                  <tr className="hover:bg-[#F6F4EB]/70 transition-colors" {...props} />
+                ),
+                th: ({ node, ...props }) => (
+                  <th className="py-3 px-4 sm:py-3.5 sm:px-5 font-bold border-b border-[#256B3A]/40" {...props} />
+                ),
+                td: ({ node, ...props }) => (
+                  <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-[#3B2E1D]" {...props} />
+                ),
+                h1: ({ node, ...props }) => <h1 className="font-serif font-bold text-2xl text-[#143520] mt-6 mb-3" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="font-serif font-bold text-xl text-[#143520] mt-5 mb-2.5" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="font-serif font-bold text-lg text-[#143520] mt-4 mb-2" {...props} />,
+                blockquote: ({ node, ...props }) => (
+                  <blockquote className="border-l-4 border-[#256B3A] pl-4 py-2.5 my-4 italic text-[#143520] bg-[#F6F4EB] rounded-r-xl" {...props} />
+                ),
+                a: ({ node, ...props }) => (
+                  <a className="text-[#256B3A] font-semibold hover:underline" target="_blank" rel="noopener noreferrer" {...props} />
+                ),
+                code: ({ node, inline, ...props }: any) => inline ? (
+                  <code className="px-1.5 py-0.5 rounded bg-[#F6F4EB] text-[#143520] font-mono text-xs border border-[#DDD4BC]" {...props} />
+                ) : (
+                  <pre className="p-4 rounded-xl bg-[#143520] text-emerald-100 font-mono text-xs overflow-x-auto my-3"><code {...props} /></pre>
+                ),
+                hr: () => <hr className="my-6 border-t border-[#DDD4BC]" />
               }}
             >
               {aboutData.editorialBody}
