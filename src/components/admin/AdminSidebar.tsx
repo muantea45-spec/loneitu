@@ -1,18 +1,20 @@
 import React from 'react';
-import { LayoutDashboard, FileText, PlusCircle, FolderTree, Tags, Users, RotateCcw, Info, PanelBottom, Calendar } from 'lucide-react';
+import { LayoutDashboard, FileText, PlusCircle, FolderTree, Tags, Users, RotateCcw, Info, PanelBottom, Calendar, Contact } from 'lucide-react';
 
-export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'categories' | 'tags' | 'authors' | 'about' | 'footer' | 'settings';
+export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'farmers' | 'categories' | 'tags' | 'authors' | 'about' | 'footer' | 'settings';
 
 interface AdminSidebarProps {
   currentTab: AdminTab;
   onSelectTab: (tab: AdminTab) => void;
   articlesCount: number;
+  farmersCount?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   currentTab,
   onSelectTab,
   articlesCount,
+  farmersCount,
 }) => {
   const navItems = [
     {
@@ -30,6 +32,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       id: 'new-article' as AdminTab,
       label: 'Draft New Article',
       icon: PlusCircle,
+      highlight: true,
+    },
+    {
+      id: 'farmers' as AdminTab,
+      label: 'Registry of Farmers',
+      icon: Contact,
+      badge: farmersCount,
       highlight: true,
     },
     {

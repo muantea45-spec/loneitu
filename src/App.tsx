@@ -16,6 +16,7 @@ const CategoryArchivePage = React.lazy(() => import('./pages/CategoryArchivePage
 const TagArchivePage = React.lazy(() => import('./pages/TagArchivePage').then(m => ({ default: m.TagArchivePage })));
 const ArchivePage = React.lazy(() => import('./pages/ArchivePage').then(m => ({ default: m.ArchivePage })));
 const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const FarmerRegistryPage = React.lazy(() => import('./pages/FarmerRegistryPage').then(m => ({ default: m.FarmerRegistryPage })));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 
 const PageLoadingFallback: React.FC = () => (
@@ -56,6 +57,8 @@ const AppLayout: React.FC = () => {
             <Route path="/archive/:year/:month" element={<ArchivePage />} />
             <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
             <Route path="/archives" element={<ArchivePage />} />
+            <Route path="/farmers" element={<FarmerRegistryPage />} />
+            <Route path="/farmer-registry" element={<FarmerRegistryPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin/*" element={<AdminDashboardPage />} />
             <Route path="*" element={<HomePage />} />

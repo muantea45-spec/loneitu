@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { HeroFeatured } from '../components/home/HeroFeatured';
 import { BlogGrid } from '../components/home/BlogGrid';
+import { FarmerRegistrySpotlight } from '../components/home/FarmerRegistrySpotlight';
 import { useBlog } from '../context/BlogContext';
 
 export const HomePage: React.FC = () => {
@@ -28,6 +29,9 @@ export const HomePage: React.FC = () => {
       <main className="flex-1">
         <BlogGrid articles={filteredArticles} />
       </main>
+
+      {/* Verified Farmer Registry Spotlight Grid */}
+      <FarmerRegistrySpotlight />
     </div>
   );
 };

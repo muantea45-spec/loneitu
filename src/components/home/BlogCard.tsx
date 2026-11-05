@@ -76,11 +76,10 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
               e.stopPropagation();
               toggleLike(article.id);
             }}
-            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${
-              isLiked
+            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${isLiked
                 ? 'bg-rose-50 text-rose-600 shadow-sm'
                 : 'bg-black/45 text-white hover:bg-black/65'
-            }`}
+              }`}
             title="Applaud research"
             aria-label="Like article"
           >

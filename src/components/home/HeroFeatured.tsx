@@ -90,11 +90,10 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ article }) => {
 
                 <button
                   onClick={() => toggleLike(article.id)}
-                  className={`p-3 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
-                    isLiked
-                      ? 'bg-rose-500/20 border-rose-400 text-rose-300'
-                      : 'bg-white/5 border-white/20 text-white/80 hover:bg-white/10'
-                  }`}
+                  className={`p-3 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${isLiked
+                    ? 'bg-rose-500/20 border-rose-400 text-rose-300'
+                    : 'bg-white/5 border-white/20 text-white/80 hover:bg-white/10'
+                    }`}
                   title="Applaud research"
                 >
                   <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />

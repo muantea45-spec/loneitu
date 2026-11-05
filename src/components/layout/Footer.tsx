@@ -71,9 +71,13 @@ export const Footer: React.FC = () => {
 
         <div className="flex flex-col items-start md:items-end gap-3.5">
           <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
-          <div className="flex items-center gap-4 text-xs font-semibold text-[#D7E3D5]">
+          <div className="flex items-center gap-4 text-xs font-semibold text-[#D7E3D5] flex-wrap">
             <Link to="/" className="hover:text-[#BFDC28] transition-colors">
               Home
+            </Link>
+            <span>•</span>
+            <Link to="/farmers" className="hover:text-[#BFDC28] transition-colors">
+              Farmer Registry
             </Link>
             <span>•</span>
             <Link to="/about" className="hover:text-[#BFDC28] transition-colors">

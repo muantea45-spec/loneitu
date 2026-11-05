@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
+import { X, Sprout, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar, Users } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -70,23 +70,32 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <Link
                 to="/"
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                  location.pathname === '/'
-                    ? 'bg-[#EBF1EA] text-[#143520]'
-                    : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
-                }`}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname === '/'
+                  ? 'bg-[#EBF1EA] text-[#143520]'
+                  : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
+                  }`}
               >
                 <Home className="w-4 h-4 text-[#256B3A]" />
                 <span>Home</span>
               </Link>
               <Link
+                to="/farmers"
+                onClick={onClose}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname.startsWith('/farmers')
+                  ? 'bg-[#EBF1EA] text-[#143520]'
+                  : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
+                  }`}
+              >
+                <Users className="w-4 h-4 text-[#256B3A]" />
+                <span>FARMER REGISTRY</span>
+              </Link>
+              <Link
                 to="/archive"
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                  location.pathname.startsWith('/archive')
-                    ? 'bg-[#EBF1EA] text-[#143520]'
-                    : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
-                }`}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname.startsWith('/archive')
+                  ? 'bg-[#EBF1EA] text-[#143520]'
+                  : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
+                  }`}
               >
                 <Calendar className="w-4 h-4 text-[#256B3A]" />
                 <span>Archive</span>
@@ -94,11 +103,10 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <Link
                 to="/about"
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                  location.pathname === '/about'
-                    ? 'bg-[#EBF1EA] text-[#143520]'
-                    : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
-                }`}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname === '/about'
+                  ? 'bg-[#EBF1EA] text-[#143520]'
+                  : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
+                  }`}
               >
                 <Info className="w-4 h-4 text-[#256B3A]" />
                 <span>About</span>

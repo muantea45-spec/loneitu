@@ -12,6 +12,7 @@ import { TagManager } from '../components/admin/TagManager';
 import { AuthorManager } from '../components/admin/AuthorManager';
 import { AboutEditor } from '../components/admin/AboutEditor';
 import { FooterEditor } from '../components/admin/FooterEditor';
+import { FarmerManager } from '../components/admin/FarmerManager';
 import { RotateCcw, Download, Upload, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/common/Toast';
 
@@ -22,6 +23,8 @@ export const AdminDashboardPage: React.FC = () => {
     categories,
     tags,
     authors,
+    farmers,
+    farmerCustomFields,
     resetToInitialData,
     restoreFullDatabase,
     authorizedEmails,
@@ -107,6 +110,8 @@ export const AdminDashboardPage: React.FC = () => {
         authors,
         aboutData,
         footerData,
+        farmers,
+        farmerCustomFields,
         authorizedEmails,
         primaryOwnerEmail,
         adminSecurityKey,
@@ -177,6 +182,7 @@ export const AdminDashboardPage: React.FC = () => {
             setCurrentTab(tab);
           }}
           articlesCount={articles.length}
+          farmersCount={farmers.length}
         />
 
         {/* Content Area */}
@@ -188,6 +194,8 @@ export const AdminDashboardPage: React.FC = () => {
               onViewArticles={() => setCurrentTab('articles')}
             />
           )}
+
+          {currentTab === 'farmers' && <FarmerManager />}
 
           {currentTab === 'articles' && (
             <ArticleList

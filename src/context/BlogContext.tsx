@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, AboutPageData, FooterData } from '../types/blog';
+import type { FarmerRecord, FarmerFieldDefinition } from '../types/farmer';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA, INITIAL_FOOTER_DATA } from '../data/initialData';
+import { INITIAL_FARMERS } from '../data/initialFarmers';
 import { DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
@@ -27,6 +29,16 @@ interface BlogContextType {
   isCloudSyncing: boolean;
   cloudSyncStatus: 'idle' | 'synced' | 'error';
   pushToCloudDatabase: (overrideData?: any) => Promise<void>;
+
+  // Farmer Registry actions
+  farmers: FarmerRecord[];
+  farmerCustomFields: FarmerFieldDefinition[];
+  addFarmer: (data: Partial<FarmerRecord> & { fullName: string }) => FarmerRecord;
+  updateFarmer: (id: string, updates: Partial<FarmerRecord>) => void;
+  deleteFarmer: (id: string) => void;
+  batchImportFarmers: (records: FarmerRecord[]) => { count: number };
+  addFarmerCustomField: (field: FarmerFieldDefinition) => void;
+  deleteFarmerCustomField: (key: string) => void;
   
   // Auth actions
   loginAdminWithGmail: (email: string) => boolean;
@@ -98,6 +110,8 @@ const STORAGE_KEYS = {
   GOOGLE_CLIENT_ID: 'loneitu_google_client_id_v2',
   ABOUT_PAGE: 'loneitu_mizo_about_page_v1',
   FOOTER: 'loneitu_mizo_footer_v1',
+  FARMERS: 'loneitu_mizo_farmers_v1',
+  FARMER_CUSTOM_FIELDS: 'loneitu_farmer_custom_fields_v1',
 };
 
 const CLOUD_API_ENDPOINTS = [
@@ -260,6 +274,24 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
+  const [farmers, setFarmers] = useState<FarmerRecord[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FARMERS);
+      return stored ? JSON.parse(stored) : INITIAL_FARMERS;
+    } catch {
+      return INITIAL_FARMERS;
+    }
+  });
+
+  const [farmerCustomFields, setFarmerCustomFields] = useState<FarmerFieldDefinition[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
@@ -341,6 +373,22 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to sync footer data locally', e);
     }
   }, [footerData]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(farmers));
+    } catch (e) {
+      console.error('Failed to sync farmers locally', e);
+    }
+  }, [farmers]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(farmerCustomFields));
+    } catch (e) {
+      console.error('Failed to sync farmer custom fields locally', e);
+    }
+  }, [farmerCustomFields]);
 
   useEffect(() => {
     try {
@@ -454,6 +502,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     authors,
     aboutData,
     footerData,
+    farmers,
+    farmerCustomFields,
   });
 
   useEffect(() => {
@@ -467,8 +517,10 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       authors,
       aboutData,
       footerData,
+      farmers,
+      farmerCustomFields,
     };
-  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors, aboutData, footerData]);
+  }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors, aboutData, footerData, farmers, farmerCustomFields]);
 
   // Pull latest database from cloud on load and when switching devices
   const fetchCloudDb = async () => {
@@ -560,6 +612,20 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
+      if (Array.isArray(cloudData.farmers) && cloudData.farmers.length > 0) {
+        setFarmers(cloudData.farmers);
+        try {
+          localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cloudData.farmers));
+        } catch {}
+      }
+
+      if (Array.isArray(cloudData.farmerCustomFields)) {
+        setFarmerCustomFields(cloudData.farmerCustomFields);
+        try {
+          localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(cloudData.farmerCustomFields));
+        } catch {}
+      }
+
       setCloudSyncStatus('synced');
     } catch (e) {
       console.warn('Initial cloud db fetch skipped', e);
@@ -611,6 +677,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } else if (type === 'ABOUT_DATA' && payload && typeof payload === 'object') {
         setAboutData(payload);
         try { localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(payload)); } catch {}
+      } else if (type === 'FARMERS' && Array.isArray(payload)) {
+        setFarmers(payload);
+        try { localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(payload)); } catch {}
       }
     };
     return () => {
@@ -632,6 +701,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         authors: overrideData?.authors ?? current.authors,
         aboutData: overrideData?.aboutData ?? current.aboutData,
         footerData: overrideData?.footerData ?? current.footerData,
+        farmers: overrideData?.farmers ?? current.farmers,
+        farmerCustomFields: overrideData?.farmerCustomFields ?? current.farmerCustomFields,
         updatedAt: new Date().toISOString(),
       };
 
@@ -1184,6 +1255,130 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     pushToCloudDatabase({ authors: remainingAuthors });
   };
 
+  // Farmer Registry actions
+  const addFarmer = useCallback((data: Partial<FarmerRecord> & { fullName: string }): FarmerRecord => {
+    lastMutationTimeRef.current = Date.now();
+    const newId = `farmer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newRecord: FarmerRecord = {
+      id: newId,
+      farmerId: data.farmerId || `MZ-REG-${String(farmers.length + 1).padStart(3, '0')}`,
+      fullName: data.fullName.trim(),
+      phone: data.phone || 'N/A',
+      gender: data.gender || 'Other',
+      age: data.age || '',
+      village: data.village || 'Mizoram',
+      district: data.district || 'Champhai',
+      state: data.state || 'Mizoram',
+      aadhaarNumber: data.aadhaarNumber || '',
+      landSizeAcre: data.landSizeAcre !== undefined ? data.landSizeAcre : 1,
+      landOwnership: data.landOwnership || 'Owned (Patu)',
+      farmingType: data.farmingType || 'Organic Farming',
+      primaryCrops: data.primaryCrops || 'Mixed Crops',
+      secondaryCrops: data.secondaryCrops || '',
+      soilType: data.soilType || 'Loamy Mountain Soil',
+      irrigationSource: data.irrigationSource || 'Rainfed & Spring',
+      annualYieldKg: data.annualYieldKg !== undefined ? data.annualYieldKg : 0,
+      annualIncomeInr: data.annualIncomeInr || '₹0',
+      bankName: data.bankName || 'Mizoram Rural Bank',
+      accountNumber: data.accountNumber || '',
+      ifscCode: data.ifscCode || '',
+      pmKisanEnrolled: data.pmKisanEnrolled || 'Yes',
+      avatar: data.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
+      status: data.status || 'Verified',
+      registrationDate: data.registrationDate || new Date().toISOString().split('T')[0],
+      notes: data.notes || '',
+      customAttributes: data.customAttributes || {},
+    };
+
+    setFarmers(prev => {
+      const updated = [newRecord, ...prev];
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+
+    return newRecord;
+  }, [farmers]);
+
+  const updateFarmer = useCallback((id: string, updates: Partial<FarmerRecord>) => {
+    lastMutationTimeRef.current = Date.now();
+    setFarmers(prev => {
+      const updated = prev.map(f => (f.id === id ? { ...f, ...updates } : f));
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+  }, []);
+
+  const deleteFarmer = useCallback((id: string) => {
+    lastMutationTimeRef.current = Date.now();
+    setFarmers(prev => {
+      const updated = prev.filter(f => f.id !== id);
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+  }, []);
+
+  const batchImportFarmers = useCallback((records: FarmerRecord[]) => {
+    lastMutationTimeRef.current = Date.now();
+    setFarmers(prev => {
+      const existingMap = new Map(prev.map(f => [f.farmerId, f]));
+      const newItems: FarmerRecord[] = [];
+
+      records.forEach(rec => {
+        if (rec.farmerId && existingMap.has(rec.farmerId)) {
+          const existing = existingMap.get(rec.farmerId)!;
+          existingMap.set(rec.farmerId, { ...existing, ...rec, id: existing.id });
+        } else {
+          newItems.push(rec);
+        }
+      });
+
+      const updated = [...newItems, ...Array.from(existingMap.values())];
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+
+    return { count: records.length };
+  }, []);
+
+  const addFarmerCustomField = useCallback((field: FarmerFieldDefinition) => {
+    setFarmerCustomFields(prev => {
+      if (prev.some(f => f.key === field.key)) return prev;
+      const updated = [...prev, field];
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmerCustomFields: updated });
+      return updated;
+    });
+  }, []);
+
+  const deleteFarmerCustomField = useCallback((key: string) => {
+    setFarmerCustomFields(prev => {
+      const updated = prev.filter(f => f.key !== key);
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmerCustomFields: updated });
+      return updated;
+    });
+  }, []);
+
   // Filter setters
   const setFilterCategory = (categorySlug: string) => {
     setFilterState(prev => ({ ...prev, category: categorySlug }));
@@ -1217,6 +1412,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthors(INITIAL_AUTHORS);
     setAboutData(INITIAL_ABOUT_DATA);
     setFooterData(INITIAL_FOOTER_DATA);
+    setFarmers(INITIAL_FARMERS);
+    setFarmerCustomFields([]);
     setBookmarks([]);
     setLikedArticles([]);
     try {
@@ -1226,6 +1423,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(INITIAL_AUTHORS));
       localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(INITIAL_ABOUT_DATA));
       localStorage.setItem(STORAGE_KEYS.FOOTER, JSON.stringify(INITIAL_FOOTER_DATA));
+      localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(INITIAL_FARMERS));
+      localStorage.removeItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS);
       localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
       localStorage.removeItem(STORAGE_KEYS.LIKES);
     } catch {}
@@ -1236,6 +1435,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       authors: INITIAL_AUTHORS,
       aboutData: INITIAL_ABOUT_DATA,
       footerData: INITIAL_FOOTER_DATA,
+      farmers: INITIAL_FARMERS,
+      farmerCustomFields: [],
     });
   };
 
@@ -1255,6 +1456,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (Array.isArray(payload.authors)) setAuthors(payload.authors);
       if (payload.aboutData) setAboutData(payload.aboutData);
       if (payload.footerData) setFooterData(payload.footerData);
+      if (Array.isArray(payload.farmers)) setFarmers(payload.farmers);
+      if (Array.isArray(payload.farmerCustomFields)) setFarmerCustomFields(payload.farmerCustomFields);
       if (Array.isArray(payload.authorizedEmails) && payload.authorizedEmails.length > 0) {
         setAuthorizedEmails(payload.authorizedEmails);
       }
@@ -1272,6 +1475,8 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         authors: payload.authors || authors,
         aboutData: payload.aboutData || aboutData,
         footerData: payload.footerData || footerData,
+        farmers: payload.farmers || farmers,
+        farmerCustomFields: payload.farmerCustomFields || farmerCustomFields,
         authorizedEmails: payload.authorizedEmails || authorizedEmails,
         primaryOwnerEmail: payload.primaryOwnerEmail || primaryOwnerEmail,
         adminSecurityKey: payload.adminSecurityKey || adminSecurityKey,
@@ -1288,7 +1493,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to restore database from backup', e);
       return false;
     }
-  }, [articles, categories, tags, authors, aboutData, authorizedEmails, primaryOwnerEmail, adminSecurityKey]);
+  }, [articles, categories, tags, authors, aboutData, footerData, farmers, farmerCustomFields, authorizedEmails, primaryOwnerEmail, adminSecurityKey]);
 
   const uploadImage = useCallback(async (dataUrl: string, filename?: string): Promise<string> => {
     return uploadImageToCloud(dataUrl, filename);
@@ -1378,6 +1583,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isCloudSyncing,
         cloudSyncStatus,
         pushToCloudDatabase,
+        farmers,
+        farmerCustomFields,
+        addFarmer,
+        updateFarmer,
+        deleteFarmer,
+        batchImportFarmers,
+        addFarmerCustomField,
+        deleteFarmerCustomField,
         loginAdminWithGmail,
         verifyAndLoginAdmin,
         verifyAndLoginWithGoogleJwt,
