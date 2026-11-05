@@ -219,7 +219,7 @@ export const AdminLoginPage: React.FC = () => {
               Editorial CMS Console
             </h2>
             <span className="inline-block mt-1 text-[11px] font-mono px-3 py-0.5 rounded-full bg-[#1E542E] text-[#BFDC28] border border-[#256B3A]">
-              {typeof window !== 'undefined' ? `${window.location.host}/admin` : 'loneitu-cbe.pages.dev/admin'}
+              {typeof window !== 'undefined' ? `${window.location.host}/admin` : 'loneitu.pages.dev/admin'}
             </span>
           </div>
           <p className="text-xs text-[#ADC6A7] max-w-xs mx-auto leading-relaxed">

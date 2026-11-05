@@ -6,21 +6,23 @@ import { DEFAULT_COMPANY_BANNER } from '../../data/initialData';
 
 export const CompanyBanner: React.FC = () => {
   const { aboutData } = useBlog();
-  const banner = aboutData.companyBanner || DEFAULT_COMPANY_BANNER;
+  const banner = aboutData?.companyBanner || DEFAULT_COMPANY_BANNER;
 
-  if (banner.enabled === false) {
+  if (banner?.enabled === false) {
     return null;
   }
 
-  const paragraphs = banner.paragraphs && banner.paragraphs.length > 0
+  const rawParagraphs = banner?.paragraphs && Array.isArray(banner.paragraphs) && banner.paragraphs.length > 0
     ? banner.paragraphs
-    : DEFAULT_COMPANY_BANNER.paragraphs!;
+    : (DEFAULT_COMPANY_BANNER.paragraphs || []);
 
-  const heading = banner.heading || DEFAULT_COMPANY_BANNER.heading || 'ABOUT US';
-  const companyName = banner.companyName || DEFAULT_COMPANY_BANNER.companyName || 'Mizo Farm Solutions';
-  const badge = banner.badge || DEFAULT_COMPANY_BANNER.badge || 'Champhai-based Registered Society';
-  const showCompanyName = banner.showCompanyName !== false;
-  const picture = banner.picture;
+  const paragraphs = rawParagraphs.filter(Boolean);
+
+  const heading = banner?.heading || DEFAULT_COMPANY_BANNER.heading || 'ABOUT US';
+  const companyName = banner?.companyName || DEFAULT_COMPANY_BANNER.companyName || 'Mizo Farm Solutions';
+  const badge = banner?.badge || DEFAULT_COMPANY_BANNER.badge || 'Champhai-based Registered Society';
+  const showCompanyName = banner?.showCompanyName !== false;
+  const picture = banner?.picture;
 
   return (
     <section className="w-full relative overflow-hidden bg-gradient-to-br from-[#143520] via-[#1A442A] to-[#12301D] text-white pt-8 pb-10 sm:pt-12 sm:pb-14 lg:pt-14 lg:pb-16 px-4 sm:px-6 lg:px-8 border-b-2 border-[#256B3A]/60 shadow-md">

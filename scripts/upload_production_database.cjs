@@ -21,7 +21,7 @@ async function main() {
 
   const endpoints = [
     'https://loneitu.ddvktp.workers.dev/api/db',
-    'https://loneitu-cbe.pages.dev/api/db'
+    'https://loneitu.pages.dev/api/db'
   ];
 
   for (const endpoint of endpoints) {

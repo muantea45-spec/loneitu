@@ -95,7 +95,7 @@ export const AboutEditor: React.FC = () => {
   const [formData, setFormData] = useState<AboutPageData>(() => ({
     ...aboutData,
     customCardsSection: aboutData.customCardsSection || initialCardsSection,
-    companyBanner: aboutData.companyBanner || DEFAULT_COMPANY_BANNER,
+    companyBanner: aboutData?.companyBanner || DEFAULT_COMPANY_BANNER,
     socialLinks: {
       instagram: aboutData.socialLinks?.instagram || '',
       facebook: aboutData.socialLinks?.facebook || '',
@@ -116,7 +116,7 @@ export const AboutEditor: React.FC = () => {
       setFormData({
         ...aboutData,
         customCardsSection: aboutData.customCardsSection || initialCardsSection,
-        companyBanner: aboutData.companyBanner || DEFAULT_COMPANY_BANNER,
+        companyBanner: aboutData?.companyBanner || DEFAULT_COMPANY_BANNER,
         socialLinks: {
           instagram: aboutData.socialLinks?.instagram || '',
           facebook: aboutData.socialLinks?.facebook || '',
