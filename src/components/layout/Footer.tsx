@@ -56,10 +56,10 @@ export const Footer: React.FC = () => {
         </div>
       )}
 
-      <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-        {/* Left Column: Brand, Mission Tagline & Contact Email (Centered on Mobile, Left-aligned on Desktop) */}
-        <div className="flex flex-col items-center md:items-start text-center md:text-left">
-          <div className="flex items-center justify-center md:justify-start gap-2.5 mb-2">
+      <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        {/* Left Column: Brand, Mission Tagline & Contact Email - STRICTLY ALIGNED TO THE LEFT */}
+        <div className="flex flex-col items-start text-left w-full md:w-auto">
+          <div className="flex items-center justify-start gap-2.5 mb-2">
             <div className="w-10 h-10 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
               <img src="/logo.png" alt="Loneitu" className="w-full h-full object-contain" />
             </div>
@@ -68,13 +68,13 @@ export const Footer: React.FC = () => {
               · MIZORAM TAN
             </span>
           </div>
-          <p className="text-xs text-[#ADC6A7] max-w-xl leading-relaxed">
+          <p className="text-xs text-[#ADC6A7] max-w-xl leading-relaxed text-left">
             {data.tagline || 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.'}
           </p>
 
-          {/* Contact Us @ (Email) */}
+          {/* Contact Us @ (Email) - Aligned to the Left */}
           {contactEmail && (
-            <div className="mt-3.5 flex items-center justify-center md:justify-start gap-2 text-xs">
+            <div className="mt-3.5 flex items-center justify-start gap-2 text-xs">
               <span className="text-[#ADC6A7] font-medium">Contact Us @</span>
               <a
                 href={`mailto:${contactEmail}`}
@@ -87,7 +87,7 @@ export const Footer: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: Social Media Links & HOME, ABOUT, ARCHIVE (Perfect Center on Mobile) */}
+        {/* Right Column: ONLY Social Media Links & HOME, ABOUT, ARCHIVE are Perfectly Centered on Mobile */}
         <div className="flex flex-col items-center md:items-end justify-center w-full md:w-auto gap-3.5">
           <div className="flex justify-center w-full md:w-auto">
             <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
@@ -108,8 +108,8 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Bar */}
-      <div className="border-t border-[#1E542E] py-5 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-[#88A682] gap-3">
+      {/* Bottom Bar: Left-aligned on mobile */}
+      <div className="border-t border-[#1E542E] py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#88A682] gap-2.5 text-left">
         <div>
           © {new Date().getFullYear()} {data.copyrightText || 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.'}
         </div>
