@@ -1,7 +1,6 @@
 import React from 'react';
-import { Search, X, ArrowUpDown, FolderTree } from 'lucide-react';
+import { Search, X, FolderTree } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
-import type { SortOption } from '../../types/blog';
 
 export const FilterBar: React.FC = () => {
   const {
@@ -12,15 +11,13 @@ export const FilterBar: React.FC = () => {
     setFilterCategory,
     setFilterTag,
     setSearchQuery,
-    setSortBy,
     clearFilters,
   } = useBlog();
 
   const isFiltered =
     filterState.category !== 'all' ||
     filterState.tag !== 'all' ||
-    filterState.searchQuery.trim() !== '' ||
-    filterState.sortBy !== 'newest';
+    filterState.searchQuery.trim() !== '';
 
   // Calculate count for each category
   const getCategoryCount = (catName: string) => {
@@ -43,7 +40,7 @@ export const FilterBar: React.FC = () => {
   return (
     <div className="w-full bg-[#F6F4EB] border-y border-[#EBE6D6] py-4 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-3">
-        {/* Filter Controls Row: Search + Category Dropdown + Sort + Reset */}
+        {/* Filter Controls Row: Search + Category Dropdown + Reset */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search Field */}
           <div className="relative flex-1 max-w-md">
@@ -65,7 +62,7 @@ export const FilterBar: React.FC = () => {
             )}
           </div>
 
-          {/* Selectors: Category + Sort + Clear */}
+          {/* Selectors: Category + Clear */}
           <div className="flex flex-wrap items-center gap-2.5 self-end md:self-auto">
             {/* Category Select Dropdown */}
             <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-[#DDD4BC] text-xs shadow-2xs">
@@ -87,26 +84,6 @@ export const FilterBar: React.FC = () => {
                     {cat.name} ({getCategoryCount(cat.name)})
                   </option>
                 ))}
-              </select>
-            </div>
-
-            {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-[#DDD4BC] text-xs shadow-2xs">
-              <ArrowUpDown className="w-3.5 h-3.5 text-[#256B3A] shrink-0" />
-              <label htmlFor="sort-select" className="text-[#6F5B3C] font-semibold hidden sm:inline">
-                Rem dan:
-              </label>
-              <select
-                id="sort-select"
-                value={filterState.sortBy}
-                onChange={e => setSortBy(e.target.value as SortOption)}
-                className="bg-transparent text-[#13341D] font-semibold focus:outline-hidden cursor-pointer"
-              >
-                <option value="newest">A Thar Ber</option>
-                <option value="oldest">A Hmasa Ber</option>
-                <option value="popular">Chhiar Hlawh Ber</option>
-                <option value="reading-desc">Thui Ber</option>
-                <option value="reading-asc">Tawi Ber</option>
               </select>
             </div>
 

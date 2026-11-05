@@ -1,26 +1,13 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Sprout, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Sprout } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { useBlog } from '../context/BlogContext';
 import { SocialIconsRow } from '../components/common/SocialIcons';
-import { INITIAL_ABOUT_DATA } from '../data/initialData';
-
-function getStaffCardDetails(card: any) {
-  const name = card.name || card.title || '';
-  const designation = card.designation || card.columnValues?.['col-location'] || card.subtitle || '';
-  const portfolio = card.portfolio || card.columnValues?.['col-contact'] || '';
-  const qualification = card.qualification || card.columnValues?.['col-status'] || card.badge || '';
-  const experience = card.experience || card.columnValues?.['col-1793872810199'] || card.columnValues?.['col-desc'] || card.description || '';
-  const avatar = card.avatar || card.image || '';
-  return { name, designation, portfolio, qualification, experience, avatar };
-}
 
 export const AboutPage: React.FC = () => {
-  const { aboutData, authors } = useBlog();
-  const [activeCardIndex, setActiveCardIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const { aboutData } = useBlog();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -30,73 +17,27 @@ export const AboutPage: React.FC = () => {
   const social = aboutData.socialLinks || {};
   const hasAnySocial = Object.values(social).some(v => !!v && v.trim() !== '');
 
-  const customCardsSection = aboutData.customCardsSection || INITIAL_ABOUT_DATA.customCardsSection;
-
-  const filteredCards = useMemo(() => {
-    return customCardsSection?.cards || [];
-  }, [customCardsSection]);
-
-  const handleCarouselScroll = useCallback(() => {
-    const container = carouselRef.current;
-    if (!container) return;
-    const scrollLeft = container.scrollLeft;
-    const firstChild = container.firstElementChild as HTMLElement;
-    if (!firstChild) return;
-    const cardWidth = firstChild.offsetWidth + 16; // 16px is gap-4
-    const newIndex = Math.round(scrollLeft / cardWidth);
-    setActiveCardIndex(Math.max(0, Math.min(newIndex, filteredCards.length - 1)));
-  }, [filteredCards.length]);
-
-  useEffect(() => {
-    const container = carouselRef.current;
-    if (!container) return;
-    container.addEventListener('scroll', handleCarouselScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleCarouselScroll);
-  }, [handleCarouselScroll]);
-
-  const scrollToCard = (index: number) => {
-    const container = carouselRef.current;
-    if (!container) return;
-    const children = container.querySelectorAll<HTMLElement>('[data-staff-card]');
-    if (children[index]) {
-      children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      setActiveCardIndex(index);
-    }
-  };
-
   return (
     <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
       {/* Hero Header */}
       <div className="w-full bg-[#143520] text-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
-        <div className="max-w-4xl mx-auto space-y-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#BFDC28]/20 border border-[#BFDC28]/40 text-[#BFDC28] text-xs font-bold uppercase tracking-wider mx-auto">
+        <div className="max-w-4xl mx-auto text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1E542E] text-[#BFDC28] border border-[#256B3A] text-xs font-semibold uppercase tracking-wider">
             <Sprout className="w-4 h-4" />
-            <span>{aboutData.badge}</span>
+            <span>{aboutData.badge || 'LONEITU EDITORIAL BOARD & MANIFESTO'}</span>
           </div>
-
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
-            {aboutData.heroTitle}
+          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
+            {aboutData.heroTitle || 'Mizoram Thlai leh Leilung Humhalhna'}
           </h1>
-
-          <p className="text-base sm:text-lg text-[#D7E3D5] leading-relaxed max-w-2xl mx-auto font-light">
-            {aboutData.heroDescription}
+          <p className="text-sm sm:text-base text-[#D7E3D5] max-w-2xl mx-auto leading-relaxed">
+            {aboutData.heroDescription || 'Tlangram lo neih dan phung hrisel, buh leh thlai thar tam dan, huan enkawl dan changkang leh ran vulh dan tha ziah chhuahna hmunpui.'}
           </p>
-
-          {/* Social Media Logos in Hero (clean logos only, no text labels) */}
-          {hasAnySocial && (
-            <div className="pt-3 flex justify-center">
-              <SocialIconsRow links={aboutData.socialLinks} variant="hero" />
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-16">
-        {/* Editorial Vision & Manifesto */}
-        <div className="bg-white p-8 sm:p-12 rounded-3xl border border-[#EBE6D6] shadow-xs space-y-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#256B3A]">
-            {aboutData.editorialTag}
-          </span>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 space-y-8">
+        {/* Editorial Body / Manifesto */}
+        <div className="bg-white p-6 sm:p-10 rounded-3xl border border-[#DDD4BC] shadow-xs space-y-6">
           <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520]">
             {aboutData.editorialTitle}
           </h2>
@@ -160,163 +101,6 @@ export const AboutPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Custom Dynamic Card View Section */}
-        {customCardsSection && customCardsSection.enabled !== false && customCardsSection.cards && customCardsSection.cards.length > 0 && (
-          <div className="space-y-4 pt-2">
-            {/* Mobile Slide Hint (when multiple cards exist) */}
-            {filteredCards.length > 1 && (
-              <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#6F5B3C] font-semibold">
-                <span>← Swipe cards to view staff →</span>
-                <span className="font-bold text-[#256B3A]">{filteredCards.length} Members</span>
-              </div>
-            )}
-
-            {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
-            <div className="space-y-4">
-              <div
-                ref={carouselRef}
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none"
-                >
-                  {filteredCards.map(card => {
-                    const details = getStaffCardDetails(card);
-                    return (
-                      <div
-                        key={card.id}
-                        data-staff-card="true"
-                        className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-5 sm:p-6 space-y-4"
-                      >
-                        {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
-                        <div className="flex items-center justify-between gap-3 min-w-0">
-                          <div className="flex-1 min-w-0">
-                            <h4
-                              title={details.name}
-                              className="font-serif font-bold text-lg sm:text-xl lg:text-[19px] text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight tracking-tight whitespace-nowrap truncate"
-                            >
-                              {details.name}
-                            </h4>
-                          </div>
-
-                          {/* Small Circular Avatar at the right corner */}
-                          <div className="shrink-0 relative">
-                            {details.avatar ? (
-                              <img
-                                src={details.avatar}
-                                alt={details.name}
-                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-sm sm:text-base shadow-2xs">
-                                {details.name ? details.name.charAt(0).toUpperCase() : 'L'}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Aligned Fields: DESIGNATION, PORTFOLIO, QUALIFICATION */}
-                        <div className="pt-2.5 border-t border-[#EBE6D6] space-y-2 text-xs">
-                          {details.designation && (
-                            <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
-                                DESIGNATION:
-                              </span>
-                              <span className="font-semibold text-[#143520] text-left break-words">
-                                {details.designation}
-                              </span>
-                            </div>
-                          )}
-
-                          {details.portfolio && (
-                            <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
-                                PORTFOLIO:
-                              </span>
-                              <span className="font-semibold text-[#143520] text-left break-words">
-                                {details.portfolio}
-                              </span>
-                            </div>
-                          )}
-
-                          {details.qualification && (
-                            <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
-                                QUALIFICATION:
-                              </span>
-                              <span className="font-semibold text-[#143520] text-left break-words">
-                                {details.qualification}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* PROFESSIONAL EXPERIENCE: All text in a new line, perfectly aligned in the whole width */}
-                        {details.experience && (
-                          <div className="pt-2.5 border-t border-[#EBE6D6]">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] block mb-1.5 text-left">
-                              PROFESSIONAL EXPERIENCE:
-                            </span>
-                            <p className="w-full text-justify [text-align:justify] text-xs text-[#54432C] leading-relaxed whitespace-pre-line">
-                              {details.experience}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Mobile Dot Indicators & Carousel Navigation Bar */}
-                {filteredCards.length > 1 && (
-                  <div className="flex sm:hidden items-center justify-between px-2 pt-1">
-                    <button
-                      onClick={() => scrollToCard(Math.max(0, activeCardIndex - 1))}
-                      disabled={activeCardIndex === 0}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
-                      aria-label="Previous staff member"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-
-                    {/* Interactive Dots Pagination */}
-                    <div className="flex items-center gap-1.5 px-3 py-2 bg-white/80 backdrop-blur-xs rounded-full border border-[#DDD4BC] shadow-2xs">
-                      {filteredCards.map((card, i) => {
-                        const isActive = activeCardIndex === i;
-                        return (
-                          <button
-                            key={card.id || i}
-                            onClick={() => scrollToCard(i)}
-                            aria-label={`Go to staff card ${i + 1}`}
-                            className="p-1.5 -m-0.5 rounded-full flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
-                          >
-                            <span
-                              className={`transition-all duration-300 rounded-full block ${
-                                isActive
-                                  ? 'w-6 h-2.5 bg-[#256B3A] shadow-xs'
-                                  : 'w-2.5 h-2.5 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
-                              }`}
-                            />
-                          </button>
-                        );
-                      })}
-                      <span className="text-[10px] font-bold text-[#6F5B3C] ml-1 select-none">
-                        {activeCardIndex + 1}/{filteredCards.length}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => scrollToCard(Math.min(filteredCards.length - 1, activeCardIndex + 1))}
-                      disabled={activeCardIndex === filteredCards.length - 1}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
-                      aria-label="Next staff member"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-          </div>
-        )}
-
         {/* Social Media & Community Channels Section (Only rendered if at least one link is filled) */}
         {hasAnySocial && (
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#EBE6D6] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -333,61 +117,7 @@ export const AboutPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Staff & Specialists of the Firm */}
-        {authors && authors.length > 0 && (
-          <div className="pt-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {authors.map(author => (
-              <div
-                key={author.id}
-                className="group bg-white p-6 rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col sm:flex-row gap-5 items-start relative overflow-hidden"
-              >
-                {/* Decorative background glow on hover */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#BFDC28]/10 to-transparent rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-
-                {/* Staff Photo */}
-                <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-3 ring-[#256B3A]/15 group-hover:ring-[#256B3A]/40 transition-all shadow-xs bg-[#F6F4EB]">
-                    <img
-                      src={author.avatar}
-                      alt={author.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-
-                {/* Staff Details */}
-                <div className="space-y-2 flex-1 min-w-0">
-                  <div>
-                    <h4 className="font-serif font-bold text-lg sm:text-xl text-[#143520] leading-tight group-hover:text-[#1E542E] transition-colors">
-                      {author.name}
-                    </h4>
-                    <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#EBF1EA] text-[#1E542E] border border-[#256B3A]/20">
-                      <span>{author.role}</span>
-                    </div>
-                  </div>
-
-                  {author.institution && (
-                    <div className="text-xs font-semibold text-[#6F5B3C] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#6F5B3C]/60" />
-                      <span className="truncate">{author.institution}</span>
-                    </div>
-                  )}
-
-                  {author.bio && (
-                    <p className="text-xs text-[#54432C] pt-1 leading-relaxed text-justify [text-align:justify]">
-                      {author.bio}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
-  </div>
-);
+  );
 };

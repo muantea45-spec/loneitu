@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BlogCard } from './BlogCard';
-import type { Article, SortOption } from '../../types/blog';
-import { BookOpen, RefreshCw, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { Article } from '../../types/blog';
+import { BookOpen, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface BlogGridProps {
@@ -11,7 +11,7 @@ interface BlogGridProps {
 const POSTS_PER_PAGE = 5;
 
 export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
-  const { clearFilters, filterState, setSortBy } = useBlog();
+  const { clearFilters } = useBlog();
   const [currentPage, setCurrentPage] = useState(1);
   const gridTopRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +62,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
 
   return (
     <div ref={gridTopRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Controls Bar without "Thuziak thar" and without Archive button */}
+      {/* Top Controls Bar without sorting dropdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-3 border-b border-[#EBE6D6]">
         <div>
           <p className="text-xs sm:text-sm text-[#6F5B3C] font-medium">
@@ -70,21 +70,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
           </p>
         </div>
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#DDD4BC] text-xs shadow-2xs">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#256B3A] shrink-0" />
-            <select
-              value={filterState.sortBy}
-              onChange={e => setSortBy(e.target.value as SortOption)}
-              className="bg-transparent text-[#13341D] font-semibold focus:outline-hidden cursor-pointer"
-            >
-              <option value="newest">A Thar Ber</option>
-              <option value="oldest">A Hmasa Ber</option>
-              <option value="popular">Chhiar Hlawh Ber</option>
-              <option value="reading-desc">Thui Ber</option>
-              <option value="reading-asc">Tawi Ber</option>
-            </select>
-          </div>
-          <span className="text-xs font-semibold px-3 py-1.5 bg-[#EBF1EA] text-[#1E542E] rounded-full border border-[#B7CEB4] hidden sm:inline-block">
+          <span className="text-xs font-semibold px-3 py-1.5 bg-[#EBF1EA] text-[#1E542E] rounded-full border border-[#B7CEB4]">
             {articles.length} posts
           </span>
         </div>

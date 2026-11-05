@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch?: () => void;
@@ -12,7 +12,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSidebarMenu,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,22 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Icons & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* About Page Tab */}
-          <Link
-            to="/about"
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all duration-200 shadow-2xs border focus-visible:ring-2 focus-visible:ring-[#256B3A] focus-visible:ring-offset-2 outline-hidden ${
-              location.pathname === '/about'
-                ? 'bg-[#143520] text-white border-[#143520]'
-                : 'bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] border-[#DDD4BC]'
-            }`}
-            title="About Loneitu — Editorial Manifesto & Staff Directory"
-            aria-label="About Loneitu"
-          >
-            <Info className={`w-4 h-4 ${location.pathname === '/about' ? 'text-[#BFDC28]' : 'text-[#256B3A]'}`} />
-            <span className="font-bold tracking-wide">ABOUT</span>
-          </Link>
-
-          {/* Universal Sidebar Menu Trigger (Desktop & Mobile) - Archive is inside MENU */}
+          {/* Universal Sidebar Menu Trigger (Desktop & Mobile) */}
           <button
             onClick={onOpenSidebarMenu}
             className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-[#143520] hover:text-white bg-[#F6F4EB] hover:bg-[#143520] border border-[#DDD4BC] hover:border-[#143520] font-semibold text-xs transition-all duration-200 cursor-pointer shadow-2xs group focus-visible:ring-2 focus-visible:ring-[#256B3A] focus-visible:ring-offset-2 outline-hidden"
