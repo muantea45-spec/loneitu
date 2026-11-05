@@ -567,6 +567,7 @@ export const INITIAL_FOOTER_DATA: FooterData = {
   tagline: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
   copyrightText: 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.',
   dedicationText: 'Loneitute leh zirtirtute tana duhsakna nen',
+  contactEmail: 'muantea45@gmail.com',
   bannerEnabled: false,
   bannerBadge: 'HRIATTIRNA',
   bannerTitle: 'Loneitu Field Advisory & Community Journal',

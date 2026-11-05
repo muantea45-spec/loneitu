@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ArrowRight } from 'lucide-react';
+import { Heart, ArrowRight, Mail } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -11,8 +11,11 @@ export const Footer: React.FC = () => {
     tagline: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
     copyrightText: 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.',
     dedicationText: 'Loneitute leh zirtirtute tana duhsakna nen',
+    contactEmail: 'muantea45@gmail.com',
     bannerEnabled: false,
   };
+
+  const contactEmail = data.contactEmail || 'muantea45@gmail.com';
 
   return (
     <footer className="w-full bg-[#143520] text-[#EBF1EA] border-t border-[#1E542E] mt-20">
@@ -67,6 +70,20 @@ export const Footer: React.FC = () => {
           <p className="text-xs text-[#ADC6A7] max-w-xl leading-relaxed">
             {data.tagline || 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.'}
           </p>
+
+          {/* Contact Us @ (Email) */}
+          {contactEmail && (
+            <div className="mt-3.5 flex items-center gap-2 text-xs">
+              <span className="text-[#ADC6A7] font-medium">Contact Us @</span>
+              <a
+                href={`mailto:${contactEmail}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1E542E] text-[#BFDC28] hover:bg-[#256B3A] border border-[#256B3A] transition-colors font-mono font-medium text-[11px] shadow-2xs"
+              >
+                <Mail className="w-3.5 h-3.5 text-[#BFDC28] shrink-0" />
+                <span>{contactEmail}</span>
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-start md:items-end gap-3.5">

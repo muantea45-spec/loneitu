@@ -132,6 +132,7 @@ export interface FooterData {
   tagline: string;
   copyrightText: string;
   dedicationText: string;
+  contactEmail?: string;
   bannerEnabled?: boolean;
   bannerBadge?: string;
   bannerTitle?: string;

@@ -9,7 +9,8 @@ import {
   Sparkles,
   Link as LinkIcon,
   Heart,
-  ArrowRight
+  ArrowRight,
+  Mail
 } from 'lucide-react';
 import type { FooterData } from '../../types/blog';
 
@@ -252,7 +253,40 @@ export const FooterEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Section 3: Bottom Bar & Legal Notices */}
+      {/* Section 3: Contact Us Email */}
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-[#EBE6D6] pb-3">
+          <div className="w-8 h-8 rounded-lg bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center font-bold">
+            <Mail className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="font-serif font-bold text-lg text-[#143520]">
+              3. Contact Us Email
+            </h2>
+            <p className="text-xs text-[#8F7855]">
+              Manual email address displayed in the footer ("Contact Us @ email") for public inquiries
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
+            Contact Email Address
+          </label>
+          <input
+            type="email"
+            value={formData.contactEmail || ''}
+            onChange={e => handleChange('contactEmail', e.target.value)}
+            placeholder="e.g. muantea45@gmail.com"
+            className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+          />
+          <p className="text-[11px] text-[#8F7855] mt-1.5">
+            This email is displayed at the bottom of every page as a clickable direct email link.
+          </p>
+        </div>
+      </div>
+
+      {/* Section 4: Bottom Bar & Legal Notices */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
         <div className="flex items-center gap-2 border-b border-[#EBE6D6] pb-3">
           <div className="w-8 h-8 rounded-lg bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center font-bold">
@@ -260,7 +294,7 @@ export const FooterEditor: React.FC = () => {
           </div>
           <div>
             <h2 className="font-serif font-bold text-lg text-[#143520]">
-              3. Copyright Notice & Dedication
+              4. Copyright Notice & Dedication
             </h2>
             <p className="text-xs text-[#8F7855]">
               Bottom legal statement and heartfelt dedication displayed on every page
