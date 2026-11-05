@@ -38,6 +38,9 @@ interface BlogContextType {
   deleteFarmer: (id: string) => void;
   wipeAllFarmers: () => void;
   batchImportFarmers: (records: FarmerRecord[]) => { count: number };
+  renameColumn: (oldCol: string, newCol: string) => void;
+  deleteColumn: (colName: string) => void;
+  addColumn: (newCol: string) => void;
   addFarmerCustomField: (field: FarmerFieldDefinition) => void;
   deleteFarmerCustomField: (key: string) => void;
   
@@ -1336,6 +1339,113 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { count: records.length };
   }, []);
 
+  const renameColumn = useCallback((oldCol: string, newCol: string) => {
+    const trimmedNew = newCol.trim();
+    if (!trimmedNew || oldCol === trimmedNew) return;
+    lastMutationTimeRef.current = Date.now();
+    setFarmers(prev => {
+      const updated = prev.map(farmer => {
+        const newData = { ...(farmer.data || {}) };
+        if (Object.prototype.hasOwnProperty.call(newData, oldCol)) {
+          newData[trimmedNew] = newData[oldCol];
+          delete newData[oldCol];
+        }
+        const newCols = (farmer.columns || []).map(c => c === oldCol ? trimmedNew : c);
+        if (!newCols.includes(trimmedNew) && farmer.columns && farmer.columns.length > 0) {
+          newCols.push(trimmedNew);
+        }
+        return {
+          ...farmer,
+          data: newData,
+          columns: newCols
+        };
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+
+    setFarmerCustomFields(prev => {
+      const updated = prev.map(f => f.key === oldCol ? { ...f, key: trimmedNew, label: trimmedNew } : f);
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmerCustomFields: updated });
+      return updated;
+    });
+  }, []);
+
+  const deleteColumn = useCallback((colName: string) => {
+    lastMutationTimeRef.current = Date.now();
+    setFarmers(prev => {
+      const updated = prev.map(farmer => {
+        const newData = { ...(farmer.data || {}) };
+        delete newData[colName];
+        const newCols = (farmer.columns || []).filter(c => c !== colName);
+        return {
+          ...farmer,
+          data: newData,
+          columns: newCols
+        };
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+
+    setFarmerCustomFields(prev => {
+      const updated = prev.filter(f => f.key !== colName);
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmerCustomFields: updated });
+      return updated;
+    });
+  }, []);
+
+  const addColumn = useCallback((newCol: string) => {
+    const trimmed = newCol.trim();
+    if (!trimmed) return;
+    lastMutationTimeRef.current = Date.now();
+    setFarmers(prev => {
+      const updated = prev.map(farmer => {
+        const newData = { ...(farmer.data || {}) };
+        if (newData[trimmed] === undefined) {
+          newData[trimmed] = '';
+        }
+        const currentCols = farmer.columns || [];
+        const newCols = currentCols.includes(trimmed) ? currentCols : [...currentCols, trimmed];
+        return {
+          ...farmer,
+          data: newData,
+          columns: newCols
+        };
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmers: updated });
+      broadcastLocalChange('FARMERS', updated);
+      return updated;
+    });
+
+    setFarmerCustomFields(prev => {
+      if (prev.some(f => f.key === trimmed)) return prev;
+      const updated = [...prev, { key: trimmed, label: trimmed }];
+      try {
+        localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
+      } catch {}
+      pushToCloudDatabase({ farmerCustomFields: updated });
+      return updated;
+    });
+  }, []);
+
   const addFarmerCustomField = useCallback((field: FarmerFieldDefinition) => {
     setFarmerCustomFields(prev => {
       if (prev.some(f => f.key === field.key)) return prev;
@@ -1570,6 +1680,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteFarmer,
         wipeAllFarmers,
         batchImportFarmers,
+        renameColumn,
+        deleteColumn,
+        addColumn,
         addFarmerCustomField,
         deleteFarmerCustomField,
         loginAdminWithGmail,
