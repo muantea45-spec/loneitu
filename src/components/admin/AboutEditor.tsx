@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -104,6 +104,154 @@ export const AboutEditor: React.FC = () => {
   const [customCols, setCustomCols] = useState(3);
   const [customRows, setCustomRows] = useState(3);
 
+  // Column Configuration interface for manual column sizing
+  interface ColumnConfig {
+    name: string;
+    width: number; // Percentage (e.g. 20, 50, 30)
+  }
+
+  const getDefaultColumns = (count: number): ColumnConfig[] => {
+    if (count === 2) {
+      return [
+        { name: 'Thupui / Metric', width: 50 },
+        { name: 'Dinhmun / Details', width: 50 }
+      ];
+    }
+    if (count === 3) {
+      return [
+        { name: 'Sl No', width: 20 },
+        { name: 'Thupui / Description', width: 50 },
+        { name: 'Dinhmun / Status', width: 30 }
+      ];
+    }
+    if (count === 4) {
+      return [
+        { name: 'Thlai / Item', width: 25 },
+        { name: 'Hmun / Location', width: 25 },
+        { name: 'Hmalakna', width: 30 },
+        { name: 'Status', width: 20 }
+      ];
+    }
+    if (count === 5) {
+      return [
+        { name: 'Sl No', width: 12 },
+        { name: 'Thupui', width: 28 },
+        { name: 'Hmun', width: 20 },
+        { name: 'Hmalakna', width: 25 },
+        { name: 'Status', width: 15 }
+      ];
+    }
+    return Array.from({ length: count }, (_, i) => ({
+      name: `Col ${i + 1}`,
+      width: Math.round(100 / count)
+    }));
+  };
+
+  const [columnsConfig, setColumnsConfig] = useState<ColumnConfig[]>(() => getDefaultColumns(3));
+
+  const handleColsChange = (newCols: number) => {
+    setCustomCols(newCols);
+    setColumnsConfig(getDefaultColumns(newCols));
+  };
+
+  const updateColumnName = (index: number, name: string) => {
+    setColumnsConfig(prev => {
+      const copy = [...prev];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], name };
+      }
+      return copy;
+    });
+  };
+
+  const updateColumnWidth = (index: number, width: number) => {
+    setColumnsConfig(prev => {
+      const copy = [...prev];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], width: Math.max(5, Math.min(95, width)) };
+      }
+      return copy;
+    });
+  };
+
+  const applyEqualWidths = () => {
+    const each = Math.round(100 / customCols);
+    setColumnsConfig(prev => {
+      return prev.map((col, idx) => ({
+        ...col,
+        width: idx === prev.length - 1 ? Math.max(5, 100 - each * (prev.length - 1)) : each
+      }));
+    });
+  };
+
+  const applyCompactFirstCol = () => {
+    if (customCols === 2) {
+      setColumnsConfig([
+        { ...columnsConfig[0], width: 20 },
+        { ...columnsConfig[1], width: 80 }
+      ]);
+    } else if (customCols === 3) {
+      setColumnsConfig([
+        { ...columnsConfig[0], width: 15 },
+        { ...columnsConfig[1], width: 55 },
+        { ...columnsConfig[2], width: 30 }
+      ]);
+    } else if (customCols === 4) {
+      setColumnsConfig([
+        { ...columnsConfig[0], width: 12 },
+        { ...columnsConfig[1], width: 38 },
+        { ...columnsConfig[2], width: 30 },
+        { ...columnsConfig[3], width: 20 }
+      ]);
+    } else {
+      const first = 10;
+      const rest = Math.round((100 - first) / (customCols - 1));
+      setColumnsConfig(prev => prev.map((col, idx) => ({
+        ...col,
+        width: idx === 0 ? first : idx === prev.length - 1 ? Math.max(5, 100 - first - rest * (prev.length - 2)) : rest
+      })));
+    }
+  };
+
+  const applyDominantMiddleCol = () => {
+    if (customCols === 3) {
+      setColumnsConfig([
+        { ...columnsConfig[0], width: 20 },
+        { ...columnsConfig[1], width: 60 },
+        { ...columnsConfig[2], width: 20 }
+      ]);
+    } else if (customCols === 4) {
+      setColumnsConfig([
+        { ...columnsConfig[0], width: 15 },
+        { ...columnsConfig[1], width: 45 },
+        { ...columnsConfig[2], width: 25 },
+        { ...columnsConfig[3], width: 15 }
+      ]);
+    } else {
+      applyEqualWidths();
+    }
+  };
+
+  const totalWidth = useMemo(() => {
+    return columnsConfig.reduce((acc, c) => acc + (c.width || 0), 0);
+  }, [columnsConfig]);
+
+  const normalizeTo100 = () => {
+    const currentSum = totalWidth;
+    if (currentSum === 0) return;
+    setColumnsConfig(prev => {
+      let accumulated = 0;
+      return prev.map((col, idx) => {
+        if (idx === prev.length - 1) {
+          return { ...col, width: Math.max(5, 100 - accumulated) };
+        }
+        const normalized = Math.max(5, Math.round((col.width / currentSum) * 100));
+        accumulated += normalized;
+        return { ...col, width: normalized };
+      });
+    });
+  };
+
   // Formatting helpers
   const insertFormat = (prefix: string, suffix: string = '', defaultText: string = '') => {
     const textarea = textareaRef.current;
@@ -173,34 +321,133 @@ export const AboutEditor: React.FC = () => {
     }, 0);
   };
 
-  const insertTable = (cols: number, rows: number, presetType?: 'standard' | 'comparison' | 'agronomy') => {
-    let tableMd = '';
+  const insertCustomConfiguredTable = () => {
+    const sum = totalWidth;
+    const finalCols = columnsConfig.map(col => {
+      if (sum === 100) return col;
+      const norm = Math.round((col.width / (sum || 1)) * 100);
+      return { ...col, width: norm };
+    });
+
+    const ths = finalCols.map(col => 
+      `      <th style="width: ${col.width}%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">${col.name || 'Header'}</th>`
+    ).join('\n');
+
+    const sampleRowCells = finalCols.map((col, cIdx) => 
+      `      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Sample ${col.name || `Data ${cIdx + 1}`}</td>`
+    ).join('\n');
+
+    const rowsHtml = Array.from({ length: customRows }, (_, rIdx) => 
+`    <tr>
+${sampleRowCells.replace(/Sample/g, `Item ${rIdx + 1} -`)}
+    </tr>`
+    ).join('\n');
+
+    const tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+  <thead>
+    <tr style="background: #143520; color: #BFDC28;">
+${ths}
+    </tr>
+  </thead>
+  <tbody>
+${rowsHtml}
+  </tbody>
+</table>\n\n`;
+
+    insertTextAtCursor(tableHtml);
+    showToast(`Table with ${customCols} custom-width columns inserted!`, 'success');
+    setIsCustomTableModalOpen(false);
+  };
+
+  const insertTable = (_cols?: number, _rows?: number, presetType: 'standard' | 'comparison' | 'agronomy' = 'standard') => {
+    let tableHtml = '';
 
     if (presetType === 'comparison') {
-      tableMd = `\n| Hmanlai Dan (Traditional) | Loneitu Kalpui Dan (Modern Agro-Tech) |
-| :--- | :--- |
-| Kut hnathawh hahthlak | Khawl leh automated monitoring |
-| Leitha tlem | Soil test hmanga leitha pek |
-| Thlai hralhna harsa | Direct market & digital registry |\n\n`;
+      tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+  <thead>
+    <tr style="background: #143520; color: #BFDC28;">
+      <th style="width: 50%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Hmanlai Dan (Traditional)</th>
+      <th style="width: 50%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Loneitu Kalpui Dan (Modern Agro-Tech)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Kut hnathawh hahthlak</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Khawl leh automated monitoring</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Leitha tlem</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Soil test hmanga leitha pek</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Thlai hralhna harsa</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Direct market & digital registry</td>
+    </tr>
+  </tbody>
+</table>\n\n`;
     } else if (presetType === 'agronomy') {
-      tableMd = `\n| Thlai Hming | Hmun / District | Hmalakna | Dinhmun (Status) |
-| :--- | :--- | :--- | :--- |
-| Chawnpui Grape | Champhai | Drip Irrigation | Ṭha tluang |
-| Dragon Fruit | Kolasib | Trellis support system | Rah chhuak mek |
-| Assam Lemon | Serchhip | Organic composting | Zirchianna kal mek |
-| Ginger (Sawhthing) | Lunglei | Value-added processing | Hralh chhuah theih |\n\n`;
+      tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+  <thead>
+    <tr style="background: #143520; color: #BFDC28;">
+      <th style="width: 25%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Thlai Hming</th>
+      <th style="width: 25%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Hmun / District</th>
+      <th style="width: 30%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Hmalakna</th>
+      <th style="width: 20%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Dinhmun (Status)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Chawnpui Grape</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Champhai</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Drip Irrigation</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Ṭha tluang</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Dragon Fruit</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Kolasib</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Trellis support system</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Rah chhuak mek</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Assam Lemon</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Serchhip</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Organic composting</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Zirchianna kal mek</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Ginger (Sawhthing)</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Lunglei</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Value-added processing</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Hralh chhuah theih</td>
+    </tr>
+  </tbody>
+</table>\n\n`;
     } else {
-      const headers = Array.from({ length: cols }, (_, i) => `Col Header ${i + 1}`).join(' | ');
-      const dividers = Array.from({ length: cols }, () => ':---').join(' | ');
-      const rowLines = Array.from({ length: rows }, (_, r) => 
-        Array.from({ length: cols }, (_, c) => `Item ${r + 1}.${c + 1}`).join(' | ')
-      ).map(r => `| ${r} |`).join('\n');
-
-      tableMd = `\n| ${headers} |\n| ${dividers} |\n${rowLines}\n\n`;
+      tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+  <thead>
+    <tr style="background: #143520; color: #BFDC28;">
+      <th style="width: 20%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Sl No</th>
+      <th style="width: 50%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Thupui / Description</th>
+      <th style="width: 30%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Dinhmun / Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">1</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Sample research record</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Active</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">2</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Field survey update</td>
+      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Completed</td>
+    </tr>
+  </tbody>
+</table>\n\n`;
     }
 
-    insertTextAtCursor(tableMd);
-    showToast('Table inserted into manifesto content!', 'success');
+    insertTextAtCursor(tableHtml);
+    showToast('Table inserted with balanced column widths!', 'success');
     setIsTableDropdownOpen(false);
     setIsCustomTableModalOpen(false);
   };
@@ -550,9 +797,12 @@ export const AboutEditor: React.FC = () => {
                 <div className="inline-flex items-center rounded-xl bg-white border border-[#DDD4BC] shadow-2xs overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => insertTable(3, 3, 'standard')}
+                    onClick={() => {
+                      setIsTableDropdownOpen(false);
+                      setIsCustomTableModalOpen(true);
+                    }}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
-                    title="Insert Standard Table (3x3)"
+                    title="Insert Custom Table with Manual Column Sizing"
                   >
                     <TableIcon className="w-4 h-4 text-[#256B3A]" />
                     <span>Table</span>
@@ -659,7 +909,7 @@ export const AboutEditor: React.FC = () => {
                       li: ({ node, ...props }) => <li className="text-[#4A584E] text-justify [text-align:justify]" {...props} />,
                       table: ({ node, ...props }) => (
                         <div className="w-full overflow-x-auto my-6 rounded-2xl border border-[#DDD4BC] shadow-xs bg-white">
-                          <table className="w-full text-left text-xs sm:text-sm border-collapse" {...props} />
+                          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-full" style={{ tableLayout: 'auto', ...props.style }} {...props} />
                         </div>
                       ),
                       thead: ({ node, ...props }) => (
@@ -672,10 +922,10 @@ export const AboutEditor: React.FC = () => {
                         <tr className="hover:bg-[#F6F4EB]/70 transition-colors" {...props} />
                       ),
                       th: ({ node, ...props }) => (
-                        <th className="py-3 px-4 sm:py-3.5 sm:px-5 font-bold border-b border-[#256B3A]/40" {...props} />
+                        <th className="py-3 px-4 sm:py-3.5 sm:px-5 font-bold border-b border-[#256B3A]/40 align-top" {...props} />
                       ),
                       td: ({ node, ...props }) => (
-                        <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-[#3B2E1D]" {...props} />
+                        <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-[#3B2E1D] align-top" {...props} />
                       ),
                       h1: ({ node, ...props }) => <h1 className="font-serif font-bold text-2xl text-[#143520] mt-6 mb-3" {...props} />,
                       h2: ({ node, ...props }) => <h2 className="font-serif font-bold text-xl text-[#143520] mt-5 mb-2.5" {...props} />,
@@ -898,18 +1148,19 @@ export const AboutEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Custom Table Builder Modal */}
+      {/* Custom Table Builder Modal with Manual Column Size Controls */}
       {isCustomTableModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 border-2 border-emerald-300 shadow-2xl space-y-5 animate-scaleUp">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 border-2 border-emerald-300 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-scaleUp">
+            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#256B3A] text-white flex items-center justify-center font-bold">
-                  <TableIcon className="w-4 h-4 text-[#BFDC28]" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#143520] text-[#BFDC28] flex items-center justify-center font-bold shadow-xs">
+                  <TableIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-base text-[#143520]">Insert Custom Table</h3>
-                  <p className="text-[11px] text-[#8F7855]">Specify columns and rows</p>
+                  <h3 className="font-serif font-bold text-lg text-[#143520]">Custom Table & Column Sizing</h3>
+                  <p className="text-xs text-[#8F7855]">Manually adjust column widths (%) and headers</p>
                 </div>
               </div>
               <button
@@ -921,51 +1172,201 @@ export const AboutEditor: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Grid Settings: Number of Columns and Rows */}
+            <div className="grid grid-cols-2 gap-4 bg-[#FAF8F3] p-4 rounded-2xl border border-[#DDD4BC]">
               <div>
                 <label className="block text-xs font-bold text-[#6F5B3C] mb-1.5">
-                  Columns (2 - 6)
+                  Number of Columns (2 - 6)
                 </label>
-                <input
-                  type="number"
-                  min={2}
-                  max={6}
-                  value={customCols}
-                  onChange={(e) => setCustomCols(Math.max(2, Math.min(6, parseInt(e.target.value) || 2)))}
-                  className="w-full px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-bold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleColsChange(Math.max(2, customCols - 1))}
+                    disabled={customCols <= 2}
+                    className="w-8 h-8 rounded-lg bg-white border border-[#DDD4BC] font-bold text-sm text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-40 cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="flex-1 text-center font-bold text-sm text-[#143520] bg-white py-1 rounded-lg border border-[#DDD4BC]">
+                    {customCols} Cols
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleColsChange(Math.min(6, customCols + 1))}
+                    disabled={customCols >= 6}
+                    className="w-8 h-8 rounded-lg bg-white border border-[#DDD4BC] font-bold text-sm text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-40 cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#6F5B3C] mb-1.5">
-                  Rows (1 - 10)
+                  Number of Data Rows (1 - 10)
                 </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={customRows}
-                  onChange={(e) => setCustomRows(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                  className="w-full px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-bold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCustomRows(Math.max(1, customRows - 1))}
+                    disabled={customRows <= 1}
+                    className="w-8 h-8 rounded-lg bg-white border border-[#DDD4BC] font-bold text-sm text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-40 cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="flex-1 text-center font-bold text-sm text-[#143520] bg-white py-1 rounded-lg border border-[#DDD4BC]">
+                    {customRows} Rows
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomRows(Math.min(10, customRows + 1))}
+                    disabled={customRows >= 10}
+                    className="w-8 h-8 rounded-lg bg-white border border-[#DDD4BC] font-bold text-sm text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-40 cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsCustomTableModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-[#DDD4BC] text-xs font-semibold text-[#54432C] hover:bg-[#F6F4EB] cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => insertTable(customCols, customRows)}
-                className="px-5 py-2 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold shadow-md cursor-pointer"
-              >
-                Insert Table
-              </button>
+            {/* Preset Width Ratios */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-[#6F5B3C] uppercase tracking-wider text-[11px]">Quick Width Presets</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                  totalWidth === 100 
+                    ? 'bg-emerald-100 text-emerald-800' 
+                    : 'bg-amber-100 text-amber-800'
+                }`}>
+                  Total Width: {totalWidth}% {totalWidth !== 100 && '(Auto-normalizes to 100%)'}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={applyEqualWidths}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                >
+                  Equal ({Math.round(100 / customCols)}% each)
+                </button>
+                <button
+                  type="button"
+                  onClick={applyCompactFirstCol}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                >
+                  Compact 1st Col (15% Index / Serial)
+                </button>
+                <button
+                  type="button"
+                  onClick={applyDominantMiddleCol}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                >
+                  Wide Content Col
+                </button>
+                {totalWidth !== 100 && (
+                  <button
+                    type="button"
+                    onClick={normalizeTo100}
+                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer ml-auto"
+                  >
+                    Normalize to 100%
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Visual Proportion Bar Preview */}
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Column Proportions Preview:</span>
+              <div className="h-8 w-full rounded-xl overflow-hidden flex border border-[#DDD4BC] shadow-xs text-[10px] font-bold text-white text-center">
+                {columnsConfig.map((col, idx) => {
+                  const colors = ['bg-[#143520]', 'bg-[#256B3A]', 'bg-[#3A8D55]', 'bg-[#5CB578]', 'bg-[#82D099]', 'bg-[#B0E5C0]'];
+                  return (
+                    <div
+                      key={idx}
+                      style={{ width: `${(col.width / (totalWidth || 1)) * 100}%` }}
+                      className={`${colors[idx % colors.length]} h-full flex items-center justify-center px-1 truncate transition-all duration-200 border-r border-white/20 last:border-r-0`}
+                      title={`${col.name || `Col ${idx + 1}`}: ${col.width}%`}
+                    >
+                      <span className="truncate">{col.name || `Col ${idx + 1}`} ({col.width}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Individual Column Sliders & Name Customizers */}
+            <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+              <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Configure Each Column Size:</span>
+              {columnsConfig.map((col, idx) => (
+                <div key={idx} className="p-3 bg-[#FAF8F3] rounded-xl border border-[#DDD4BC] space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="w-5 h-5 rounded-full bg-[#143520] text-[#BFDC28] text-[10px] font-black flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={col.name}
+                        onChange={(e) => updateColumnName(idx, e.target.value)}
+                        placeholder={`Column ${idx + 1} Title`}
+                        className="flex-1 px-2.5 py-1 text-xs font-bold bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <input
+                        type="number"
+                        min={5}
+                        max={90}
+                        value={col.width}
+                        onChange={(e) => updateColumnWidth(idx, parseInt(e.target.value) || 10)}
+                        className="w-16 px-2 py-1 text-xs font-bold text-center bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                      />
+                      <span className="text-xs font-bold text-[#6F5B3C]">%</span>
+                    </div>
+                  </div>
+
+                  {/* Slider */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={5}
+                      max={85}
+                      step={1}
+                      value={col.width}
+                      onChange={(e) => updateColumnWidth(idx, parseInt(e.target.value))}
+                      className="flex-1 h-1.5 bg-[#DDD4BC] rounded-lg appearance-none cursor-pointer accent-[#256B3A]"
+                    />
+                    <span className="text-[11px] font-mono text-[#8F7855] w-10 text-right">{col.width}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#EBE6D6]">
+              <div className="text-[11px] text-[#8F7855]">
+                Generates editable <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">&lt;th style="width: ...%"&gt;</code> tags
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTableModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#DDD4BC] text-xs font-semibold text-[#54432C] hover:bg-[#F6F4EB] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={insertCustomConfiguredTable}
+                  className="px-5 py-2 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <TableIcon className="w-3.5 h-3.5 text-[#BFDC28]" />
+                  <span>Insert Table</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

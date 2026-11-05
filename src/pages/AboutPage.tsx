@@ -67,7 +67,7 @@ export const AboutPage: React.FC = () => {
                 li: ({ node, ...props }) => <li className="text-[#4A584E] text-justify [text-align:justify]" {...props} />,
                 table: ({ node, ...props }) => (
                   <div className="w-full overflow-x-auto my-6 rounded-2xl border border-[#DDD4BC] shadow-xs bg-white">
-                    <table className="w-full text-left text-xs sm:text-sm border-collapse" {...props} />
+                    <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-full" style={{ tableLayout: 'auto', ...props.style }} {...props} />
                   </div>
                 ),
                 thead: ({ node, ...props }) => (
@@ -80,10 +80,10 @@ export const AboutPage: React.FC = () => {
                   <tr className="hover:bg-[#F6F4EB]/70 transition-colors" {...props} />
                 ),
                 th: ({ node, ...props }) => (
-                  <th className="py-3 px-4 sm:py-3.5 sm:px-5 font-bold border-b border-[#256B3A]/40" {...props} />
+                  <th className="py-3 px-4 sm:py-3.5 sm:px-5 font-bold border-b border-[#256B3A]/40 align-top" {...props} />
                 ),
                 td: ({ node, ...props }) => (
-                  <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-[#3B2E1D]" {...props} />
+                  <td className="py-2.5 px-4 sm:py-3 sm:px-5 text-[#3B2E1D] align-top" {...props} />
                 ),
                 h1: ({ node, ...props }) => <h1 className="font-serif font-bold text-2xl text-[#143520] mt-6 mb-3" {...props} />,
                 h2: ({ node, ...props }) => <h2 className="font-serif font-bold text-xl text-[#143520] mt-5 mb-2.5" {...props} />,
