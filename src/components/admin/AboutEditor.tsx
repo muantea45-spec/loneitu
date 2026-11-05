@@ -31,6 +31,8 @@ import {
   ChevronDown,
   X,
   Plus,
+  CornerDownLeft,
+  ListIndentIncrease,
   Info
 } from 'lucide-react';
 import {
@@ -257,29 +259,33 @@ export const AboutEditor: React.FC = () => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
+    const savedScrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
     const selected = text.substring(start, end);
     const replacement = selected ? `${prefix}${selected}${suffix}` : `${prefix}${defaultText}${suffix}`;
 
+    const newStart = start + prefix.length;
+    const newEnd = selected ? end + prefix.length : newStart + defaultText.length;
+
     const nextValue = text.substring(0, start) + replacement + text.substring(end);
     handleChange('editorialBody', nextValue);
 
-    setTimeout(() => {
-      textarea.focus();
-      if (selected) {
-        textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-      } else {
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length + defaultText.length);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus({ preventScroll: true });
+        textareaRef.current.setSelectionRange(newStart, newEnd);
+        textareaRef.current.scrollTop = savedScrollTop;
       }
-    }, 0);
+    });
   };
 
   const insertLinePrefix = (prefix: string, defaultText: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
+    const savedScrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
@@ -289,20 +295,25 @@ export const AboutEditor: React.FC = () => {
     const needsNewlineBefore = before.length > 0 && !before.endsWith('\n');
     const insertStr = `${needsNewlineBefore ? '\n' : ''}${prefix}${selected}\n`;
 
+    const newPos = start + (needsNewlineBefore ? 1 : 0) + prefix.length + selected.length;
+
     const nextValue = text.substring(0, start) + insertStr + text.substring(end);
     handleChange('editorialBody', nextValue);
 
-    setTimeout(() => {
-      textarea.focus();
-      const newPos = start + (needsNewlineBefore ? 1 : 0) + prefix.length + selected.length;
-      textarea.setSelectionRange(newPos, newPos);
-    }, 0);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus({ preventScroll: true });
+        textareaRef.current.setSelectionRange(newPos, newPos);
+        textareaRef.current.scrollTop = savedScrollTop;
+      }
+    });
   };
 
   const insertTextAtCursor = (content: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
+    const savedScrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
@@ -311,14 +322,72 @@ export const AboutEditor: React.FC = () => {
     const needsNewlineBefore = before.length > 0 && !before.endsWith('\n');
     const insertStr = `${needsNewlineBefore ? '\n' : ''}${content}`;
 
+    const newPos = start + insertStr.length;
+
     const nextValue = text.substring(0, start) + insertStr + text.substring(end);
     handleChange('editorialBody', nextValue);
 
-    setTimeout(() => {
-      textarea.focus();
-      const newPos = start + insertStr.length;
-      textarea.setSelectionRange(newPos, newPos);
-    }, 0);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus({ preventScroll: true });
+        textareaRef.current.setSelectionRange(newPos, newPos);
+        textareaRef.current.scrollTop = savedScrollTop;
+      }
+    });
+  };
+
+  const handleInsertTab = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const savedScrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const tabSpaces = '    '; // 4 spaces for clean indentation
+
+    const nextValue = text.substring(0, start) + tabSpaces + text.substring(end);
+    handleChange('editorialBody', nextValue);
+
+    const newPos = start + tabSpaces.length;
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus({ preventScroll: true });
+        textareaRef.current.setSelectionRange(newPos, newPos);
+        textareaRef.current.scrollTop = savedScrollTop;
+      }
+    });
+  };
+
+  const handleInsertNewParagraph = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const savedScrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    // Ensure 2 newlines (\n\n) so markdown and preview render a true separate paragraph
+    const before = text.substring(0, start);
+    let insertStr = '\n\n';
+    if (before.endsWith('\n\n')) {
+      insertStr = '\n';
+    } else if (before.endsWith('\n')) {
+      insertStr = '\n';
+    }
+
+    const nextValue = text.substring(0, start) + insertStr + text.substring(end);
+    handleChange('editorialBody', nextValue);
+
+    const newPos = start + insertStr.length;
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus({ preventScroll: true });
+        textareaRef.current.setSelectionRange(newPos, newPos);
+        textareaRef.current.scrollTop = savedScrollTop;
+      }
+    });
   };
 
   const insertCustomConfiguredTable = () => {
@@ -459,6 +528,21 @@ ${rowsHtml}
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 1. Tab key: insert 4 spaces indent without losing focus
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      handleInsertTab();
+      return;
+    }
+
+    // 2. Enter key: pressing Enter inserts a new paragraph break (\n\n) so markdown and live link render a true separate paragraph
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      handleInsertNewParagraph();
+      return;
+    }
+
+    // 3. Shortcuts: Ctrl+B (Bold), Ctrl+I (Italic), Ctrl+K (Link)
     if (e.ctrlKey || e.metaKey) {
       if (e.key.toLowerCase() === 'b') {
         e.preventDefault();
@@ -678,6 +762,7 @@ ${rowsHtml}
               {/* Text styles */}
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertFormat('**', '**', 'Bold text')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Bold (Ctrl+B)"
@@ -687,6 +772,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertFormat('*', '*', 'Italic text')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Italic (Ctrl+I)"
@@ -696,6 +782,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertFormat('~~', '~~', 'Strikethrough text')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Strikethrough"
@@ -708,6 +795,7 @@ ${rowsHtml}
               {/* Headings */}
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertLinePrefix('# ', 'Heading 1')}
                 className="px-2 py-1.5 rounded-lg text-xs font-bold text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Heading 1"
@@ -717,6 +805,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertLinePrefix('## ', 'Heading 2')}
                 className="px-2 py-1.5 rounded-lg text-xs font-bold text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Heading 2"
@@ -726,6 +815,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertLinePrefix('### ', 'Heading 3')}
                 className="px-2 py-1.5 rounded-lg text-xs font-bold text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Heading 3"
@@ -735,9 +825,35 @@ ${rowsHtml}
 
               <div className="h-5 w-px bg-[#DDD4BC] mx-1" />
 
+              {/* Tab Indent & New Paragraph Action Buttons */}
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleInsertTab}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
+                title="Insert Tab Indent (4 spaces or Tab key)"
+              >
+                <ListIndentIncrease className="w-3.5 h-3.5 text-[#256B3A]" />
+                <span>Tab</span>
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleInsertNewParagraph}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
+                title="New Paragraph (Enter)"
+              >
+                <CornerDownLeft className="w-3.5 h-3.5 text-[#256B3A]" />
+                <span>New Para</span>
+              </button>
+
+              <div className="h-5 w-px bg-[#DDD4BC] mx-1" />
+
               {/* Lists and Quotes */}
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertLinePrefix('- ', 'List item')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Bullet List"
@@ -747,6 +863,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertLinePrefix('1. ', 'List item')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Numbered List"
@@ -756,6 +873,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertLinePrefix('> ', 'Quote callout')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Blockquote"
@@ -765,6 +883,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertFormat('`', '`', 'code')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Inline Code"
@@ -774,6 +893,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertTextAtCursor('\n\n---\n\n')}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Horizontal Divider"
@@ -783,6 +903,7 @@ ${rowsHtml}
 
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={handleInsertLink}
                 className="p-2 rounded-lg text-[#143520] hover:bg-white hover:shadow-xs border border-transparent hover:border-[#DDD4BC] transition-all cursor-pointer"
                 title="Insert Link (Ctrl+K)"
@@ -797,6 +918,7 @@ ${rowsHtml}
                 <div className="inline-flex items-center rounded-xl bg-white border border-[#DDD4BC] shadow-2xs overflow-hidden">
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       setIsTableDropdownOpen(false);
                       setIsCustomTableModalOpen(true);
@@ -810,6 +932,7 @@ ${rowsHtml}
 
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setIsTableDropdownOpen(!isTableDropdownOpen)}
                     className="p-1.5 hover:bg-[#F6F4EB] border-l border-[#DDD4BC] text-[#143520] transition-colors cursor-pointer"
                     title="Table Templates & Custom Builder"
@@ -885,7 +1008,7 @@ ${rowsHtml}
                   required
                 />
                 <div className="flex items-center justify-between text-[11px] text-[#8F7855] px-2 pt-1 font-mono">
-                  <span>Shortcuts: <strong>Ctrl+B</strong> (Bold), <strong>Ctrl+I</strong> (Italic), <strong>Ctrl+K</strong> (Link)</span>
+                  <span>Shortcuts: <strong>Ctrl+B</strong> (Bold), <strong>Ctrl+I</strong> (Italic), <strong>Tab</strong> (Indent), <strong>Enter</strong> (New Para)</span>
                   <span>{formData.editorialBody.length} characters</span>
                 </div>
               </div>
@@ -901,7 +1024,7 @@ ${rowsHtml}
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
                     components={{
-                      p: ({ node, ...props }) => <p className="mb-4 leading-relaxed text-justify [text-align:justify]" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-5 leading-relaxed text-justify [text-align:justify] whitespace-pre-line" {...props} />,
                       strong: ({ node, ...props }) => <strong className="font-bold text-[#143520]" {...props} />,
                       em: ({ node, ...props }) => <em className="italic text-[#143520]" {...props} />,
                       ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-3 text-justify [text-align:justify]" {...props} />,

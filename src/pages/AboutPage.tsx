@@ -59,7 +59,7 @@ export const AboutPage: React.FC = () => {
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
               components={{
-                p: ({ node, ...props }) => <p className="mb-4 leading-relaxed text-justify [text-align:justify]" {...props} />,
+                p: ({ node, ...props }) => <p className="mb-5 leading-relaxed text-justify [text-align:justify] whitespace-pre-line" {...props} />,
                 strong: ({ node, ...props }) => <strong className="font-bold text-[#143520]" {...props} />,
                 em: ({ node, ...props }) => <em className="italic text-[#143520]" {...props} />,
                 ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-3 text-justify [text-align:justify]" {...props} />,
