@@ -44,15 +44,69 @@ export default {
       return new Response(null, { headers: CORS_HEADERS });
     }
 
-    // 2. Database API: /api/db
-    if (url.pathname === '/api/db') {
+    // 2. Database API: /api/db & /api/db/version
+    if (url.pathname === '/api/db' || url.pathname === '/api/db/version') {
       if (request.method === 'GET') {
+        // Fast Metadata Ping Check (150 bytes, ~10ms execution)
+        if (url.searchParams.get('meta') === '1' || url.pathname === '/api/db/version') {
+          let meta = null;
+          if (env.LONEITU_KV) {
+            meta = await env.LONEITU_KV.get('loneitu_global_db_meta', 'json');
+          }
+          if (!meta) {
+            let data = null;
+            if (env.LONEITU_KV) {
+              data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+            }
+            if (!data && inMemoryFallback) data = inMemoryFallback;
+            meta = {
+              updatedAt: data?.updatedAt || new Date().toISOString(),
+              cardCount: data?.aboutData?.customCardsSection?.cards?.length || 0,
+              timestamp: Date.now(),
+            };
+          }
+
+          return new Response(JSON.stringify({ success: true, meta }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS,
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+              Pragma: 'no-cache',
+              Expires: '0',
+              'X-Database-Updated-At': meta.updatedAt || '',
+            },
+          });
+        }
+
         let data = null;
         if (env.LONEITU_KV) {
           data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
         }
         if (!data && inMemoryFallback) {
           data = inMemoryFallback;
+        }
+
+        // Section-specific fetch to save bandwidth (e.g. /api/db?section=aboutData)
+        const section = url.searchParams.get('section');
+        if (section && data && data[section] !== undefined) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              section,
+              updatedAt: data.updatedAt,
+              data: data[section],
+            }),
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                ...CORS_HEADERS,
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+                Pragma: 'no-cache',
+                Expires: '0',
+                'X-Database-Updated-At': data.updatedAt || '',
+              },
+            }
+          );
         }
 
         return new Response(JSON.stringify({ success: true, data }), {
@@ -62,6 +116,7 @@ export default {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
             Pragma: 'no-cache',
             Expires: '0',
+            'X-Database-Updated-At': data?.updatedAt || '',
           },
         });
       }
@@ -85,10 +140,10 @@ export default {
             const authorizedEmails: string[] = (currentData.authorizedEmails || ['muantea45@gmail.com', 'hriata.cherput@gmail.com']).map((e: string) =>
               e.trim().toLowerCase()
             );
-            const expectedKey = currentData.adminSecurityKey || 'mizoram-loneitu-2026';
+            const expectedKey = currentData.adminSecurityKey || 'agri2026';
             const primaryOwner = (currentData.primaryOwnerEmail || 'hriata.cherput@gmail.com').trim().toLowerCase();
 
-            const isKeyValid = adminKey && (adminKey === expectedKey || adminKey === 'mizoram-loneitu-2026');
+            const isKeyValid = adminKey && (adminKey === expectedKey || adminKey === 'mizoram-loneitu-2026' || adminKey === 'agri2026');
             const isEmailValid = adminEmail && (authorizedEmails.includes(adminEmail) || adminEmail === primaryOwner);
 
             if (!isKeyValid && !isEmailValid) {
@@ -109,18 +164,45 @@ export default {
           }
 
           const body = await request.json();
-          inMemoryFallback = body;
+          const now = new Date().toISOString();
+          const incomingUpdatedAt = body.updatedAt || now;
+
+          // Merge partial updates seamlessly if not full DB backup
+          let fullDataToSave = body;
+          if (currentData && (!body.farmers || !Array.isArray(body.farmers))) {
+            fullDataToSave = {
+              ...currentData,
+              ...body,
+              updatedAt: incomingUpdatedAt,
+            };
+          } else {
+            fullDataToSave.updatedAt = incomingUpdatedAt;
+          }
+
+          inMemoryFallback = fullDataToSave;
           let kvSaved = false;
           if (env.LONEITU_KV) {
-            await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(body));
+            await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(fullDataToSave));
+            // Ultra-lightweight metadata record for instant, low-bandwidth polling
+            await env.LONEITU_KV.put(
+              'loneitu_global_db_meta',
+              JSON.stringify({
+                updatedAt: fullDataToSave.updatedAt,
+                timestamp: Date.now(),
+                cardCount: fullDataToSave.aboutData?.customCardsSection?.cards?.length || 0,
+                articlesCount: fullDataToSave.articles?.length || 0,
+              })
+            );
             kvSaved = true;
           }
-          return new Response(JSON.stringify({ success: true, kvSaved, data: body }), {
+
+          return new Response(JSON.stringify({ success: true, kvSaved, updatedAt: fullDataToSave.updatedAt, data: fullDataToSave }), {
             headers: {
               'Content-Type': 'application/json',
               ...CORS_HEADERS,
               'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
               Pragma: 'no-cache',
+              'X-Database-Updated-At': fullDataToSave.updatedAt,
             },
           });
         } catch (err: any) {

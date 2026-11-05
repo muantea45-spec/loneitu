@@ -157,13 +157,24 @@ export const AboutEditor: React.FC = () => {
   const [isCardImageUploading, setIsCardImageUploading] = useState(false);
   const cardFileInputRef = useRef<HTMLInputElement>(null);
 
-  const updateCardsSection = (updates: Partial<CustomCardSectionData>) => {
-    isDirtyRef.current = true;
+  const updateCardsSection = (updates: Partial<CustomCardSectionData>, autoSync: boolean = false) => {
     const nextSection: CustomCardSectionData = {
       ...currentCardsSection,
       ...updates,
     };
-    handleChange('customCardsSection', nextSection);
+    const nextFormData: AboutPageData = {
+      ...formData,
+      customCardsSection: nextSection,
+    };
+    setFormData(nextFormData);
+    if (autoSync) {
+      isDirtyRef.current = false;
+      setIsSaved(true);
+      updateAboutData(nextFormData);
+    } else {
+      isDirtyRef.current = true;
+      setIsSaved(false);
+    }
   };
 
   const handleOpenAddCard = () => {
@@ -229,14 +240,14 @@ export const AboutEditor: React.FC = () => {
       showToast(`New staff card "${cardName}" added!`, 'success');
     }
 
-    updateCardsSection({ cards });
+    updateCardsSection({ cards }, true);
     setIsCardModalOpen(false);
   };
 
   const handleDeleteCard = (cardId: string, title: string) => {
     if (!window.confirm(`Are you sure you want to delete card "${title}"?`)) return;
     const cards = (currentCardsSection.cards || []).filter(c => c.id !== cardId);
-    updateCardsSection({ cards });
+    updateCardsSection({ cards }, true);
     showToast(`Card "${title}" deleted.`, 'success');
   };
 
@@ -255,7 +266,7 @@ export const AboutEditor: React.FC = () => {
       avatar: details.avatar,
     };
     cards.push(newCard);
-    updateCardsSection({ cards });
+    updateCardsSection({ cards }, true);
     showToast(`Duplicated "${details.name}"`, 'success');
   };
 
@@ -266,7 +277,7 @@ export const AboutEditor: React.FC = () => {
     const temp = cards[index];
     cards[index] = cards[targetIdx];
     cards[targetIdx] = temp;
-    updateCardsSection({ cards });
+    updateCardsSection({ cards }, true);
   };
 
   const handleCardAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

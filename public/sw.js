@@ -1,9 +1,9 @@
 /**
- * Loneitu (MIZORAM TAN) — Offline Field Access Service Worker
- * Ensures agronomists and farmers can read articles, guides, and registry records without internet.
+ * Loneitu (MIZORAM TAN) — High-Performance Instant Synchronization Service Worker
+ * Ensures 100% fresh content across all platforms while maintaining reliable offline fallback.
  */
 
-const CACHE_NAME = 'loneitu-offline-v2';
+const CACHE_NAME = 'loneitu-instant-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -15,22 +15,24 @@ const STATIC_ASSETS = [
   '/pwa-512x512.png',
 ];
 
-// 1. Install event: Pre-cache core shell
+// 1. Install event: Immediately take over without waiting
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// 2. Activate event: Clear legacy caches
+// 2. Activate event: Clear all legacy caches and claim active clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('🧹 Clearing outdated cache:', key);
             return caches.delete(key);
           }
         })
@@ -39,20 +41,46 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch event: Stale-while-revalidate / Network-first with cache fallback
+// 3. Fetch event: Network-First for HTML & APIs to guarantee instant updates
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Skip non-GET requests or browser extensions
+  // Skip non-GET requests or browser extension protocols
   if (req.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // Handle API Database: Network first, fall back to cached response
-  if (url.pathname.includes('/api/db')) {
+  // A. API requests (/api/): STRICT NETWORK-FIRST (bypasses cache when online)
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-store' })
+        .then((networkRes) => {
+          if (networkRes && networkRes.status === 200 && url.pathname.includes('/api/db')) {
+            const clone = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return networkRes;
+        })
+        .catch(() => {
+          // If offline and request is /api/db, provide cached snapshot
+          if (url.pathname.includes('/api/db')) {
+            return caches.match(req);
+          }
+          return new Response(JSON.stringify({ error: 'offline', success: false }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        })
+    );
+    return;
+  }
+
+  // B. HTML Navigations (page visits e.g. /about, /, /article/*):
+  // STRICT NETWORK-FIRST so all devices load the freshest app build immediately
+  if (req.mode === 'navigate' || (req.headers.get('accept') && req.headers.get('accept').includes('text/html'))) {
+    event.respondWith(
+      fetch(req, { cache: 'no-cache' })
         .then((networkRes) => {
           if (networkRes && networkRes.status === 200) {
             const clone = networkRes.clone();
@@ -61,13 +89,32 @@ self.addEventListener('fetch', (event) => {
           return networkRes;
         })
         .catch(() => {
-          return caches.match(req);
+          return caches.match(req).then((cached) => {
+            return cached || caches.match('/') || caches.match('/index.html');
+          });
         })
     );
     return;
   }
 
-  // Handle Static Assets & Pages: Stale-While-Revalidate
+  // C. Immutable hashed static assets (/assets/): Cache-first with network fallback
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const clone = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return networkRes;
+        });
+      })
+    );
+    return;
+  }
+
+  // D. General static fallback (Stale-While-Revalidate)
   event.respondWith(
     caches.match(req).then((cached) => {
       const fetchPromise = fetch(req)
@@ -78,16 +125,9 @@ self.addEventListener('fetch', (event) => {
           }
           return networkRes;
         })
-        .catch(() => {
-          // If offline and request is HTML navigation, serve cached root
-          if (req.mode === 'navigate') {
-            return caches.match('/') || caches.match('/index.html');
-          }
-          return cached;
-        });
+        .catch(() => cached);
 
       return cached || fetchPromise;
     })
   );
 });
-

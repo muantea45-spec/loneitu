@@ -91,3 +91,4 @@ db.updatedAt = new Date().toISOString();
 
 fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf8');
 console.log('Successfully updated production_db.json with new Staff Cards schema!');
+

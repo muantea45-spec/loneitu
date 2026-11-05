@@ -7,37 +7,91 @@ const BACKEND_URL = 'https://loneitu.ddvktp.workers.dev/api/db';
 export const onRequestGet: PagesFunction = async (context) => {
   try {
     const env = context.env as any;
+    const reqUrl = new URL(context.request.url);
+    const isMeta = reqUrl.searchParams.get('meta') === '1' || reqUrl.pathname.endsWith('/version');
+    const section = reqUrl.searchParams.get('section');
+
     if (env?.LONEITU_KV) {
+      if (isMeta) {
+        let meta = await env.LONEITU_KV.get('loneitu_global_db_meta', 'json');
+        if (!meta) {
+          const data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+          meta = {
+            updatedAt: data?.updatedAt || new Date().toISOString(),
+            cardCount: data?.aboutData?.customCardsSection?.cards?.length || 0,
+            timestamp: Date.now(),
+          };
+        }
+        return new Response(JSON.stringify({ success: true, meta }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            Pragma: 'no-cache',
+            Expires: '0',
+            'X-Database-Updated-At': meta.updatedAt || '',
+          },
+        });
+      }
+
       const data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
       if (data) {
+        if (section && data[section] !== undefined) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              section,
+              updatedAt: data.updatedAt,
+              data: data[section],
+            }),
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+                Pragma: 'no-cache',
+                Expires: '0',
+                'X-Database-Updated-At': data.updatedAt || '',
+              },
+            }
+          );
+        }
+
         return new Response(JSON.stringify({ success: true, data }), {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-            'Pragma': 'no-cache',
-            'Expires': '0',
+            Pragma: 'no-cache',
+            Expires: '0',
+            'X-Database-Updated-At': data.updatedAt || '',
           },
         });
       }
     }
 
-    const res = await fetch(`${BACKEND_URL}?_t=${Date.now()}`, {
+    // Proxy to dedicated worker with query params preserved
+    const search = reqUrl.search ? `${reqUrl.search}&_t=${Date.now()}` : `?_t=${Date.now()}`;
+    const res = await fetch(`${BACKEND_URL}${search}`, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
+        Pragma: 'no-cache',
       },
     });
     const text = await res.text();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      Pragma: 'no-cache',
+      Expires: '0',
+    };
+    const updatedAt = res.headers.get('x-database-updated-at');
+    if (updatedAt) headers['X-Database-Updated-At'] = updatedAt;
+
     return new Response(text, {
       status: res.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
+      headers,
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }), {
@@ -53,24 +107,42 @@ export const onRequestGet: PagesFunction = async (context) => {
 
 export const onRequestPost: PagesFunction = async (context) => {
   try {
-    const body = await context.request.text();
+    const bodyText = await context.request.text();
     const adminKey = context.request.headers.get('x-admin-key') || '';
     const adminEmail = (context.request.headers.get('x-admin-email') || '').trim().toLowerCase();
     const authHeader = context.request.headers.get('authorization') || '';
 
     const env = context.env as any;
+    let kvSavedLocally = false;
+    let savedUpdatedAt = new Date().toISOString();
+
     if (env?.LONEITU_KV) {
       try {
-        const parsed = JSON.parse(body);
-        await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(parsed));
-        return new Response(JSON.stringify({ success: true, kvSaved: true, data: parsed }), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-            'Pragma': 'no-cache',
-          },
-        });
+        const parsed = JSON.parse(bodyText);
+        savedUpdatedAt = parsed.updatedAt || savedUpdatedAt;
+        let toSave = parsed;
+        if (!parsed.farmers || !Array.isArray(parsed.farmers)) {
+          const current = (await env.LONEITU_KV.get('loneitu_global_db_v1', 'json')) || {};
+          toSave = {
+            ...current,
+            ...parsed,
+            updatedAt: savedUpdatedAt,
+          };
+        } else {
+          toSave.updatedAt = savedUpdatedAt;
+        }
+
+        await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(toSave));
+        await env.LONEITU_KV.put(
+          'loneitu_global_db_meta',
+          JSON.stringify({
+            updatedAt: savedUpdatedAt,
+            timestamp: Date.now(),
+            cardCount: toSave.aboutData?.customCardsSection?.cards?.length || 0,
+            articlesCount: toSave.articles?.length || 0,
+          })
+        );
+        kvSavedLocally = true;
       } catch (kvErr) {
         console.warn('Direct KV put error, falling back to backend URL', kvErr);
       }
@@ -87,7 +159,7 @@ export const onRequestPost: PagesFunction = async (context) => {
     const res = await fetch(`${BACKEND_URL}?_t=${Date.now()}`, {
       method: 'POST',
       headers,
-      body,
+      body: bodyText,
     });
     const text = await res.text();
     return new Response(text, {
@@ -96,7 +168,8 @@ export const onRequestPost: PagesFunction = async (context) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
+        Pragma: 'no-cache',
+        'X-Database-Updated-At': savedUpdatedAt,
       },
     });
   } catch (err: any) {

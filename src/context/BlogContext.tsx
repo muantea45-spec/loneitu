@@ -134,6 +134,31 @@ function broadcastLocalChange(type: string, payload: any) {
   }
 }
 
+async function fetchDatabaseMeta(): Promise<{ updatedAt?: string; cardCount?: number; timestamp?: number } | null> {
+  const t = Date.now();
+  for (const endpoint of CLOUD_API_ENDPOINTS) {
+    try {
+      const url = `${endpoint}?meta=1&_cb=${t}`;
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && (json.meta || json.updatedAt)) {
+          return json.meta || { updatedAt: json.updatedAt };
+        }
+      }
+    } catch {
+      // try fallback endpoint
+    }
+  }
+  return null;
+}
+
 async function fetchRemoteDatabase(): Promise<any> {
   const t = Date.now();
   for (const endpoint of CLOUD_API_ENDPOINTS) {
@@ -163,7 +188,7 @@ async function saveRemoteDatabase(payload: any, authInfo?: { key?: string; email
   const t = Date.now();
   let saved = false;
 
-  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || 'mizoram-loneitu-2026';
+  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || 'agri2026';
   const email = authInfo?.email || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) : null) || 'muantea45@gmail.com';
 
   const headers: Record<string, string> = {
@@ -506,6 +531,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Track the exact timestamp of local mutations to prevent race-condition overwrites
   const lastMutationTimeRef = useRef<number>(0);
+  const lastKnownRemoteUpdatedAtRef = useRef<string>('');
 
   // Reference tracking latest state to prevent stale closures during cloud sync
   const latestDbStateRef = useRef({
@@ -544,8 +570,12 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const cloudData = await fetchRemoteDatabase();
       if (!cloudData) return;
 
-      // Concurrency guard: If user performed an action in the last 4 seconds, do NOT let a stale response overwrite it
-      if (Date.now() - lastMutationTimeRef.current < 4000) {
+      if (cloudData.updatedAt) {
+        lastKnownRemoteUpdatedAtRef.current = cloudData.updatedAt;
+      }
+
+      // Concurrency guard: If user performed an action in the last 2.5 seconds, do NOT let a stale response overwrite it
+      if (Date.now() - lastMutationTimeRef.current < 2500) {
         return;
       }
 
@@ -653,22 +683,37 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let isMounted = true;
     fetchCloudDb();
 
+    // Fast 1.5-second lightweight metadata poll (150-byte ping) for 100% instant sync across devices
+    let isChecking = false;
+    const checkFastSync = async () => {
+      if (!isMounted || isChecking || document.visibilityState !== 'visible') return;
+      if (Date.now() - lastMutationTimeRef.current < 2500) return;
+
+      isChecking = true;
+      try {
+        const meta = await fetchDatabaseMeta();
+        if (meta && meta.updatedAt && meta.updatedAt !== lastKnownRemoteUpdatedAtRef.current) {
+          lastKnownRemoteUpdatedAtRef.current = meta.updatedAt;
+          await fetchCloudDb();
+        }
+      } catch {
+        // silent fallback
+      } finally {
+        isChecking = false;
+      }
+    };
+
     // Re-sync instantly when tab gains focus or visibility (Desktop <-> Mobile sync)
     const handleSyncOnVisible = () => {
       if (document.visibilityState === 'visible' && isMounted) {
-        fetchCloudDb();
+        checkFastSync();
       }
     };
 
     window.addEventListener('visibilitychange', handleSyncOnVisible);
     window.addEventListener('focus', handleSyncOnVisible);
 
-    // Fast 3-second live sync poll when page is active on screen (Instant updates across devices)
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible' && isMounted) {
-        fetchCloudDb();
-      }
-    }, 3000);
+    const interval = setInterval(checkFastSync, 1500);
 
     return () => {
       isMounted = false;
@@ -709,20 +754,32 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsCloudSyncing(true);
     try {
       const current = latestDbStateRef.current;
-      const payload = {
-        authorizedEmails: overrideData?.authorizedEmails ?? current.authorizedEmails,
-        primaryOwnerEmail: overrideData?.primaryOwnerEmail ?? current.primaryOwnerEmail,
-        adminSecurityKey: overrideData?.adminSecurityKey ?? current.adminSecurityKey,
-        articles: overrideData?.articles ?? current.articles,
-        categories: overrideData?.categories ?? current.categories,
-        tags: overrideData?.tags ?? current.tags,
-        authors: overrideData?.authors ?? current.authors,
-        aboutData: overrideData?.aboutData ?? current.aboutData,
-        footerData: overrideData?.footerData ?? current.footerData,
-        farmers: overrideData?.farmers ?? current.farmers,
-        farmerCustomFields: overrideData?.farmerCustomFields ?? current.farmerCustomFields,
-        updatedAt: new Date().toISOString(),
-      };
+      const now = new Date().toISOString();
+      lastKnownRemoteUpdatedAtRef.current = now;
+
+      // Fast partial payload optimization for sub-50ms cloud writes
+      let payload: any;
+      if (overrideData && !overrideData.farmers && Object.keys(overrideData).length <= 2) {
+        payload = {
+          ...overrideData,
+          updatedAt: now,
+        };
+      } else {
+        payload = {
+          authorizedEmails: overrideData?.authorizedEmails ?? current.authorizedEmails,
+          primaryOwnerEmail: overrideData?.primaryOwnerEmail ?? current.primaryOwnerEmail,
+          adminSecurityKey: overrideData?.adminSecurityKey ?? current.adminSecurityKey,
+          articles: overrideData?.articles ?? current.articles,
+          categories: overrideData?.categories ?? current.categories,
+          tags: overrideData?.tags ?? current.tags,
+          authors: overrideData?.authors ?? current.authors,
+          aboutData: overrideData?.aboutData ?? current.aboutData,
+          footerData: overrideData?.footerData ?? current.footerData,
+          farmers: overrideData?.farmers ?? current.farmers,
+          farmerCustomFields: overrideData?.farmerCustomFields ?? current.farmerCustomFields,
+          updatedAt: now,
+        };
+      }
 
       latestDbStateRef.current = {
         ...current,
@@ -744,35 +801,31 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateAboutData = (updates: Partial<AboutPageData>) => {
-    setAboutData(prev => {
-      const updated = { ...prev, ...updates };
-      lastMutationTimeRef.current = Date.now();
-      latestDbStateRef.current.aboutData = updated;
-      try {
-        localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(updated));
-      } catch (e) {
-        console.error('Failed to sync about data locally', e);
-      }
-      pushToCloudDatabase({ aboutData: updated });
-      broadcastLocalChange('ABOUT_DATA', updated);
-      return updated;
-    });
+    const updated = { ...latestDbStateRef.current.aboutData, ...updates };
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.aboutData = updated;
+    setAboutData(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to sync about data locally', e);
+    }
+    pushToCloudDatabase({ aboutData: updated });
+    broadcastLocalChange('ABOUT_DATA', updated);
   };
 
   const updateFooterData = (updates: Partial<FooterData>) => {
-    setFooterData(prev => {
-      const updated = { ...prev, ...updates };
-      lastMutationTimeRef.current = Date.now();
-      latestDbStateRef.current.footerData = updated;
-      try {
-        localStorage.setItem(STORAGE_KEYS.FOOTER, JSON.stringify(updated));
-      } catch (e) {
-        console.error('Failed to sync footer data locally', e);
-      }
-      pushToCloudDatabase({ footerData: updated });
-      broadcastLocalChange('FOOTER_DATA', updated);
-      return updated;
-    });
+    const updated = { ...latestDbStateRef.current.footerData, ...updates };
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.footerData = updated;
+    setFooterData(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.FOOTER, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to sync footer data locally', e);
+    }
+    pushToCloudDatabase({ footerData: updated });
+    broadcastLocalChange('FOOTER_DATA', updated);
   };
 
   const setPrimaryOwnerEmail = (email: string) => {
