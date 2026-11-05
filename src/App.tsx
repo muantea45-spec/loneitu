@@ -6,6 +6,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { SidebarMenu } from './components/layout/SidebarMenu';
 import { SearchModal } from './components/common/SearchModal';
+import { OfflineBanner } from './components/common/OfflineBanner';
 
 // Fast Initial Load: Primary homepage is statically imported
 import { HomePage } from './pages/HomePage';
@@ -134,6 +135,9 @@ const AppLayout: React.FC = () => {
         onClose={() => setIsSidebarOpen(false)}
         onOpenSearch={() => setIsSearchOpen(true)}
       />
+
+      {/* Offline Field Connectivity Monitor */}
+      <OfflineBanner />
     </div>
   );
 };

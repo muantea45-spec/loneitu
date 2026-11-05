@@ -1,0 +1,24 @@
+{
+  "name": "Loneitu (MIZORAM TAN)",
+  "short_name": "Loneitu",
+  "description": "Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#143520",
+  "theme_color": "#143520",
+  "orientation": "portrait-primary",
+  "categories": ["agriculture", "education", "news"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
