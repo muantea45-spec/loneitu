@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 
 export const FarmerManager: React.FC = () => {
   const { 
@@ -431,7 +431,7 @@ export const FarmerManager: React.FC = () => {
               Registry of Farmers
             </h1>
             <p className="text-emerald-100 text-sm mt-1 max-w-xl">
-              Internal admin management system. Presenting profiles in compact Green Card View (10 profiles per page) with PDF/Excel export and backup capabilities.
+              Internal admin management system. Presenting profiles in compact Green Card View (8 profiles per page) with PDF/Excel export and backup capabilities.
             </p>
           </div>
 
@@ -563,7 +563,7 @@ export const FarmerManager: React.FC = () => {
           </div>
           <div>
             <span className="text-xs text-emerald-200 block">Per Page View</span>
-            <p className="text-2xl font-black mt-0.5">10 Profiles</p>
+            <p className="text-2xl font-black mt-0.5">8 Profiles</p>
           </div>
         </div>
       </div>
@@ -770,67 +770,37 @@ export const FarmerManager: React.FC = () => {
                   <div className="h-1.5 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
 
                   <div className="p-4 flex-1 flex flex-col justify-between">
-                    {/* Card Top: Monogram/Avatar, Name & Quick Actions */}
+                    {/* Card Top: Monogram/Avatar & Full Unobstructed Farmer Name */}
                     <div>
-                      <div className="flex items-center justify-between gap-2.5 pb-2.5 border-b border-emerald-100 dark:border-emerald-900/60">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="relative shrink-0">
-                            {farmer.avatar ? (
-                              <img
-                                src={farmer.avatar}
-                                alt={farmer.fullName}
-                                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#256B3A]/30 dark:ring-emerald-400/30 shadow-xs"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-emerald-500/20 shrink-0">
-                                {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
-                              </div>
-                            )}
-                            <div 
-                              className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-slate-900"
-                              title="Verified"
-                            >
-                              <ShieldCheck className="w-2.5 h-2.5 text-[#BFDC28]" />
+                      <div className="flex items-center gap-3 pb-3 border-b border-emerald-100 dark:border-emerald-900/60">
+                        <div className="relative shrink-0">
+                          {farmer.avatar ? (
+                            <img
+                              src={farmer.avatar}
+                              alt={farmer.fullName}
+                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#256B3A]/30 dark:ring-emerald-400/30 shadow-xs"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-emerald-500/20 shrink-0">
+                              {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
                             </div>
-                          </div>
-
-                          <div className="min-w-0">
-                            <h3 
-                              className="text-sm font-black text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors truncate"
-                              title={farmer.fullName}
-                            >
-                              {farmer.fullName}
-                            </h3>
+                          )}
+                          <div 
+                            className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-slate-900"
+                            title="Verified"
+                          >
+                            <ShieldCheck className="w-2.5 h-2.5 text-[#BFDC28]" />
                           </div>
                         </div>
 
-                        {/* Top Action Pills */}
-                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => setSelectedFarmerForDetail(farmer)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-[#256B3A] dark:hover:text-emerald-300 hover:bg-emerald-100/70 dark:hover:bg-emerald-950 transition-colors"
-                            title="View Full Details"
+                        {/* Full width unobstructed name */}
+                        <div className="flex-1 min-w-0">
+                          <h3 
+                            className="text-sm sm:text-base font-black text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors leading-snug line-clamp-2"
+                            title={farmer.fullName}
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenEditModal(farmer)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
-                            title="Edit Fields"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Delete record for ${farmer.fullName}?`)) {
-                                deleteFarmer(farmer.id);
-                              }
-                            }}
-                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
-                            title="Delete Record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            {farmer.fullName}
+                          </h3>
                         </div>
                       </div>
 
@@ -862,13 +832,40 @@ export const FarmerManager: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Card Footer: Summary indicator & click for full details */}
-                    <div className="pt-2 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between text-[11px] font-semibold text-[#256B3A] dark:text-emerald-400">
-                      <span>{extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}</span>
-                      <span className="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-bold">
-                        <span>Click for details</span>
-                        <Eye className="w-3 h-3" />
-                      </span>
+                    {/* Card Footer: Summary Tag & Relocated Action Buttons (View, Edit, Delete) */}
+                    <div className="pt-2.5 mt-2 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between gap-2">
+                      <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 truncate">
+                        {extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}
+                      </div>
+
+                      {/* Action buttons relocated here to prevent crowding the name */}
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setSelectedFarmerForDetail(farmer)}
+                          className="p-1.5 rounded-lg text-emerald-800 dark:text-emerald-300 hover:text-white hover:bg-[#256B3A] bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/80 transition-all shadow-2xs"
+                          title="View Full Profile"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(farmer)}
+                          className="p-1.5 rounded-lg text-blue-700 dark:text-blue-300 hover:text-white hover:bg-blue-600 bg-blue-50 dark:bg-blue-950/80 border border-blue-200/80 dark:border-blue-800/80 transition-all shadow-2xs"
+                          title="Edit Fields"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete record for ${farmer.fullName}?`)) {
+                              deleteFarmer(farmer.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg text-rose-700 dark:text-rose-300 hover:text-white hover:bg-rose-600 bg-rose-50 dark:bg-rose-950/80 border border-rose-200/80 dark:border-rose-800/80 transition-all shadow-2xs"
+                          title="Delete Record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1139,11 +1136,11 @@ export const FarmerManager: React.FC = () => {
         </div>
       )}
 
-      {/* PAGINATION CONTROLS: Display up to 10 profiles per page with Next / Previous & Numbers */}
+      {/* PAGINATION CONTROLS: Display up to 8 profiles per page with Next / Previous & Numbers */}
       {filteredFarmers.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60 shadow-sm">
           <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-            Showing <strong>{(effectivePage - 1) * PAGE_SIZE + 1}</strong> to <strong>{Math.min(effectivePage * PAGE_SIZE, filteredFarmers.length)}</strong> of <strong>{filteredFarmers.length}</strong> farmers (10 per page)
+            Showing <strong>{(effectivePage - 1) * PAGE_SIZE + 1}</strong> to <strong>{Math.min(effectivePage * PAGE_SIZE, filteredFarmers.length)}</strong> of <strong>{filteredFarmers.length}</strong> farmers (8 per page)
           </div>
 
           <div className="flex items-center gap-1.5">
