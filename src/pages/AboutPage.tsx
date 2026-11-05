@@ -7,6 +7,30 @@ import { useBlog } from '../context/BlogContext';
 import { SocialIconsRow } from '../components/common/SocialIcons';
 import { INITIAL_ABOUT_DATA } from '../data/initialData';
 
+function getCardFieldValue(card: any, colId: string, colName: string): string {
+  if (card.columnValues && card.columnValues[colId] !== undefined && card.columnValues[colId] !== '') {
+    return card.columnValues[colId];
+  }
+  const lower = colName.toLowerCase();
+  if (lower.includes('subtitle') || lower.includes('division') || lower.includes('department')) {
+    if (card.subtitle) return card.subtitle;
+  }
+  if (lower.includes('desc') || lower.includes('bio') || lower.includes('narrative') || lower.includes('about')) {
+    if (card.description) return card.description;
+  }
+  if (lower.includes('badge') || lower.includes('status')) {
+    if (card.badge) return card.badge;
+  }
+  if (card.columnValues) {
+    for (const key of Object.keys(card.columnValues)) {
+      if (key.toLowerCase().includes(colId.toLowerCase()) || colId.toLowerCase().includes(key.toLowerCase())) {
+        if (card.columnValues[key]) return card.columnValues[key];
+      }
+    }
+  }
+  return '';
+}
+
 export const AboutPage: React.FC = () => {
   const { aboutData, authors } = useBlog();
   const [cardSearchQuery, setCardSearchQuery] = useState('');
@@ -25,12 +49,13 @@ export const AboutPage: React.FC = () => {
     if (!customCardsSection?.cards) return [];
     if (!cardSearchQuery.trim()) return customCardsSection.cards;
     const q = cardSearchQuery.toLowerCase();
+    const cols = customCardsSection.columns || [];
     return customCardsSection.cards.filter(c => {
       if (c.title?.toLowerCase().includes(q)) return true;
       if (c.subtitle?.toLowerCase().includes(q)) return true;
       if (c.badge?.toLowerCase().includes(q)) return true;
       if (c.description?.toLowerCase().includes(q)) return true;
-      return Object.values(c.columnValues || {}).some(v => v?.toLowerCase().includes(q));
+      return cols.some(col => getCardFieldValue(c, col.id, col.name).toLowerCase().includes(q));
     });
   }, [customCardsSection, cardSearchQuery]);
 
@@ -178,67 +203,44 @@ export const AboutPage: React.FC = () => {
                 {filteredCards.map(card => (
                   <div
                     key={card.id}
-                    className="group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative"
+                    className="group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
                   >
                     {/* Optional Card Image Banner */}
-                    {card.image ? (
-                      <div className="w-full h-44 overflow-hidden bg-[#F6F4EB] relative shrink-0">
+                    {card.image && (
+                      <div className="w-full h-48 sm:h-52 overflow-hidden bg-[#F6F4EB] relative shrink-0">
                         <img
                           src={card.image}
                           alt={card.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
-                        {card.badge && (
-                          <span className="absolute top-3 right-3 px-3 py-1 rounded-full text-[11px] font-bold bg-[#143520]/90 text-[#BFDC28] backdrop-blur-xs shadow-xs border border-white/20">
-                            {card.badge}
-                          </span>
-                        )}
                       </div>
-                    ) : card.badge ? (
-                      <div className="p-6 pb-0 flex justify-end">
-                        <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#EBF1EA] text-[#1E542E] border border-[#256B3A]/20">
-                          {card.badge}
-                        </span>
-                      </div>
-                    ) : null}
+                    )}
 
                     {/* Card Content */}
                     <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                      <div className="space-y-2">
-                        <h4 className="font-serif font-bold text-lg sm:text-xl text-[#143520] leading-snug group-hover:text-[#1E542E] transition-colors">
+                      {/* Card Title (Staff Name) - strictly NO field name label */}
+                      <div>
+                        <h4 className="font-serif font-bold text-xl sm:text-2xl text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight">
                           {card.title}
                         </h4>
-
-                        {card.subtitle && (
-                          <div className="text-xs font-semibold text-[#8F7855] flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#8F7855]/60" />
-                            <span>{card.subtitle}</span>
-                          </div>
-                        )}
-
-                        {card.description && (
-                          <p className="text-xs text-[#54432C] leading-relaxed pt-1 text-justify [text-align:justify]">
-                            {card.description}
-                          </p>
-                        )}
                       </div>
 
-                      {/* Dynamic Columns List */}
+                      {/* All other fields with Field Name and perfectly aligned Values */}
                       {customCardsSection.columns && customCardsSection.columns.length > 0 && (
-                        <div className="pt-3 border-t border-[#F2ECE1] space-y-2">
+                        <div className="pt-3 border-t border-[#EBE6D6] divide-y divide-[#F2ECE1]">
                           {customCardsSection.columns.map(col => {
-                            const val = card.columnValues?.[col.id];
+                            const val = getCardFieldValue(card, col.id, col.name);
                             if (!val || !val.trim()) return null;
                             return (
                               <div
                                 key={col.id}
-                                className="flex items-start justify-between gap-3 text-xs"
+                                className="grid grid-cols-[135px_1fr] sm:grid-cols-[150px_1fr] gap-3 items-start py-2.5 text-xs"
                               >
-                                <span className="text-[10px] font-bold tracking-wider text-[#8F7855] uppercase shrink-0 pt-0.5">
+                                <span className="text-[11px] font-bold tracking-wider text-[#8F7855] uppercase shrink-0 pt-0.5 text-left">
                                   {col.name}:
                                 </span>
-                                <span className="font-semibold text-[#143520] text-right break-words max-w-[65%]">
+                                <span className="font-semibold text-[#143520] text-left break-words leading-relaxed whitespace-pre-line">
                                   {val}
                                 </span>
                               </div>

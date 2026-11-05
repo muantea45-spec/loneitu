@@ -60,20 +60,46 @@ import {
   SocialIconsRow
 } from '../common/SocialIcons';
 
+function getCardFieldValue(card: any, colId: string, colName: string): string {
+  if (card.columnValues && card.columnValues[colId] !== undefined && card.columnValues[colId] !== '') {
+    return card.columnValues[colId];
+  }
+  const lower = colName.toLowerCase();
+  if (lower.includes('subtitle') || lower.includes('division') || lower.includes('department')) {
+    if (card.subtitle) return card.subtitle;
+  }
+  if (lower.includes('desc') || lower.includes('bio') || lower.includes('narrative') || lower.includes('about')) {
+    if (card.description) return card.description;
+  }
+  if (lower.includes('badge') || lower.includes('status')) {
+    if (card.badge) return card.badge;
+  }
+  if (card.columnValues) {
+    for (const key of Object.keys(card.columnValues)) {
+      if (key.toLowerCase().includes(colId.toLowerCase()) || colId.toLowerCase().includes(key.toLowerCase())) {
+        if (card.columnValues[key]) return card.columnValues[key];
+      }
+    }
+  }
+  return '';
+}
+
 export const AboutEditor: React.FC = () => {
   const { aboutData, updateAboutData, isCloudSyncing, uploadImage } = useBlog();
   const { showToast } = useToast();
 
   const initialCardsSection: CustomCardSectionData = aboutData.customCardsSection || INITIAL_ABOUT_DATA.customCardsSection || {
     enabled: true,
-    tag: 'Operational Units & Field Stations',
-    title: 'Our Specialist Units & Field Stations',
-    subtitle: 'Explore our registered agricultural branches, nodal officers, field trial stations, and advisory facilities.',
+    tag: 'Staff & Team Specialists',
+    title: 'Staff & Specialists of the Firm',
+    subtitle: 'The dedicated agronomists, researchers, officers, and field specialists of the firm.',
     columns: [
-      { id: 'col-role', name: 'Role / Specialty', type: 'text' },
-      { id: 'col-location', name: 'Location / District', type: 'text' },
+      { id: 'col-role', name: 'Role / Designation', type: 'text' },
+      { id: 'col-dept', name: 'Subtitle / Division', type: 'text' },
+      { id: 'col-location', name: 'Station / District', type: 'text' },
       { id: 'col-contact', name: 'Contact / Phone', type: 'text' },
       { id: 'col-status', name: 'Status', type: 'badge' },
+      { id: 'col-desc', name: 'Description / Bio', type: 'text' },
     ],
     cards: [],
   };
@@ -138,9 +164,6 @@ export const AboutEditor: React.FC = () => {
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [cardTitle, setCardTitle] = useState('');
-  const [cardSubtitle, setCardSubtitle] = useState('');
-  const [cardBadge, setCardBadge] = useState('');
-  const [cardDescription, setCardDescription] = useState('');
   const [cardImage, setCardImage] = useState('');
   const [cardColumnValues, setCardColumnValues] = useState<Record<string, string>>({});
   const [isCardImageUploading, setIsCardImageUploading] = useState(false);
@@ -163,9 +186,6 @@ export const AboutEditor: React.FC = () => {
   const handleOpenAddCard = () => {
     setEditingCardId(null);
     setCardTitle('');
-    setCardSubtitle('');
-    setCardBadge('');
-    setCardDescription('');
     setCardImage('');
     const initialValues: Record<string, string> = {};
     (currentCardsSection.columns || []).forEach(col => {
@@ -178,20 +198,56 @@ export const AboutEditor: React.FC = () => {
   const handleOpenEditCard = (card: CustomCardItem) => {
     setEditingCardId(card.id);
     setCardTitle(card.title);
-    setCardSubtitle(card.subtitle || '');
-    setCardBadge(card.badge || '');
-    setCardDescription(card.description || '');
     setCardImage(card.image || '');
-    setCardColumnValues({ ...(card.columnValues || {}) });
+    const populatedValues: Record<string, string> = {};
+    (currentCardsSection.columns || []).forEach(col => {
+      populatedValues[col.id] = getCardFieldValue(card, col.id, col.name);
+    });
+    setCardColumnValues(populatedValues);
     setIsCardModalOpen(true);
+  };
+
+  const handleAddFieldFromModal = (name: string) => {
+    if (!name.trim()) return;
+    const newColId = `col-${Date.now()}`;
+    const newCol: CustomCardColumn = {
+      id: newColId,
+      name: name.trim(),
+      type: 'text',
+    };
+    const updatedColumns = [...(currentCardsSection.columns || []), newCol];
+    updateCardsSection({ columns: updatedColumns });
+    setCardColumnValues(prev => ({ ...prev, [newColId]: '' }));
+    showToast(`Added field "${name.trim()}" to cards!`, 'success');
+  };
+
+  const handleRenameFieldInline = (colId: string, currentName: string) => {
+    const nextName = window.prompt('Rename this field to:', currentName);
+    if (!nextName || !nextName.trim() || nextName.trim() === currentName) return;
+    const updatedColumns = (currentCardsSection.columns || []).map(c => 
+      c.id === colId ? { ...c, name: nextName.trim() } : c
+    );
+    updateCardsSection({ columns: updatedColumns });
+    showToast(`Field renamed to "${nextName.trim()}"`, 'success');
   };
 
   const handleSaveCard = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!cardTitle.trim()) {
-      showToast('Please provide a title for the card.', 'error');
+      showToast('Please provide a name/title for the card.', 'error');
       return;
     }
+
+    let sub = '';
+    let badge = '';
+    let desc = '';
+    (currentCardsSection.columns || []).forEach(col => {
+      const lower = col.name.toLowerCase();
+      const val = cardColumnValues[col.id] || '';
+      if (lower.includes('subtitle') || lower.includes('division') || lower.includes('department')) sub = val;
+      if (lower.includes('badge') || lower.includes('status')) badge = val;
+      if (lower.includes('desc') || lower.includes('bio') || lower.includes('narrative')) desc = val;
+    });
 
     const cards = [...(currentCardsSection.cards || [])];
     if (editingCardId) {
@@ -200,11 +256,11 @@ export const AboutEditor: React.FC = () => {
         cards[idx] = {
           ...cards[idx],
           title: cardTitle.trim(),
-          subtitle: cardSubtitle.trim(),
-          badge: cardBadge.trim(),
-          description: cardDescription.trim(),
+          subtitle: sub.trim(),
+          badge: badge.trim(),
+          description: desc.trim(),
           image: cardImage.trim(),
-          columnValues: cardColumnValues,
+          columnValues: { ...cardColumnValues },
         };
       }
       showToast(`Card "${cardTitle}" updated!`, 'success');
@@ -212,11 +268,11 @@ export const AboutEditor: React.FC = () => {
       const newCard: CustomCardItem = {
         id: `card-${Date.now()}`,
         title: cardTitle.trim(),
-        subtitle: cardSubtitle.trim(),
-        badge: cardBadge.trim(),
-        description: cardDescription.trim(),
+        subtitle: sub.trim(),
+        badge: badge.trim(),
+        description: desc.trim(),
         image: cardImage.trim(),
-        columnValues: cardColumnValues,
+        columnValues: { ...cardColumnValues },
       };
       cards.push(newCard);
       showToast(`New card "${cardTitle}" added!`, 'success');
@@ -1598,56 +1654,32 @@ ${rowsHtml}
                     <div>
                       {/* Image Thumbnail */}
                       {card.image && (
-                        <div className="w-full h-32 overflow-hidden bg-[#F6F4EB] relative">
+                        <div className="w-full h-36 overflow-hidden bg-[#F6F4EB] relative">
                           <img
                             src={card.image}
                             alt={card.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover object-top"
                           />
-                          {card.badge && (
-                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#143520]/80 text-[#BFDC28] backdrop-blur-xs">
-                              {card.badge}
-                            </span>
-                          )}
                         </div>
                       )}
 
-                      <div className="p-4 space-y-2">
-                        {!card.image && card.badge && (
-                          <div className="flex justify-end">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF1EA] text-[#1E542E]">
-                              {card.badge}
-                            </span>
-                          </div>
-                        )}
-
+                      <div className="p-4 space-y-3">
                         <div>
                           <h4 className="font-serif font-bold text-base text-[#143520] leading-snug">
                             {card.title}
                           </h4>
-                          {card.subtitle && (
-                            <div className="text-[11px] font-semibold text-[#8F7855] mt-0.5">
-                              {card.subtitle}
-                            </div>
-                          )}
                         </div>
 
-                        {card.description && (
-                          <p className="text-xs text-[#54432C] line-clamp-2 leading-relaxed">
-                            {card.description}
-                          </p>
-                        )}
-
-                        {/* Column values */}
+                        {/* All fields aligned with Field Name and Value */}
                         {currentCardsSection.columns && currentCardsSection.columns.length > 0 && (
-                          <div className="pt-2 border-t border-[#F2ECE1] space-y-1">
+                          <div className="pt-2 border-t border-[#EBE6D6] divide-y divide-[#F2ECE1]">
                             {currentCardsSection.columns.map(col => {
-                              const v = card.columnValues?.[col.id];
+                              const v = getCardFieldValue(card, col.id, col.name);
                               if (!v) return null;
                               return (
-                                <div key={col.id} className="flex items-center justify-between text-[11px] gap-2">
-                                  <span className="text-[#8F7855] font-semibold shrink-0">{col.name}:</span>
-                                  <span className="text-[#143520] font-bold truncate">{v}</span>
+                                <div key={col.id} className="grid grid-cols-[115px_1fr] gap-2 py-1.5 text-[11px] items-start">
+                                  <span className="text-[#8F7855] font-bold uppercase tracking-wider shrink-0 text-left">{col.name}:</span>
+                                  <span className="text-[#143520] font-semibold text-left break-words">{v}</span>
                                 </div>
                               );
                             })}
@@ -2307,52 +2339,28 @@ ${rowsHtml}
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                    Card Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={cardTitle}
-                    onChange={e => setCardTitle(e.target.value)}
-                    placeholder="e.g. Champhai Agro-Tech & Soil Lab"
-                    className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                    Subtitle / Division (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={cardSubtitle}
-                    onChange={e => setCardSubtitle(e.target.value)}
-                    placeholder="e.g. Eastern Agricultural Division"
-                    className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                    Status Badge (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={cardBadge}
-                    onChange={e => setCardBadge(e.target.value)}
-                    placeholder="e.g. Active Station, Field Lab"
-                    className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                  />
-                </div>
+              {/* Card Title (Staff Name) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
+                  Card Title / Staff Name * (Main Heading on Card)
+                </label>
+                <input
+                  type="text"
+                  value={cardTitle}
+                  onChange={e => setCardTitle(e.target.value)}
+                  placeholder="e.g. Dr. C. Lalremruata"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                  required
+                />
+                <p className="text-[10px] text-[#8F7855] mt-1">
+                  Note: Card Title is displayed as the primary heading at the top of the card without a field name label.
+                </p>
               </div>
 
               {/* Photo Upload or Embed */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                  Card Photo / Banner Image (Optional)
+                  Card Photo / Avatar (Optional)
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -2397,48 +2405,107 @@ ${rowsHtml}
                 )}
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                  Description / Narrative (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  value={cardDescription}
-                  onChange={e => setCardDescription(e.target.value)}
-                  placeholder="Brief summary of activities, facilities, or scope..."
-                  className="w-full px-3.5 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                />
-              </div>
-
-              {/* Dynamic Columns Data Entry */}
-              {currentCardsSection.columns && currentCardsSection.columns.length > 0 && (
-                <div className="p-4 bg-[#FBFBF8] rounded-2xl border border-[#DDD4BC] space-y-3">
+              {/* Dynamic Card Fields (All with editable names, add field option, and aligned inputs) */}
+              <div className="p-4 bg-[#FBFBF8] rounded-2xl border border-[#DDD4BC] space-y-4">
+                <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-2">
                   <div className="text-xs font-bold uppercase tracking-wider text-[#256B3A] flex items-center gap-1.5">
                     <Columns className="w-3.5 h-3.5" />
-                    <span>Dynamic Column Values for this Card</span>
+                    <span>Card Fields (Names displayed in Live Card)</span>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {currentCardsSection.columns.map(col => (
-                      <div key={col.id}>
-                        <label className="block text-[11px] font-bold text-[#6F5B3C] mb-1">
-                          {col.name}
-                        </label>
-                        <input
-                          type="text"
-                          value={cardColumnValues[col.id] || ''}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setCardColumnValues(prev => ({ ...prev, [col.id]: val }));
-                          }}
-                          placeholder={`Enter ${col.name}...`}
-                          className="w-full px-3 py-2 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = window.prompt('Enter new field name (e.g. Qualification, Email, Experience):');
+                      if (name) handleAddFieldFromModal(name);
+                    }}
+                    className="text-xs font-bold text-[#256B3A] hover:text-[#143520] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Field</span>
+                  </button>
                 </div>
-              )}
+
+                <div className="space-y-3.5">
+                  {currentCardsSection.columns && currentCardsSection.columns.length > 0 ? (
+                    currentCardsSection.columns.map(col => {
+                      const isLong = col.name.toLowerCase().includes('desc') || 
+                                     col.name.toLowerCase().includes('bio') || 
+                                     col.name.toLowerCase().includes('narrative') || 
+                                     col.name.toLowerCase().includes('about');
+                      return (
+                        <div key={col.id} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold uppercase tracking-wider text-[#6F5B3C] flex items-center gap-1.5">
+                              <span>{col.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRenameFieldInline(col.id, col.name)}
+                                className="text-[#8F7855] hover:text-[#143520] p-1 rounded hover:bg-[#F6F4EB] cursor-pointer"
+                                title="Rename this field label"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                              </button>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteColumn(col.id, col.name)}
+                              className="text-[10px] text-red-500 hover:text-red-700 hover:underline cursor-pointer"
+                              title="Delete this field from all cards"
+                            >
+                              Remove field
+                            </button>
+                          </div>
+
+                          {isLong ? (
+                            <textarea
+                              rows={3}
+                              value={cardColumnValues[col.id] || ''}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setCardColumnValues(prev => ({ ...prev, [col.id]: val }));
+                              }}
+                              placeholder={`Enter ${col.name}...`}
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={cardColumnValues[col.id] || ''}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setCardColumnValues(prev => ({ ...prev, [col.id]: val }));
+                              }}
+                              placeholder={`Enter ${col.name}...`}
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                            />
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-xs text-[#8F7855] italic py-2">
+                      No fields configured yet. Click "+ Add Field" above to add fields like Role, Division, Description, or Phone.
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-[#EBE6D6] flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = window.prompt('Enter new field name (e.g. Qualification, Email, Experience):');
+                      if (name) handleAddFieldFromModal(name);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Another Field to this Card</span>
+                  </button>
+                  <span className="text-[11px] text-[#8F7855]">
+                    Fields added here appear on all cards and the live page.
+                  </span>
+                </div>
+              </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#EBE6D6]">
                 <button
