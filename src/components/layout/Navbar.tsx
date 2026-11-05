@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Menu, Sun } from 'lucide-react';
-import { useSunlightMode } from '../../hooks/useSunlightMode';
+import { Search, Menu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -14,7 +13,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSidebarMenu,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { isSunlightMode, toggleSunlightMode } = useSunlightMode();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,23 +51,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Icons & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Outdoor Sunlight Mode (Ni Én Mode) for High-Glare Field Reading */}
-          <button
-            onClick={toggleSunlightMode}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-bold rounded-xl border transition-all duration-200 cursor-pointer shadow-2xs ${
-              isSunlightMode
-                ? 'bg-[#143520] text-white border-[#143520] ring-2 ring-[#256B3A]/30'
-                : 'text-[#54432C] bg-[#F6F4EB] hover:bg-[#EBE6D6] border-[#DDD4BC]'
-            }`}
-            title={isSunlightMode ? 'Ni Én Mode: HMAN MEK A NI (Switch to Normal)' : 'Ni Én Mode: Outdoor Sunlight Contrast Mode'}
-            aria-label="Toggle Outdoor Sunlight Contrast Mode"
-          >
-            <Sun className={`w-4 h-4 shrink-0 transition-transform ${isSunlightMode ? 'text-[#BFDC28] rotate-45 scale-110' : 'text-[#C98A2C]'}`} />
-            <span className="text-[11px] tracking-wide">
-              {isSunlightMode ? 'Ni Én: ON' : 'Ni Én'}
-            </span>
-          </button>
-
           {/* Search Trigger */}
           <button
             onClick={onOpenSearch}

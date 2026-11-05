@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar, Sun } from 'lucide-react';
+import { X, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
-import { useSunlightMode } from '../../hooks/useSunlightMode';
 import { SocialIconsRow } from '../common/SocialIcons';
 
 interface SidebarMenuProps {
@@ -18,7 +17,6 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   onOpenSearch,
 }) => {
   const { categories, tags, articles, aboutData } = useBlog();
-  const { isSunlightMode, toggleSunlightMode } = useSunlightMode();
   const location = useLocation();
 
   if (!isOpen) return null;
@@ -52,7 +50,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             </div>
 
             {/* Quick Actions Bar */}
-            <div className="p-4 bg-[#F6F4EB] border-b border-[#EBE6D6] space-y-2">
+            <div className="p-4 bg-[#F6F4EB] border-b border-[#EBE6D6]">
               <button
                 onClick={() => {
                   onClose();
@@ -62,25 +60,6 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               >
                 <Search className="w-4 h-4 text-[#256B3A]" />
                 <span>Zawnna (Search Articles)</span>
-              </button>
-
-              <button
-                onClick={toggleSunlightMode}
-                className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                  isSunlightMode
-                    ? 'bg-[#143520] text-white border-[#143520]'
-                    : 'bg-white text-[#13341D] hover:bg-[#EBE6D6] border-[#DDD4BC]'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Sun className={`w-4 h-4 ${isSunlightMode ? 'text-[#BFDC28]' : 'text-[#C98A2C]'}`} />
-                  <span>Ni Én Mode (Sunlight Contrast)</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                  isSunlightMode ? 'bg-[#BFDC28] text-[#143520]' : 'bg-[#EBF1EA] text-[#256B3A]'
-                }`}>
-                  {isSunlightMode ? 'Active' : 'Turn On'}
-                </span>
               </button>
             </div>
 
