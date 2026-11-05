@@ -8,18 +8,11 @@ export interface ParseResult {
   detectedHeaders: string[];
 }
 
-const DEFAULT_AVATARS = [
-  'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400'
-];
-
 /**
  * Parses an Excel (.xlsx, .xls) or CSV file into dynamic FarmerRecord objects.
  * Only the exact columns present in the uploaded spreadsheet are saved.
+ * Avatars are left blank unless a specific valid image URL is in the spreadsheet,
+ * requiring profiles to be uploaded manually.
  */
 export async function parseExcelToFarmers(file: File): Promise<ParseResult> {
   const buffer = await file.arrayBuffer();
@@ -102,7 +95,8 @@ export async function parseExcelToFarmers(file: File): Promise<ParseResult> {
     }
 
     const customAvatar = avatarHeaderIndex !== -1 && row[avatarHeaderIndex] ? String(row[avatarHeaderIndex]).trim() : '';
-    const avatar = customAvatar || DEFAULT_AVATARS[records.length % DEFAULT_AVATARS.length];
+    // Wipe fake/stock avatars: only keep if explicitly provided non-unsplash URL
+    const avatar = customAvatar && !customAvatar.includes('unsplash.com') ? customAvatar : '';
 
     records.push({
       id: `farmer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,

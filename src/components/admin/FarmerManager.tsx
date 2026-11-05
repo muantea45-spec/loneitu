@@ -128,6 +128,13 @@ export const FarmerManager: React.FC = () => {
     ])
   ).filter(c => Boolean(c) && !['name', 'farmer name', 'full name', 'hming', 'avatar', 'photo'].includes(c.toLowerCase().trim()));
 
+  // Determine summary columns to show on the card: only up to Contact No.
+  const contactIdx = allColumns.findIndex(c => /contact|phone|mobile|call|ph/i.test(c));
+  const summaryColumns = contactIdx !== -1 
+    ? allColumns.slice(0, contactIdx + 1)
+    : allColumns.slice(0, Math.min(allColumns.length, 3));
+  const extraColumnsCount = Math.max(0, allColumns.length - summaryColumns.length);
+
   // Reset page to 1 when search query changes
   useEffect(() => {
     setCurrentPage(1);
@@ -161,7 +168,7 @@ export const FarmerManager: React.FC = () => {
 
     setEditingFarmer({
       fullName: '',
-      avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
+      avatar: '',
       data: initialData,
       columns: allColumns
     });
@@ -173,6 +180,7 @@ export const FarmerManager: React.FC = () => {
   const handleOpenEditModal = (farmer: FarmerRecord) => {
     setEditingFarmer({
       ...farmer,
+      avatar: farmer.avatar && !farmer.avatar.includes('unsplash') ? farmer.avatar : '',
       data: { ...(farmer.data || {}) },
       columns: [...(farmer.columns || allColumns)]
     });
@@ -206,6 +214,7 @@ export const FarmerManager: React.FC = () => {
       try {
         const uploadedUrl = await uploadImage(dataUrl, `farmer-avatar-${Date.now()}`);
         setEditingFarmer(prev => (prev ? { ...prev, avatar: uploadedUrl } : null));
+        setStatusFeedback({ type: 'success', message: 'Profile photo uploaded successfully' });
       } catch {
         setEditingFarmer(prev => (prev ? { ...prev, avatar: dataUrl } : null));
       }
@@ -373,7 +382,6 @@ export const FarmerManager: React.FC = () => {
     if (!pendingRestore) return;
 
     if (restoreMode === 'replace') {
-      // Overwrite all farmers with backup
       try {
         localStorage.setItem('loneitu_mizo_farmers_v2', JSON.stringify(pendingRestore.farmers));
         if (pendingRestore.farmerCustomFields) {
@@ -384,10 +392,8 @@ export const FarmerManager: React.FC = () => {
         farmers: pendingRestore.farmers,
         farmerCustomFields: pendingRestore.farmerCustomFields || []
       });
-      // Also update local state by wiping and re-adding or triggering reload
       window.location.reload();
     } else {
-      // Merge with existing
       batchImportFarmers(pendingRestore.farmers);
       setStatusFeedback({ type: 'success', message: `Merged ${pendingRestore.farmers.length} backup records into registry.` });
     }
@@ -425,7 +431,7 @@ export const FarmerManager: React.FC = () => {
               Registry of Farmers
             </h1>
             <p className="text-emerald-100 text-sm mt-1 max-w-xl">
-              Internal admin management system. Presenting profiles in Green Card View (10 profiles per page) with full column editing, PDF/Excel export, and backup/restore.
+              Internal admin management system. Presenting profiles in compact Green Card View (10 profiles per page) with PDF/Excel export and backup capabilities.
             </p>
           </div>
 
@@ -557,7 +563,7 @@ export const FarmerManager: React.FC = () => {
           </div>
           <div>
             <span className="text-xs text-emerald-200 block">Per Page View</span>
-            <p className="text-2xl font-black mt-0.5">10 Cards</p>
+            <p className="text-2xl font-black mt-0.5">10 Profiles</p>
           </div>
         </div>
       </div>
@@ -617,7 +623,7 @@ export const FarmerManager: React.FC = () => {
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Green Cards</span>
+              <span>Cards</span>
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -645,24 +651,34 @@ export const FarmerManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Editable Column Headers Banner */}
+      {/* ACTIVE REGISTRY COLUMNS BOX: Well Arranged & Beautifully Readable */}
       {allColumns.length > 0 && (
-        <div className="bg-emerald-50/60 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200/60 dark:border-emerald-900/40">
-          <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#256B3A] dark:text-emerald-300 flex items-center gap-1.5">
-              <Columns className="w-3.5 h-3.5" />
-              <span>Active Registry Columns ({allColumns.length}):</span>
-            </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              Double-click or click pencil to rename column header globally
-            </span>
+        <div className="bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] rounded-3xl p-5 border-2 border-emerald-300 dark:border-emerald-800 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#256B3A] text-white flex items-center justify-center shadow-xs shrink-0">
+                <Columns className="w-4 h-4 text-[#BFDC28]" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-[#143520] dark:text-emerald-300">
+                  Active Registry Columns ({allColumns.length})
+                </h3>
+                <p className="text-[11px] text-[#1E542E] dark:text-emerald-200/90 font-medium">
+                  Columns dynamically populated from your spreadsheet and manual additions
+                </p>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#EBF1EA] dark:bg-emerald-950/80 text-[#143520] dark:text-emerald-300 border border-[#B7CEB4] dark:border-emerald-800 shadow-2xs self-start sm:self-auto">
+              <span>💡 Double-click or click pencil to rename header globally</span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {allColumns.map(col => (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {allColumns.map((col, idx) => (
               <div 
                 key={col}
-                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 text-xs shadow-2xs"
+                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-800 text-xs shadow-2xs hover:border-[#256B3A] dark:hover:border-emerald-400 transition-all"
               >
                 {editingHeaderCol?.oldName === col ? (
                   <div className="flex items-center gap-1">
@@ -692,30 +708,36 @@ export const FarmerManager: React.FC = () => {
                   </div>
                 ) : (
                   <>
+                    <span className="w-4 h-4 rounded-full bg-[#143520] text-emerald-200 text-[9px] font-black flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
                     <span 
                       onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
-                      className="font-bold text-[#143520] dark:text-emerald-200 cursor-pointer"
+                      className="font-bold text-[#143520] dark:text-emerald-100 cursor-pointer hover:underline"
+                      title="Double-click to rename"
                     >
                       {col}
                     </span>
-                    <button
-                      onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
-                      className="p-1 text-slate-400 hover:text-blue-600 rounded"
-                      title={`Rename column "${col}"`}
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Delete column "${col}" across all farmer records?`)) {
-                          deleteColumn(col);
-                        }
-                      }}
-                      className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                      title={`Delete column "${col}"`}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-0.5 ml-1">
+                      <button
+                        onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                        className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
+                        title={`Rename column "${col}"`}
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete column "${col}" across all farmer records?`)) {
+                            deleteColumn(col);
+                          }
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
+                        title={`Delete column "${col}"`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -724,7 +746,7 @@ export const FarmerManager: React.FC = () => {
         </div>
       )}
 
-      {/* MAIN VIEW CONTENT: GREEN CARDS (DEFAULT) */}
+      {/* MAIN VIEW CONTENT: COMPACT GREEN CARDS (DEFAULT) */}
       {viewMode === 'card' ? (
         <div className="space-y-6">
           {paginatedFarmers.length === 0 ? (
@@ -737,70 +759,66 @@ export const FarmerManager: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
               {paginatedFarmers.map(farmer => (
                 <div
                   key={farmer.id}
-                  className="group relative flex flex-col justify-between bg-gradient-to-b from-[#F3F8F4] to-white dark:from-[#0d2616] dark:to-[#0a1a0f] rounded-3xl border-2 border-emerald-200/90 dark:border-emerald-800/80 hover:border-[#256B3A] dark:hover:border-emerald-400 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                  onClick={() => setSelectedFarmerForDetail(farmer)}
+                  className="group relative flex flex-col justify-between bg-gradient-to-b from-[#F3F8F4] to-white dark:from-[#0d2616] dark:to-[#0a1a0f] rounded-2xl border-2 border-emerald-200/90 dark:border-emerald-800/80 hover:border-[#256B3A] dark:hover:border-emerald-400 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer"
                 >
                   {/* Decorative Forest Green Accent Top Strip */}
-                  <div className="h-2.5 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
+                  <div className="h-1.5 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
 
-                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-                    {/* Card Top: Circular Avatar, Name & Actions */}
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    {/* Card Top: Monogram/Avatar, Name & Quick Actions */}
                     <div>
-                      <div className="flex items-start justify-between gap-3 pb-4 border-b border-emerald-100 dark:border-emerald-900/60">
-                        <div className="flex items-center gap-3.5">
-                          <div 
-                            className="relative cursor-pointer shrink-0"
-                            onClick={() => setSelectedFarmerForDetail(farmer)}
-                          >
-                            <img
-                              src={farmer.avatar}
-                              alt={farmer.fullName}
-                              className="w-14 h-14 rounded-full object-cover ring-3 ring-[#256B3A]/30 dark:ring-emerald-400/30 shadow-md group-hover:scale-105 transition-transform"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
-                              }}
-                            />
+                      <div className="flex items-center justify-between gap-2.5 pb-2.5 border-b border-emerald-100 dark:border-emerald-900/60">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative shrink-0">
+                            {farmer.avatar ? (
+                              <img
+                                src={farmer.avatar}
+                                alt={farmer.fullName}
+                                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#256B3A]/30 dark:ring-emerald-400/30 shadow-xs"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-emerald-500/20 shrink-0">
+                                {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
+                              </div>
+                            )}
                             <div 
-                              className="absolute -bottom-1 -right-1 bg-[#256B3A] text-white p-1 rounded-full shadow-xs ring-2 ring-white dark:ring-slate-900"
-                              title="Verified Record"
+                              className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-slate-900"
+                              title="Verified"
                             >
-                              <ShieldCheck className="w-3 h-3 text-[#BFDC28]" />
+                              <ShieldCheck className="w-2.5 h-2.5 text-[#BFDC28]" />
                             </div>
                           </div>
 
-                          <div>
+                          <div className="min-w-0">
                             <h3 
-                              onClick={() => setSelectedFarmerForDetail(farmer)}
-                              className="text-base font-black text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors line-clamp-1 cursor-pointer"
+                              className="text-sm font-black text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors truncate"
                               title={farmer.fullName}
                             >
                               {farmer.fullName}
                             </h3>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF1EA] dark:bg-emerald-950/80 text-[#143520] dark:text-emerald-300 border border-[#B7CEB4] dark:border-emerald-800/60 mt-1">
-                              Farmer Record
-                            </span>
                           </div>
                         </div>
 
                         {/* Top Action Pills */}
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => setSelectedFarmerForDetail(farmer)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-[#256B3A] dark:text-slate-400 dark:hover:text-emerald-300 hover:bg-emerald-100/70 dark:hover:bg-emerald-950 transition-colors"
+                            className="p-1 rounded-lg text-slate-400 hover:text-[#256B3A] dark:hover:text-emerald-300 hover:bg-emerald-100/70 dark:hover:bg-emerald-950 transition-colors"
                             title="View Full Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleOpenEditModal(farmer)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
-                            title="Edit Fields & Values"
+                            className="p-1 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                            title="Edit Fields"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => {
@@ -808,61 +826,49 @@ export const FarmerManager: React.FC = () => {
                                 deleteFarmer(farmer.id);
                               }
                             }}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
                             title="Delete Record"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
 
-                      {/* Card Body: Dynamic Columns Key-Value Grid in Green Aesthetic */}
-                      <div className="py-4">
-                        {allColumns.length === 0 ? (
-                          <p className="text-xs text-slate-400 italic text-center py-4">No additional columns uploaded</p>
+                      {/* Card Body: Summary Attributes Displayed ONLY UP TO CONTACT NO */}
+                      <div className="py-2.5 space-y-1.5">
+                        {summaryColumns.length === 0 ? (
+                          <p className="text-[11px] text-slate-400 italic text-center py-1">No fields uploaded</p>
                         ) : (
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            {allColumns.map(col => {
-                              const val = farmer.data?.[col];
-                              return (
-                                <div
-                                  key={col}
-                                  className="p-2.5 rounded-2xl bg-white/90 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs flex flex-col justify-between"
+                          summaryColumns.map(col => {
+                            const val = farmer.data?.[col];
+                            return (
+                              <div 
+                                key={col}
+                                className="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-white/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60"
+                              >
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#256B3A] dark:text-emerald-400 truncate max-w-[42%]">
+                                  {col}:
+                                </span>
+                                <span 
+                                  className="font-bold text-slate-800 dark:text-slate-100 truncate text-[11px] max-w-[58%] text-right" 
+                                  title={String(val ?? '')}
                                 >
-                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#256B3A] dark:text-emerald-400 truncate mb-0.5">
-                                    {col}
-                                  </span>
-                                  <span 
-                                    className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs" 
-                                    title={String(val ?? '')}
-                                  >
-                                    {val !== undefined && val !== '' ? (
-                                      String(val)
-                                    ) : (
-                                      <span className="text-slate-400 font-normal italic">-</span>
-                                    )}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                  {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
+                                </span>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
                     </div>
 
-                    {/* Card Footer */}
-                    <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between text-xs">
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                        {Object.keys(farmer.data || {}).length} Fields Uploaded
+                    {/* Card Footer: Summary indicator & click for full details */}
+                    <div className="pt-2 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between text-[11px] font-semibold text-[#256B3A] dark:text-emerald-400">
+                      <span>{extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}</span>
+                      <span className="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-bold">
+                        <span>Click for details</span>
+                        <Eye className="w-3 h-3" />
                       </span>
-
-                      <button
-                        onClick={() => handleOpenEditModal(farmer)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-[#256B3A] text-white hover:bg-[#1b4d2a] transition-all shadow-xs"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit Profile</span>
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -871,15 +877,18 @@ export const FarmerManager: React.FC = () => {
           )}
         </div>
       ) : (
-        /* TABLE VIEW (ALTERNATIVE SPREADSHEET VIEW) */
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        /* TABLE VIEW (MATCHING GREEN CARDS COLOR SCHEME) */
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-emerald-300 dark:border-emerald-800 shadow-md overflow-hidden">
+          {/* Top Green Accent Strip */}
+          <div className="h-2 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#EBF1EA] dark:bg-slate-800 text-[#143520] dark:text-slate-400 font-bold uppercase tracking-wider border-b border-emerald-200 dark:border-slate-800">
+              <thead className="bg-[#143520] text-emerald-100 font-bold uppercase tracking-wider border-b border-emerald-800 text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Farmer Profile</th>
+                  <th className="py-3 px-4 whitespace-nowrap min-w-[180px]">Farmer Profile</th>
                   {allColumns.map(col => (
-                    <th key={col} className="py-3 px-4 whitespace-nowrap group/header relative min-w-[140px]">
+                    <th key={col} className="py-3 px-4 whitespace-nowrap group/header relative min-w-[130px]">
                       {editingHeaderCol?.oldName === col ? (
                         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -891,21 +900,21 @@ export const FarmerManager: React.FC = () => {
                               if (e.key === 'Enter') handleSaveHeaderRename();
                               if (e.key === 'Escape') setEditingHeaderCol(null);
                             }}
-                            className="px-2 py-1 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-36 shadow-sm"
+                            className="px-2 py-0.5 text-xs font-bold rounded-lg border border-[#256B3A] bg-white text-slate-900 outline-none w-32 shadow-sm"
                           />
                           <button
                             onClick={handleSaveHeaderRename}
                             className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
-                            title="Save column name"
+                            title="Save"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => setEditingHeaderCol(null)}
-                            className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                            className="p-1 rounded bg-slate-200 text-slate-600"
                             title="Cancel"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
                       ) : (
@@ -913,14 +922,14 @@ export const FarmerManager: React.FC = () => {
                           <span 
                             onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
                             title="Double click to rename column"
-                            className="cursor-pointer hover:text-[#256B3A] transition-colors"
+                            className="cursor-pointer hover:text-white transition-colors"
                           >
                             {col}
                           </span>
                           <div className="opacity-0 group-hover/header:opacity-100 flex items-center gap-1 transition-opacity">
                             <button
                               onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
-                              className="p-1 text-slate-400 hover:text-blue-600 rounded"
+                              className="p-1 text-emerald-300 hover:text-white rounded"
                               title={`Rename column "${col}"`}
                             >
                               <Pencil className="w-3 h-3" />
@@ -931,7 +940,7 @@ export const FarmerManager: React.FC = () => {
                                   deleteColumn(col);
                                 }
                               }}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                              className="p-1 text-emerald-300 hover:text-rose-400 rounded"
                               title={`Delete column "${col}"`}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -941,10 +950,10 @@ export const FarmerManager: React.FC = () => {
                       )}
                     </th>
                   ))}
-                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Actions</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-emerald-100 dark:divide-emerald-900/60">
                 {paginatedFarmers.length === 0 ? (
                   <tr>
                     <td colSpan={Math.max(allColumns.length + 2, 3)} className="py-12 text-center text-slate-400">
@@ -954,24 +963,33 @@ export const FarmerManager: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedFarmers.map(farmer => (
+                  paginatedFarmers.map((farmer, idx) => (
                     <tr 
                       key={farmer.id}
-                      className="hover:bg-emerald-50/40 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                      className={`transition-colors cursor-pointer ${
+                        idx % 2 === 0 
+                          ? 'bg-white dark:bg-[#0c2214]/40 hover:bg-emerald-50 dark:hover:bg-[#143520]' 
+                          : 'bg-[#F4F9F5] dark:bg-[#0f2918]/60 hover:bg-emerald-100/70 dark:hover:bg-[#143520]'
+                      }`}
                       onClick={() => setSelectedFarmerForDetail(farmer)}
                     >
-                      <td className="py-3.5 px-4 whitespace-nowrap group/cell" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={farmer.avatar}
-                            alt={farmer.fullName}
-                            onClick={() => setSelectedFarmerForDetail(farmer)}
-                            className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/20 cursor-pointer hover:ring-[#256B3A] transition-all shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
-                            }}
-                          />
+                      <td className="py-3 px-4 whitespace-nowrap group/cell" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2.5">
+                          {farmer.avatar ? (
+                            <img
+                              src={farmer.avatar}
+                              alt={farmer.fullName}
+                              onClick={() => setSelectedFarmerForDetail(farmer)}
+                              className="w-8 h-8 rounded-full object-cover ring-2 ring-[#256B3A]/30 shrink-0"
+                            />
+                          ) : (
+                            <div 
+                              onClick={() => setSelectedFarmerForDetail(farmer)}
+                              className="w-8 h-8 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-xs flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+                            >
+                              {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
+                            </div>
+                          )}
 
                           {editingCell?.farmerId === farmer.id && editingCell?.column === '__fullName__' ? (
                             <div className="flex items-center gap-1">
@@ -984,40 +1002,40 @@ export const FarmerManager: React.FC = () => {
                                   if (e.key === 'Enter') handleSaveCellEdit();
                                   if (e.key === 'Escape') setEditingCell(null);
                                 }}
-                                className="px-2 py-1 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-40 shadow-sm"
+                                className="px-2 py-0.5 text-xs font-bold rounded-lg border border-[#256B3A] bg-white text-slate-900 outline-none w-36 shadow-sm"
                               />
                               <button
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={handleSaveCellEdit}
                                 className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
                               >
-                                <Check className="w-3.5 h-3.5" />
+                                <Check className="w-3 h-3" />
                               </button>
                               <button
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => setEditingCell(null)}
-                                className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                className="p-1 rounded bg-slate-200 text-slate-600"
                               >
-                                <X className="w-3.5 h-3.5" />
+                                <X className="w-3 h-3" />
                               </button>
                             </div>
                           ) : (
                             <div 
-                              className="flex items-center gap-2"
+                              className="flex items-center gap-1.5"
                               onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: '__fullName__', value: farmer.fullName })}
                             >
                               <span 
                                 onClick={() => setSelectedFarmerForDetail(farmer)}
-                                className="font-bold text-slate-900 dark:text-white hover:text-[#256B3A] dark:hover:text-emerald-400 transition-colors"
+                                className="font-bold text-[#143520] dark:text-emerald-100 hover:text-[#256B3A] transition-colors"
                               >
                                 {farmer.fullName}
                               </span>
                               <button
                                 onClick={() => setEditingCell({ farmerId: farmer.id, column: '__fullName__', value: farmer.fullName })}
-                                className="opacity-0 group-hover/cell:opacity-100 p-1 text-slate-400 hover:text-blue-600 rounded transition-opacity"
-                                title="Edit farmer name"
+                                className="opacity-0 group-hover/cell:opacity-100 p-0.5 text-slate-400 hover:text-blue-600 rounded transition-opacity"
+                                title="Edit name"
                               >
-                                <Pencil className="w-3 h-3" />
+                                <Pencil className="w-2.5 h-2.5" />
                               </button>
                             </div>
                           )}
@@ -1045,37 +1063,37 @@ export const FarmerManager: React.FC = () => {
                                     if (e.key === 'Enter') handleSaveCellEdit();
                                     if (e.key === 'Escape') setEditingCell(null);
                                   }}
-                                  className="px-2 py-1 text-xs rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-36 shadow-sm"
+                                  className="px-2 py-0.5 text-xs rounded-lg border border-[#256B3A] bg-white text-slate-900 outline-none w-32 shadow-sm"
                                 />
                                 <button
                                   onMouseDown={(e) => e.preventDefault()}
                                   onClick={handleSaveCellEdit}
                                   className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
                                 >
-                                  <Check className="w-3.5 h-3.5" />
+                                  <Check className="w-3 h-3" />
                                 </button>
                                 <button
                                   onMouseDown={(e) => e.preventDefault()}
                                   onClick={() => setEditingCell(null)}
-                                  className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                  className="p-1 rounded bg-slate-200 text-slate-600"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <X className="w-3 h-3" />
                                 </button>
                               </div>
                             ) : (
                               <div 
-                                className="flex items-center justify-between gap-2 min-h-[24px]"
+                                className="flex items-center justify-between gap-1.5 min-h-[22px]"
                                 onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
                               >
-                                <span className="truncate max-w-[180px]" title={cellVal || '-'}>
-                                  {cellVal || <span className="text-slate-300 dark:text-slate-600 italic">Empty</span>}
+                                <span className="truncate max-w-[160px]" title={cellVal || '-'}>
+                                  {cellVal || <span className="text-slate-400 font-normal italic">-</span>}
                                 </span>
                                 <button
                                   onClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
-                                  className="opacity-0 group-hover/cell:opacity-100 p-1 text-slate-400 hover:text-blue-600 rounded transition-opacity"
-                                  title="Edit cell value"
+                                  className="opacity-0 group-hover/cell:opacity-100 p-0.5 text-slate-400 hover:text-blue-600 rounded transition-opacity"
+                                  title="Edit cell"
                                 >
-                                  <Pencil className="w-3 h-3" />
+                                  <Pencil className="w-2.5 h-2.5" />
                                 </button>
                               </div>
                             )}
@@ -1083,21 +1101,21 @@ export const FarmerManager: React.FC = () => {
                         );
                       })}
 
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => setSelectedFarmerForDetail(farmer)}
-                            className="p-1.5 text-slate-400 hover:text-[#256B3A] rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            className="p-1.5 text-slate-400 hover:text-[#256B3A] rounded-lg hover:bg-emerald-100/60 dark:hover:bg-slate-800"
                             title="View Profile"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleOpenEditModal(farmer)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                            title="Edit All Fields"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800"
+                            title="Edit"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => {
@@ -1105,10 +1123,10 @@ export const FarmerManager: React.FC = () => {
                                 deleteFarmer(farmer.id);
                               }
                             }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                            title="Delete Record"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-slate-800"
+                            title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -1283,6 +1301,7 @@ export const FarmerManager: React.FC = () => {
                   addColumn(newGlobalColumnName.trim());
                   setNewGlobalColumnName('');
                   setIsAddColumnModalOpen(false);
+                  setStatusFeedback({ type: 'success', message: `Added new column "${newGlobalColumnName.trim()}"` });
                 }
               }}
               className="space-y-4"
@@ -1464,24 +1483,31 @@ export const FarmerManager: React.FC = () => {
               {editingFarmer.id ? 'Edit Record' : 'Add Farmer Record'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-              Edit any field name and its corresponding value. You can also add more custom columns dynamically.
+              Edit any field name and its corresponding value. Photos are uploaded manually.
             </p>
 
             <form onSubmit={handleSaveFarmer} className="space-y-6">
-              {/* Profile Image & Avatar Upload */}
-              <div className="flex flex-col items-center justify-center p-4 bg-emerald-50/50 dark:bg-slate-800/40 rounded-2xl border border-emerald-100 dark:border-slate-800">
+              {/* Profile Image & Avatar Upload (Manual Upload Only) */}
+              <div className="flex flex-col items-center justify-center p-5 bg-emerald-50/60 dark:bg-slate-800/40 rounded-2xl border border-emerald-100 dark:border-slate-800">
                 <div className="relative group">
-                  <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md">
-                    <img
-                      src={editingFarmer.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400'}
-                      alt="Avatar preview"
-                      className="w-full h-full rounded-full object-cover"
-                    />
+                  <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center overflow-hidden">
+                    {editingFarmer.avatar ? (
+                      <img
+                        src={editingFarmer.avatar}
+                        alt="Avatar preview"
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white flex flex-col items-center justify-center">
+                        <Camera className="w-6 h-6 mb-1 text-emerald-200" />
+                        <span className="text-[9px] font-bold tracking-wider">No Photo</span>
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold"
+                    className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold"
                   >
                     <Camera className="w-5 h-5 mb-0.5" />
                     <span>Upload</span>
@@ -1494,13 +1520,25 @@ export const FarmerManager: React.FC = () => {
                     onChange={handleAvatarFileChange}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-xs font-semibold text-[#256B3A] dark:text-emerald-400 hover:underline mt-2"
-                >
-                  Change Profile Photo
-                </button>
+
+                <div className="flex items-center gap-3 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs font-bold text-[#256B3A] dark:text-emerald-400 hover:underline"
+                  >
+                    {editingFarmer.avatar ? 'Change Photo' : 'Upload Profile Photo'}
+                  </button>
+                  {editingFarmer.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingFarmer({ ...editingFarmer, avatar: '' })}
+                      className="text-xs text-rose-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Full Name */}

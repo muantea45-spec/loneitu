@@ -144,3 +144,4 @@ export function exportFarmersToPdf(
   const todayStr = new Date().toISOString().split('T')[0];
   doc.save(`Farmer_Registry_Export_${todayStr}.pdf`);
 }
+

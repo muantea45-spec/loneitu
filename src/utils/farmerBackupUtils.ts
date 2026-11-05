@@ -84,3 +84,4 @@ export async function parseFarmerBackupFile(file: File): Promise<{
 
   throw new Error('Unrecognized backup structure. File does not contain valid farmer records.');
 }
+

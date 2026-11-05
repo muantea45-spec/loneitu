@@ -54,24 +54,26 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
         </button>
 
         {/* Top Header: Centered Circular Avatar & Farmer Name */}
-        <div className="flex flex-col items-center text-center pb-6 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col items-center text-center pb-6 border-b border-emerald-100 dark:border-emerald-900/60">
           <div className="relative mb-3">
-            <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/20 shadow-md">
-              <img
-                src={farmer.avatar}
-                alt={farmer.fullName}
-                className="w-full h-full rounded-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
-                }}
-              />
+            <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md flex items-center justify-center bg-emerald-50 dark:bg-emerald-950">
+              {farmer.avatar ? (
+                <img
+                  src={farmer.avatar}
+                  alt={farmer.fullName}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-3xl flex items-center justify-center shadow-inner">
+                  {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
+                </div>
+              )}
             </div>
             <div 
               className="absolute bottom-1 right-1 bg-[#256B3A] text-white p-1.5 rounded-full shadow-md ring-2 ring-white dark:ring-slate-900"
               title="Verified Record"
             >
-              <BadgeCheck className="w-4 h-4" />
+              <BadgeCheck className="w-4 h-4 text-[#BFDC28]" />
             </div>
           </div>
 

@@ -278,10 +278,18 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
+  const cleanFarmerAvatars = (list: FarmerRecord[]): FarmerRecord[] => {
+    return list.map(f => ({
+      ...f,
+      avatar: (f.avatar && !f.avatar.includes('unsplash.com')) ? f.avatar : ''
+    }));
+  };
+
   const [farmers, setFarmers] = useState<FarmerRecord[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.FARMERS);
-      return stored ? JSON.parse(stored) : INITIAL_FARMERS;
+      const parsed = stored ? JSON.parse(stored) : INITIAL_FARMERS;
+      return Array.isArray(parsed) ? cleanFarmerAvatars(parsed) : [];
     } catch {
       return INITIAL_FARMERS;
     }
@@ -617,9 +625,10 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (Array.isArray(cloudData.farmers)) {
-        setFarmers(cloudData.farmers);
+        const cleaned = cleanFarmerAvatars(cloudData.farmers);
+        setFarmers(cleaned);
         try {
-          localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cloudData.farmers));
+          localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cleaned));
         } catch {}
       }
 
@@ -682,8 +691,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAboutData(payload);
         try { localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(payload)); } catch {}
       } else if (type === 'FARMERS' && Array.isArray(payload)) {
-        setFarmers(payload);
-        try { localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(payload)); } catch {}
+        const cleaned = cleanFarmerAvatars(payload);
+        setFarmers(cleaned);
+        try { localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cleaned)); } catch {}
       }
     };
     return () => {
@@ -1266,7 +1276,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const newRecord: FarmerRecord = {
       id: newId,
       fullName: recordData.fullName.trim(),
-      avatar: recordData.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
+      avatar: (recordData.avatar && !recordData.avatar.includes('unsplash.com')) ? recordData.avatar : '',
       registrationDate: recordData.registrationDate || new Date().toISOString().split('T')[0],
       status: recordData.status || 'Verified',
       data: recordData.data || {},
