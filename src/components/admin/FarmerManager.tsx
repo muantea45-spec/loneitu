@@ -25,55 +25,21 @@ import {
   Camera, 
   Eye, 
   ShieldCheck, 
-  FileUp,
   Check,
   Columns,
   Pencil,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   LayoutGrid,
   List,
   Database,
   MessageCircle,
-  MapPin,
-  Building2,
-  Filter
+  Building2
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 
 const PAGE_SIZE = 8;
-
-const POPULAR_MIZORAM_DISTRICTS = [
-  'Champhai',
-  'Aizawl',
-  'Kolasib',
-  'Serchhip',
-  'Lunglei',
-  'Mamit',
-  'Saitual',
-  'Khawzawl',
-  'Hnahthial',
-  'Lawngtlai',
-  'Siaha'
-];
-
-// Helper to extract district from farmer record data
-function getFarmerDistrict(farmer: FarmerRecord): string {
-  if (!farmer || !farmer.data) return '';
-  for (const [key, val] of Object.entries(farmer.data)) {
-    if (/(^|\b)district(\b|$)/i.test(key)) {
-      const s = String(val || '').trim();
-      if (s) return s;
-    }
-  }
-  for (const [key, val] of Object.entries(farmer.data)) {
-    if (/dist/i.test(key)) {
-      const s = String(val || '').trim();
-      if (s) return s;
-    }
-  }
-  return '';
-}
 
 // Helper to extract block from farmer record data
 function getFarmerBlock(farmer: FarmerRecord): string {
@@ -206,64 +172,16 @@ export const FarmerManager: React.FC = () => {
     : allColumns.slice(0, Math.min(allColumns.length, 3));
   const extraColumnsCount = Math.max(0, allColumns.length - summaryColumns.length);
 
-  // District and Block Filter States
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
+  // Block Filter State (District removed per user request)
   const [selectedBlock, setSelectedBlock] = useState<string>('all');
 
-  // Compute farmer counts per district (including fuzzy search across all values if no explicit column)
-  const districtCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    farmers.forEach(f => {
-      const explicitDist = getFarmerDistrict(f);
-      if (explicitDist) {
-        const key = explicitDist.trim().toLowerCase();
-        counts[key] = (counts[key] || 0) + 1;
-      } else {
-        POPULAR_MIZORAM_DISTRICTS.forEach(dist => {
-          const match = Object.values(f.data || {}).some(v => 
-            String(v).toLowerCase().includes(dist.toLowerCase())
-          );
-          if (match) {
-            const key = dist.toLowerCase();
-            counts[key] = (counts[key] || 0) + 1;
-          }
-        });
-      }
-    });
-    return counts;
-  }, [farmers]);
+  // Active Registry Columns Dropdown Menu state
+  const [isColumnsDropdownOpen, setIsColumnsDropdownOpen] = useState(false);
 
-  // Determine available districts: all districts in uploaded records + standard popular Mizoram districts
-  const availableDistricts = useMemo(() => {
-    const set = new Set<string>();
-    // First, add all detected districts from farmer records
-    farmers.forEach(f => {
-      const d = getFarmerDistrict(f);
-      if (d) set.add(d);
-    });
-    // Add popular Mizoram districts
-    POPULAR_MIZORAM_DISTRICTS.forEach(d => set.add(d));
-
-    return Array.from(set).sort((a, b) => {
-      const countA = districtCounts[a.toLowerCase()] || 0;
-      const countB = districtCounts[b.toLowerCase()] || 0;
-      if (countA !== countB) return countB - countA;
-      return a.localeCompare(b);
-    });
-  }, [farmers, districtCounts]);
-
-  // Determine available blocks (dynamically filtered by selected district)
+  // Determine available blocks from all farmer records
   const availableBlocks = useMemo(() => {
     const blocksMap = new Map<string, number>();
     farmers.forEach(f => {
-      if (selectedDistrict !== 'all') {
-        const dist = getFarmerDistrict(f);
-        const matchesDist = dist 
-          ? dist.toLowerCase() === selectedDistrict.toLowerCase()
-          : Object.values(f.data || {}).some(v => String(v).toLowerCase().includes(selectedDistrict.toLowerCase()));
-        if (!matchesDist) return;
-      }
-
       const b = getFarmerBlock(f);
       if (b) {
         blocksMap.set(b, (blocksMap.get(b) || 0) + 1);
@@ -273,30 +191,17 @@ export const FarmerManager: React.FC = () => {
     return Array.from(blocksMap.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [farmers, selectedDistrict]);
+  }, [farmers]);
 
-  // Reset page to 1 when search query, selected district or block changes
+  // Reset page to 1 when search query or selected block changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedDistrict, selectedBlock]);
+  }, [searchQuery, selectedBlock]);
 
-  // Filtered farmers based on district, block, and search
+  // Filtered farmers based on block and search
   const filteredFarmers = useMemo(() => {
     return farmers.filter(farmer => {
-      // 1. District filter
-      if (selectedDistrict !== 'all') {
-        const dist = getFarmerDistrict(farmer);
-        if (dist) {
-          if (dist.toLowerCase() !== selectedDistrict.toLowerCase()) return false;
-        } else {
-          const match = Object.values(farmer.data || {}).some(v => 
-            String(v).toLowerCase().includes(selectedDistrict.toLowerCase())
-          );
-          if (!match) return false;
-        }
-      }
-
-      // 2. Block filter
+      // 1. Block filter
       if (selectedBlock !== 'all') {
         const block = getFarmerBlock(farmer);
         if (block) {
@@ -309,7 +214,7 @@ export const FarmerManager: React.FC = () => {
         }
       }
 
-      // 3. Search query
+      // 2. Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchName = farmer.fullName.toLowerCase().includes(q);
@@ -321,7 +226,7 @@ export const FarmerManager: React.FC = () => {
 
       return true;
     });
-  }, [farmers, selectedDistrict, selectedBlock, searchQuery]);
+  }, [farmers, selectedBlock, searchQuery]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredFarmers.length / PAGE_SIZE));
@@ -607,9 +512,34 @@ export const FarmerManager: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Action Buttons Toolbar */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Import Group */}
+          {/* Quick Action Buttons Toolbar (8 Actions: Clean icons/signs on mobile, icon+label on desktop) */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
+            {/* 1. Add Record (+) */}
+            <button
+              onClick={handleOpenAddModal}
+              className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-bold bg-[#C9A84C] hover:bg-[#b8953c] text-white transition-all shadow-md active:scale-95 cursor-pointer"
+              title="Add Record (+)"
+              aria-label="Add Record"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Add Record</span>
+            </button>
+
+            {/* 2. + Add Column */}
+            <button
+              onClick={() => {
+                setNewGlobalColumnName('');
+                setIsAddColumnModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md active:scale-95 cursor-pointer"
+              title="+ Add Column"
+              aria-label="Add Column"
+            >
+              <Columns className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">+ Add Column</span>
+            </button>
+
+            {/* 3. Excel Import */}
             <button
               onClick={() => {
                 setImportFile(null);
@@ -617,79 +547,61 @@ export const FarmerManager: React.FC = () => {
                 setParseError(null);
                 setIsImportModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-[#143520] hover:bg-emerald-50 transition-all shadow-md active:scale-95"
-              title="Import spreadsheet (.xlsx / .xls)"
+              className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-bold bg-white text-[#143520] hover:bg-emerald-50 transition-all shadow-md active:scale-95 cursor-pointer"
+              title="Excel Import (.xlsx / .xls)"
+              aria-label="Excel Import"
             >
-              <FileUp className="w-4 h-4 text-[#256B3A]" />
-              <span>Excel Import</span>
-            </button>
-
-            {/* Add Column */}
-            <button
-              onClick={() => {
-                setNewGlobalColumnName('');
-                setIsAddColumnModalOpen(true);
-              }}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md active:scale-95"
-              title="Add a new column header across all farmer records"
-            >
-              <Columns className="w-4 h-4" />
-              <span>+ Add Column</span>
-            </button>
-
-            {/* Add Record */}
-            <button
-              onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#C9A84C] hover:bg-[#b8953c] text-white transition-all shadow-md active:scale-95"
-              title="Manually add a farmer record"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Record</span>
+              <FileSpreadsheet className="w-4 h-4 text-[#256B3A] shrink-0" />
+              <span className="hidden sm:inline">Excel Import</span>
             </button>
 
             {/* Export & Backup Section */}
             {farmers.length > 0 && (
               <>
-                {/* Export PDF Button */}
-                <button
-                  onClick={handleExportPdf}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/25 hover:bg-rose-500/35 text-white transition-all border border-rose-300/30 shadow-xs active:scale-95"
-                  title="Export official printable PDF of all farmer records"
-                >
-                  <FileText className="w-4 h-4 text-rose-300" />
-                  <span>Export PDF</span>
-                </button>
-
-                {/* Export Excel Button */}
+                {/* 4. Export Excel */}
                 <button
                   onClick={handleExportExcel}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/25 hover:bg-emerald-500/35 text-white transition-all border border-emerald-300/30 shadow-xs active:scale-95"
-                  title="Export all current farmer records to Excel (.xlsx)"
+                  className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/25 hover:bg-emerald-500/35 text-white transition-all border border-emerald-300/30 shadow-xs active:scale-95 cursor-pointer"
+                  title="Export Excel (.xlsx)"
+                  aria-label="Export Excel"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
-                  <span>Export Excel</span>
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-300 shrink-0" />
+                  <span className="hidden sm:inline">Export Excel</span>
                 </button>
 
-                {/* Backup JSON Button */}
+                {/* 5. Export PDF */}
+                <button
+                  onClick={handleExportPdf}
+                  className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-semibold bg-rose-500/25 hover:bg-rose-500/35 text-white transition-all border border-rose-300/30 shadow-xs active:scale-95 cursor-pointer"
+                  title="Export PDF Document (.pdf)"
+                  aria-label="Export PDF"
+                >
+                  <FileText className="w-4 h-4 text-rose-300 shrink-0" />
+                  <span className="hidden sm:inline">Export PDF</span>
+                </button>
+
+                {/* 6. Backup (.json) */}
                 <button
                   onClick={handleDownloadBackup}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-blue-500/25 hover:bg-blue-500/35 text-white transition-all border border-blue-300/30 shadow-xs active:scale-95"
-                  title="Download complete registry snapshot backup (.json)"
+                  className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-semibold bg-blue-500/25 hover:bg-blue-500/35 text-white transition-all border border-blue-300/30 shadow-xs active:scale-95 cursor-pointer"
+                  title="Backup Registry (.json)"
+                  aria-label="Backup JSON"
                 >
-                  <Database className="w-4 h-4 text-blue-300" />
-                  <span>Backup (.json)</span>
+                  <Database className="w-4 h-4 text-blue-300 shrink-0" />
+                  <span className="hidden sm:inline">Backup (.json)</span>
                 </button>
               </>
             )}
 
-            {/* Restore Backup Button */}
+            {/* 7. Restore Backup */}
             <button
               onClick={() => backupFileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 active:scale-95"
-              title="Restore registry from backup JSON file"
+              className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 active:scale-95 cursor-pointer"
+              title="Restore from Backup File (.json)"
+              aria-label="Restore Backup"
             >
-              <Upload className="w-4 h-4 text-emerald-300" />
-              <span>Restore Backup</span>
+              <Upload className="w-4 h-4 text-emerald-300 shrink-0" />
+              <span className="hidden sm:inline">Restore Backup</span>
             </button>
 
             <input
@@ -700,7 +612,7 @@ export const FarmerManager: React.FC = () => {
               onChange={handleBackupFileSelect}
             />
 
-            {/* Wipe All Button */}
+            {/* 8. Wipe All */}
             {farmers.length > 0 && (
               <button
                 onClick={() => {
@@ -709,11 +621,12 @@ export const FarmerManager: React.FC = () => {
                     setStatusFeedback({ type: 'success', message: 'Wiped all farmer records from registry.' });
                   }
                 }}
-                className="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-all cursor-pointer"
-                title="Wipe all farmer registry records completely"
+                className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-all cursor-pointer active:scale-95"
+                title="Wipe All Farmer Records"
+                aria-label="Wipe All"
               >
-                <Trash2 className="w-4 h-4 text-rose-300" />
-                <span>Wipe All</span>
+                <Trash2 className="w-4 h-4 text-rose-300 shrink-0" />
+                <span className="hidden sm:inline">Wipe All</span>
               </button>
             )}
           </div>
@@ -823,243 +736,184 @@ export const FarmerManager: React.FC = () => {
         </div>
       </div>
 
-      {/* DISTRICT & BLOCK FILTER (District leh Block Thlanna) */}
-      <div className="bg-gradient-to-r from-emerald-50/90 via-white to-emerald-50/60 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#256B3A] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <MapPin className="w-3.5 h-3.5 text-[#BFDC28]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-[#143520] dark:text-emerald-300">
-                  District leh Block Thlanna (Filter)
+      {/* BLOCK FILTER (Block Thlanna Dropdown Menu) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-emerald-50/90 via-white to-emerald-50/60 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] rounded-2xl p-3.5 sm:p-4 border border-emerald-200 dark:border-emerald-800 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#256B3A] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Building2 className="w-4 h-4 text-[#BFDC28]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-[#143520] dark:text-emerald-300">
+                Block Thlanna (Filter by Block)
+              </span>
+              {selectedBlock !== 'all' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
+                  Active: {selectedBlock}
                 </span>
-                {(selectedDistrict !== 'all' || selectedBlock !== 'all') && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
-                    Active: {selectedDistrict !== 'all' ? selectedDistrict : 'All Districts'}
-                    {selectedBlock !== 'all' ? ` • ${selectedBlock}` : ''}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-[#1E542E] dark:text-emerald-400 font-medium">
-                Hmet la, district leh block hrang hranga farmer-te awlsam takin thlang chhuak rawh
-              </p>
+              )}
             </div>
+            <p className="text-[11px] text-[#1E542E] dark:text-emerald-400 font-medium">
+              Dropdown menu atang hian farmer-te awmna block thlang rawh le
+            </p>
+          </div>
+        </div>
+
+        {/* Block Dropdown Menu */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72">
+            <select
+              value={selectedBlock}
+              onChange={(e) => setSelectedBlock(e.target.value)}
+              className="w-full appearance-none pl-3.5 pr-8 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-800 border-2 border-emerald-300 dark:border-emerald-700 text-[#143520] dark:text-emerald-200 focus:outline-none focus:ring-2 focus:ring-[#256B3A] cursor-pointer shadow-2xs"
+            >
+              <option value="all">Block Zawng Zawng (All Blocks - {farmers.length})</option>
+              {availableBlocks.map(block => (
+                <option key={block.name} value={block.name}>
+                  {block.name} ({block.count} {block.count === 1 ? 'farmer' : 'farmers'})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-[#256B3A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
-          {(selectedDistrict !== 'all' || selectedBlock !== 'all') && (
+          {selectedBlock !== 'all' && (
             <button
-              onClick={() => {
-                setSelectedDistrict('all');
-                setSelectedBlock('all');
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer self-start sm:self-auto shadow-2xs"
+              onClick={() => setSelectedBlock('all')}
+              className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer shadow-2xs shrink-0"
+              title="Clear Block Filter"
             >
               <X className="w-3.5 h-3.5" />
-              <span>Clear Filter (Tibo Rawh)</span>
+              <span className="hidden sm:inline">Tibo Rawh</span>
             </button>
           )}
         </div>
-
-        {/* District Filter Quick Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-thin">
-          <span className="text-[11px] font-bold text-[#143520] dark:text-emerald-400 shrink-0 mr-1 flex items-center gap-1">
-            <Filter className="w-3 h-3 text-[#256B3A]" />
-            <span>District:</span>
-          </span>
-
-          {/* All Districts Pill */}
-          <button
-            onClick={() => {
-              setSelectedDistrict('all');
-              setSelectedBlock('all');
-            }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-              selectedDistrict === 'all'
-                ? 'bg-[#256B3A] text-white shadow-xs'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100/70 hover:text-[#143520] border border-emerald-200/80 dark:border-slate-700'
-            }`}
-          >
-            <span>All Districts</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-              selectedDistrict === 'all'
-                ? 'bg-white/20 text-white'
-                : 'bg-emerald-100 dark:bg-emerald-900 text-[#143520] dark:text-emerald-200'
-            }`}>
-              {farmers.length}
-            </span>
-          </button>
-
-          {/* District specific pills */}
-          {availableDistricts.map(dist => {
-            const count = districtCounts[dist.toLowerCase()] || 0;
-            const isSelected = selectedDistrict.toLowerCase() === dist.toLowerCase();
-            return (
-              <button
-                key={dist}
-                onClick={() => {
-                  setSelectedDistrict(isSelected ? 'all' : dist);
-                  setSelectedBlock('all');
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#256B3A] text-white shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100/70 hover:text-[#143520] border border-emerald-200/80 dark:border-slate-700'
-                }`}
-              >
-                <MapPin className={`w-3 h-3 ${isSelected ? 'text-[#BFDC28]' : 'text-[#256B3A]'}`} />
-                <span>{dist}</span>
-                {count > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                    isSelected
-                      ? 'bg-white/20 text-white'
-                      : 'bg-emerald-100 dark:bg-emerald-900 text-[#143520] dark:text-emerald-200'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Block Filter Quick Pills (RD Block) */}
-        {availableBlocks.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/60 scrollbar-thin">
-            <span className="text-[11px] font-bold text-[#143520] dark:text-emerald-400 shrink-0 mr-1 flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-[#256B3A]" />
-              <span>Block:</span>
-            </span>
-
-            <button
-              onClick={() => setSelectedBlock('all')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                selectedBlock === 'all'
-                  ? 'bg-emerald-700 text-white shadow-2xs'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 border border-emerald-100 dark:border-slate-700'
-              }`}
-            >
-              <span>All Blocks</span>
-            </button>
-
-            {availableBlocks.map(block => {
-              const isSelected = selectedBlock.toLowerCase() === block.name.toLowerCase();
-              return (
-                <button
-                  key={block.name}
-                  onClick={() => setSelectedBlock(isSelected ? 'all' : block.name)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                    isSelected
-                      ? 'bg-emerald-700 text-white shadow-2xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 border border-emerald-100 dark:border-slate-700'
-                  }`}
-                >
-                  <span>{block.name}</span>
-                  <span className={`text-[10px] px-1 rounded-full ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {block.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
-      {/* ACTIVE REGISTRY COLUMNS BOX: Well Arranged & Beautifully Readable */}
+      {/* ACTIVE REGISTRY COLUMNS: Dropdown Menu */}
       {allColumns.length > 0 && (
-        <div className="bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] rounded-3xl p-5 border-2 border-emerald-300 dark:border-emerald-800 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsColumnsDropdownOpen(!isColumnsDropdownOpen)}
+            className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-emerald-50 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] border-2 border-emerald-300 dark:border-emerald-800 shadow-xs hover:border-[#256B3A] transition-all cursor-pointer"
+            aria-expanded={isColumnsDropdownOpen}
+          >
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#256B3A] text-white flex items-center justify-center shadow-xs shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-[#256B3A] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Columns className="w-4 h-4 text-[#BFDC28]" />
               </div>
-              <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-[#143520] dark:text-emerald-300">
-                  Active Registry Columns ({allColumns.length})
-                </h3>
-                <p className="text-[11px] text-[#1E542E] dark:text-emerald-200/90 font-medium">
-                  Columns dynamically populated from your spreadsheet and manual additions
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#143520] dark:text-emerald-300">
+                    Active Registry Columns
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700 text-white font-black">
+                    {allColumns.length} Columns
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#1E542E] dark:text-emerald-400 font-medium">
+                  Hmet la, column zawng zawng en, rename, emaw delete rawh le
                 </p>
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#EBF1EA] dark:bg-emerald-950/80 text-[#143520] dark:text-emerald-300 border border-[#B7CEB4] dark:border-emerald-800 shadow-2xs self-start sm:self-auto">
-              <span>💡 Double-click or click pencil to rename header globally</span>
+            <div className="flex items-center gap-1.5 text-[#256B3A] dark:text-emerald-300 font-bold text-xs shrink-0 ml-2">
+              <span className="hidden sm:inline">{isColumnsDropdownOpen ? 'Close Menu' : 'View / Manage Columns'}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isColumnsDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
-          </div>
+          </button>
 
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            {allColumns.map((col, idx) => (
-              <div 
-                key={col}
-                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-800 text-xs shadow-2xs hover:border-[#256B3A] dark:hover:border-emerald-400 transition-all"
-              >
-                {editingHeaderCol?.oldName === col ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      autoFocus
-                      value={editingHeaderCol.newName}
-                      onChange={(e) => setEditingHeaderCol({ ...editingHeaderCol, newName: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveHeaderRename();
-                        if (e.key === 'Escape') setEditingHeaderCol(null);
-                      }}
-                      className="px-2 py-0.5 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none w-28"
-                    />
-                    <button
-                      onClick={handleSaveHeaderRename}
-                      className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
-                    >
-                      <Check className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => setEditingHeaderCol(null)}
-                      className="p-1 rounded bg-slate-200 text-slate-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <span className="w-4 h-4 rounded-full bg-[#143520] text-emerald-200 text-[9px] font-black flex items-center justify-center shrink-0">
-                      {idx + 1}
-                    </span>
-                    <span 
-                      onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
-                      className="font-bold text-[#143520] dark:text-emerald-100 cursor-pointer hover:underline"
-                      title="Double-click to rename"
-                    >
-                      {col}
-                    </span>
-                    <div className="flex items-center gap-0.5 ml-1">
-                      <button
-                        onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
-                        className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
-                        title={`Rename column "${col}"`}
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Delete column "${col}" across all farmer records?`)) {
-                            deleteColumn(col);
-                          }
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
-                        title={`Delete column "${col}"`}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </>
-                )}
+          {/* Dropdown Menu Panel */}
+          {isColumnsDropdownOpen && (
+            <div className="mt-2 p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-300 dark:border-emerald-800 shadow-xl space-y-3 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-emerald-100 dark:border-emerald-900/60">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  💡 Double-click or click pencil to rename header globally
+                </span>
+                <button
+                  onClick={() => {
+                    setNewGlobalColumnName('');
+                    setIsAddColumnModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#256B3A] text-white hover:bg-[#1b4d2a] transition-all self-start sm:self-auto cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add New Column</span>
+                </button>
               </div>
-            ))}
-          </div>
+
+              <div className="flex flex-wrap items-center gap-2 max-h-60 overflow-y-auto p-1 scrollbar-thin">
+                {allColumns.map((col, idx) => (
+                  <div 
+                    key={col}
+                    className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border-2 border-emerald-200 dark:border-emerald-800 text-xs shadow-2xs hover:border-[#256B3A] dark:hover:border-emerald-400 transition-all"
+                  >
+                    {editingHeaderCol?.oldName === col ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={editingHeaderCol.newName}
+                          onChange={(e) => setEditingHeaderCol({ ...editingHeaderCol, newName: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveHeaderRename();
+                            if (e.key === 'Escape') setEditingHeaderCol(null);
+                          }}
+                          className="px-2 py-0.5 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none w-28"
+                        />
+                        <button
+                          onClick={handleSaveHeaderRename}
+                          className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setEditingHeaderCol(null)}
+                          className="p-1 rounded bg-slate-200 text-slate-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="w-4 h-4 rounded-full bg-[#143520] text-emerald-200 text-[9px] font-black flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span 
+                          onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                          className="font-bold text-[#143520] dark:text-emerald-100 cursor-pointer hover:underline"
+                          title="Double-click to rename"
+                        >
+                          {col}
+                        </span>
+                        <div className="flex items-center gap-0.5 ml-1">
+                          <button
+                            onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                            className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
+                            title={`Rename column "${col}"`}
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete column "${col}" across all farmer records?`)) {
+                                deleteColumn(col);
+                              }
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
+                            title={`Delete column "${col}"`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
