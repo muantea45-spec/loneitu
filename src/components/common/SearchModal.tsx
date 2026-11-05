@@ -103,7 +103,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             <div className="space-y-6 py-2">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#8F7855] mb-2.5">
-                  Thlur Bing Zawngte (Sectors)
+                  Categories
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {categories.map(cat => (
@@ -128,7 +128,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#8F7855] mb-2">
-                  Popular Agronomic Tags
+                  TAGS
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {tags.slice(0, 8).map(tag => (

@@ -100,14 +100,14 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               </Link>
             </div>
 
-            {/* Category Archives / Sectors */}
+            {/* Category Archives / Categories */}
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between px-2 mb-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] flex items-center gap-1.5">
                   <FolderTree className="w-3.5 h-3.5 text-[#256B3A]" />
-                  <span>Thlur Bing Zawngte (Sectors)</span>
+                  <span>Categories</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#8F7855]">{categories.length} sectors</span>
+                <span className="text-[10px] font-mono text-[#8F7855]">{categories.length} categories</span>
               </div>
 
               <div className="space-y-1.5">
@@ -143,11 +143,11 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               </div>
             </div>
 
-            {/* Popular Practice Tags */}
+            {/* Popular TAGS */}
             <div className="p-4 pt-2 border-t border-[#EBE6D6]">
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] mb-2 px-1 flex items-center gap-1.5">
                 <TagIcon className="w-3.5 h-3.5 text-[#256B3A]" />
-                <span>Hmalak Dan Tag-te (Practice Tags)</span>
+                <span>TAGS</span>
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {tags.map(t => (

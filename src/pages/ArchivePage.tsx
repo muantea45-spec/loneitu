@@ -282,7 +282,7 @@ export const ArchivePage: React.FC = () => {
                   <tr className="bg-[#FAF8F3] text-[#54432C] border-b border-[#EBE6D6] font-bold uppercase tracking-wider text-[11px]">
                     <th className="py-3 px-4 w-32 whitespace-nowrap">Tar Lan Ni (Date)</th>
                     <th className="py-3 px-4 min-w-[280px]">Thupui (Article Title)</th>
-                    <th className="py-3 px-4 w-36 whitespace-nowrap">Thlur Bing (Sector)</th>
+                    <th className="py-3 px-4 w-36 whitespace-nowrap">Category</th>
                     <th className="py-3 px-4 w-44 whitespace-nowrap">Ziaktu (Author)</th>
                     <th className="py-3 px-4 w-36 text-right whitespace-nowrap">Chhiarna (Action)</th>
                   </tr>
