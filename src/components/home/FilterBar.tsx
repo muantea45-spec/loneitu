@@ -105,8 +105,8 @@ export const FilterBar: React.FC = () => {
                 <option value="newest">A Thar Ber</option>
                 <option value="oldest">A Hmasa Ber</option>
                 <option value="popular">Chhiar Hlawh Ber</option>
-                <option value="reading-asc">Chhiar Rang Ber</option>
-                <option value="reading-desc">Chhiar Rei Ber</option>
+                <option value="reading-desc">Thui Ber</option>
+                <option value="reading-asc">Tawi Ber</option>
               </select>
             </div>
 

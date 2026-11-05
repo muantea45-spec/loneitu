@@ -42,13 +42,32 @@ import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 
 const PAGE_SIZE = 8;
 
+// Helper to canonicalize and format block names (e.g. CHAMPHAI, Champhai -> Champhai; khawbung, KHAWBUNG -> Khawbung)
+function formatBlockName(raw: string): string {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  // Clean up redundant trailing 'Block' / 'RD Block' if entered (e.g. "CHAMPHAI BLOCK" -> "Champhai")
+  const withoutSuffix = trimmed.replace(/\s+(?:r\.?d\.?\s+)?block$/i, '').trim();
+  const base = withoutSuffix || trimmed;
+
+  // Convert to Title Case words (e.g., 'CHAMPHAI' -> 'Champhai', 'khawbung' -> 'Khawbung')
+  return base
+    .toLowerCase()
+    .split(/\s+/)
+    .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1) : '')
+    .join(' ')
+    .trim();
+}
+
 // Helper to extract block from farmer record data
 function getFarmerBlock(farmer: FarmerRecord): string {
   if (!farmer || !farmer.data) return '';
   for (const [key, val] of Object.entries(farmer.data)) {
     if (/block/i.test(key)) {
       const s = String(val || '').trim();
-      if (s) return s;
+      if (s) return formatBlockName(s);
     }
   }
   return '';
@@ -189,18 +208,23 @@ export const FarmerManager: React.FC = () => {
   // Active Registry Columns Dropdown Menu state
   const [isColumnsDropdownOpen, setIsColumnsDropdownOpen] = useState(false);
 
-  // Determine available blocks from all farmer records
+  // Determine available blocks from all farmer records (case-insensitive combined)
   const availableBlocks = useMemo(() => {
-    const blocksMap = new Map<string, number>();
+    const blocksMap = new Map<string, { name: string; count: number }>();
     farmers.forEach(f => {
       const b = getFarmerBlock(f);
       if (b) {
-        blocksMap.set(b, (blocksMap.get(b) || 0) + 1);
+        const canonicalKey = b.toLowerCase();
+        const existing = blocksMap.get(canonicalKey);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          blocksMap.set(canonicalKey, { name: b, count: 1 });
+        }
       }
     });
 
-    return Array.from(blocksMap.entries())
-      .map(([name, count]) => ({ name, count }))
+    return Array.from(blocksMap.values())
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }, [farmers]);
 
@@ -212,14 +236,18 @@ export const FarmerManager: React.FC = () => {
   // Filtered farmers based on block and search
   const filteredFarmers = useMemo(() => {
     return farmers.filter(farmer => {
-      // 1. Block filter
+      // 1. Block filter (case-insensitive match)
       if (selectedBlock !== 'all') {
         const block = getFarmerBlock(farmer);
+        const sel = selectedBlock.toLowerCase();
         if (block) {
-          if (block.toLowerCase() !== selectedBlock.toLowerCase()) return false;
+          const blk = block.toLowerCase();
+          if (blk !== sel && !blk.includes(sel) && !sel.includes(blk)) {
+            return false;
+          }
         } else {
           const match = Object.values(farmer.data || {}).some(v => 
-            String(v).toLowerCase().includes(selectedBlock.toLowerCase())
+            String(v).toLowerCase().includes(sel)
           );
           if (!match) return false;
         }

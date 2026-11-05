@@ -80,8 +80,8 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
               <option value="newest">A Thar Ber</option>
               <option value="oldest">A Hmasa Ber</option>
               <option value="popular">Chhiar Hlawh Ber</option>
-              <option value="reading-asc">Chhiar Rang Ber</option>
-              <option value="reading-desc">Chhiar Rei Ber</option>
+              <option value="reading-desc">Thui Ber</option>
+              <option value="reading-asc">Tawi Ber</option>
             </select>
           </div>
           <span className="text-xs font-semibold px-3 py-1.5 bg-[#EBF1EA] text-[#1E542E] rounded-full border border-[#B7CEB4] hidden sm:inline-block">
