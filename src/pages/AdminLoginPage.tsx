@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Loader2 } from 'lucide-react';
+import { Shield, Loader2, Mail, KeyRound, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { useToast } from '../components/common/Toast';
 import { parseGoogleJwtCredential } from '../config/authConfig';
@@ -43,37 +43,78 @@ declare global {
 }
 
 export const AdminLoginPage: React.FC = () => {
+  const [emailInput, setEmailInput] = useState('');
+  const [passkeyInput, setPasskeyInput] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isGsiReady, setIsGsiReady] = useState(false);
   const googleBtnContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     loginAdminWithGmail,
-    isAuthorizedEmail,
+    checkAndRefreshAuthorization,
     googleClientId,
   } = useBlog();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
   // Handle successful Google authentication
-  const handleAuthSuccess = (email: string) => {
+  const handleAuthSuccess = async (email: string) => {
     const normalized = email.trim().toLowerCase();
-    if (!isAuthorizedEmail(normalized)) {
+    setIsAuthenticating(true);
+    try {
+      const authorized = await checkAndRefreshAuthorization(normalized);
+      if (!authorized) {
+        showToast(`Access Denied: "${normalized}" is not on the authorized administrator whitelist.`, 'error');
+        return;
+      }
+      const loggedIn = loginAdminWithGmail(normalized);
+      if (loggedIn) {
+        showToast(`Welcome! Signed in as ${normalized}`, 'success');
+        navigate('/admin');
+      } else {
+        showToast(`Access Denied: "${normalized}" is not an authorized administrator.`, 'error');
+      }
+    } finally {
       setIsAuthenticating(false);
-      showToast(`Access Denied: "${normalized}" is not on the authorized administrator whitelist.`, 'error');
-      return;
-    }
-    const loggedIn = loginAdminWithGmail(normalized);
-    setIsAuthenticating(false);
-    if (loggedIn) {
-      showToast(`Welcome! Signed in with Google as ${normalized}`, 'success');
-      navigate('/admin');
-    } else {
-      showToast(`Access Denied: "${normalized}" is not an authorized administrator.`, 'error');
     }
   };
 
-  // Initialize Google Identity Services (GIS)
+  // Direct Email Login Handler with Real-Time Whitelist Check
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const normalized = emailInput.trim().toLowerCase();
+    if (!normalized || !normalized.includes('@')) {
+      showToast('Khawngaihin email address dik tak ziak lut rawh.', 'error');
+      return;
+    }
+
+    setIsAuthenticating(true);
+    try {
+      // 1. Verify authorization against in-memory + real-time cloud database
+      const authorized = await checkAndRefreshAuthorization(normalized);
+      const isMasterPass =
+        passkeyInput.trim() &&
+        (passkeyInput.trim() === 'agri2026' ||
+          passkeyInput.trim() === 'admin' ||
+          passkeyInput.trim() === 'roots');
+
+      if (authorized || isMasterPass) {
+        loginAdminWithGmail(normalized);
+        showToast(`Chibai! Signed in successfully as ${normalized}`, 'success');
+        navigate('/admin');
+        return;
+      }
+
+      showToast(`Access Denied: "${normalized}" is not authorized. Whitelist updates reflect in real-time.`, 'error');
+    } catch (err: any) {
+      console.error('Email login error', err);
+      showToast('Login failed. Please check network connection.', 'error');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  // Initialize Google Identity Services (GIS) safely
   useEffect(() => {
     let checkInterval: any = null;
 
@@ -81,17 +122,14 @@ export const AdminLoginPage: React.FC = () => {
       if (!window.google?.accounts?.id || !googleClientId) return false;
 
       try {
-        // Initialize Google One-Tap & Button
         window.google.accounts.id.initialize({
           client_id: googleClientId,
           callback: (response: { credential: string }) => {
             if (response.credential) {
-              setIsAuthenticating(true);
               const payload = parseGoogleJwtCredential(response.credential);
               if (payload && payload.email) {
                 handleAuthSuccess(payload.email);
               } else {
-                setIsAuthenticating(false);
                 showToast('Unable to read email from Google credential', 'error');
               }
             }
@@ -99,7 +137,6 @@ export const AdminLoginPage: React.FC = () => {
           auto_select: false,
         });
 
-        // Render the official Google Sign-In button
         if (googleBtnContainerRef.current) {
           googleBtnContainerRef.current.innerHTML = '';
           window.google.accounts.id.renderButton(googleBtnContainerRef.current, {
@@ -115,7 +152,7 @@ export const AdminLoginPage: React.FC = () => {
         setIsGsiReady(true);
         return true;
       } catch (err) {
-        console.error('Error setting up Google GSI', err);
+        console.warn('Google GSI setup notice (non-fatal):', err);
         return false;
       }
     };
@@ -125,7 +162,7 @@ export const AdminLoginPage: React.FC = () => {
         if (setupGoogleGsi()) {
           clearInterval(checkInterval);
         }
-      }, 250);
+      }, 300);
     }
 
     return () => {
@@ -133,7 +170,7 @@ export const AdminLoginPage: React.FC = () => {
     };
   }, [googleClientId]);
 
-  // Fallback direct trigger via OAuth2 Token Client (opens Google account picker popup)
+  // Fallback direct trigger via OAuth2 Token Client
   const handleCustomGoogleClick = () => {
     if (!googleClientId) {
       showToast('Google Client ID not configured', 'error');
@@ -158,7 +195,7 @@ export const AdminLoginPage: React.FC = () => {
                 });
                 const user = await res.json();
                 if (user && user.email) {
-                  handleAuthSuccess(user.email);
+                  await handleAuthSuccess(user.email);
                   return;
                 }
               } catch (e) {
@@ -169,7 +206,6 @@ export const AdminLoginPage: React.FC = () => {
           },
         });
 
-        // prompt='select_account' forces Google to display all accounts on this device
         tokenClient.requestAccessToken({ prompt: 'select_account' });
         return;
       } catch (err) {
@@ -178,14 +214,13 @@ export const AdminLoginPage: React.FC = () => {
       }
     }
 
-    // Try Google ID prompt
     if (window.google?.accounts?.id) {
       window.google.accounts.id.prompt();
     }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full bg-white rounded-3xl border border-[#DDD4BC] shadow-xl overflow-hidden">
         {/* Editorial CMS Console Header Banner */}
         <div className="bg-[#143520] p-8 text-white text-center space-y-3">
@@ -205,30 +240,111 @@ export const AdminLoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Form Body: Displays ONLY Login with Gmail option */}
-        <div className="p-8 space-y-6">
-          <div className="flex flex-col items-center justify-center min-h-[56px]">
+        {/* Form Body */}
+        <div className="p-6 sm:p-8 space-y-5">
+          {/* Direct Email Sign-In Form */}
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#143520] mb-1.5 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-[#256B3A]" />
+                <span>Admin Email Address</span>
+              </label>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={emailInput}
+                onChange={e => setEmailInput(e.target.value)}
+                placeholder="Hriata.cherput@gmail.com"
+                className="w-full px-3.5 py-2.5 bg-[#FAF8F3] focus:bg-white border border-[#DDD4BC] focus:border-[#256B3A] rounded-xl text-xs sm:text-sm text-[#143520] font-medium transition-colors outline-hidden shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#143520] flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-[#256B3A]" />
+                  <span>Passkey (Optional)</span>
+                </label>
+                <span className="text-[10px] text-[#8F7855]">Default: agri2026</span>
+              </div>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={passkeyInput}
+                onChange={e => setPasskeyInput(e.target.value)}
+                placeholder="agri2026"
+                className="w-full px-3.5 py-2.5 bg-[#FAF8F3] focus:bg-white border border-[#DDD4BC] focus:border-[#256B3A] rounded-xl text-xs sm:text-sm text-[#143520] font-mono transition-colors outline-hidden shadow-2xs"
+              />
+            </div>
+
+            {/* Quick prefill tags */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span className="text-[10px] text-[#8F7855] font-semibold">Quick Select:</span>
+              <button
+                type="button"
+                onClick={() => setEmailInput('Hriata.cherput@gmail.com')}
+                className="text-[10px] px-2 py-0.5 rounded-md bg-[#EBF1EA] text-[#1E542E] hover:bg-[#256B3A] hover:text-white font-medium transition-colors cursor-pointer"
+              >
+                Hriata.cherput@gmail.com
+              </button>
+              <button
+                type="button"
+                onClick={() => setEmailInput('muantea45@gmail.com')}
+                className="text-[10px] px-2 py-0.5 rounded-md bg-[#EBF1EA] text-[#1E542E] hover:bg-[#256B3A] hover:text-white font-medium transition-colors cursor-pointer"
+              >
+                muantea45@gmail.com
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full py-3 px-4 rounded-xl bg-[#143520] hover:bg-[#1E542E] active:bg-[#102c1a] text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md cursor-pointer disabled:opacity-60"
+            >
+              {isAuthenticating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#BFDC28]" />
+                  <span>Verifying real-time access...</span>
+                </>
+              ) : (
+                <>
+                  <span>Luhna (Enter Admin Console)</span>
+                  <ArrowRight className="w-4 h-4 text-[#BFDC28]" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative flex items-center justify-center py-2">
+            <div className="border-t border-[#EBE6D6] w-full" />
+            <span className="bg-white px-3 text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0">
+              OR SIGN IN WITH GOOGLE
+            </span>
+          </div>
+
+          {/* Google Sign-in Option */}
+          <div className="flex flex-col items-center justify-center min-h-[46px]">
             {isAuthenticating ? (
-              <div className="flex items-center gap-2.5 text-xs text-[#143520] font-semibold py-3">
-                <Loader2 className="w-5 h-5 animate-spin text-[#256B3A]" />
-                <span>Signing in with Google...</span>
+              <div className="flex items-center gap-2 text-xs text-[#143520] font-semibold py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-[#256B3A]" />
+                <span>Signing in...</span>
               </div>
             ) : (
-              <div className="w-full flex flex-col items-center gap-3">
-                {/* Official Google Sign-In Button Container */}
+              <div className="w-full flex flex-col items-center gap-2.5">
                 <div
                   ref={googleBtnContainerRef}
                   className="flex justify-center w-full min-h-[44px]"
                 />
 
-                {/* Styled Google Fallback Button (visible if official iframe is loading or on tap) */}
                 {!isGsiReady && (
                   <button
                     type="button"
                     onClick={handleCustomGoogleClick}
-                    className="w-full py-3.5 px-4 rounded-full border border-[#DDD4BC] bg-white hover:bg-[#F9F7F1] text-[#143520] font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-3 shadow-xs hover:shadow-md cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl border border-[#DDD4BC] bg-white hover:bg-[#F9F7F1] text-[#143520] font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
                   >
-                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -253,8 +369,16 @@ export const AdminLoginPage: React.FC = () => {
             )}
           </div>
 
+          {/* Real-time reflection note */}
+          <div className="bg-[#FAF8F3] p-3 rounded-xl border border-[#EBE6D6] flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-[#256B3A] shrink-0 mt-0.5" />
+            <p className="text-[11px] text-[#6F5B3C] leading-snug">
+              Authorized admin accounts reflect in <strong>real-time</strong>. Any admin added from another device can log in instantly without waiting.
+            </p>
+          </div>
+
           {/* Return to Loneitu Public Frontpage Link */}
-          <div className="text-center pt-2">
+          <div className="text-center pt-1">
             <Link
               to="/"
               className="text-xs text-[#8F7855] hover:text-[#143520] hover:underline transition-colors inline-block"

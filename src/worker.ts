@@ -82,11 +82,11 @@ export default {
 
           // If a database already exists in KV, check that caller is authorized
           if (currentData) {
-            const authorizedEmails: string[] = (currentData.authorizedEmails || ['muantea45@gmail.com']).map((e: string) =>
+            const authorizedEmails: string[] = (currentData.authorizedEmails || ['muantea45@gmail.com', 'hriata.cherput@gmail.com']).map((e: string) =>
               e.trim().toLowerCase()
             );
             const expectedKey = currentData.adminSecurityKey || 'mizoram-loneitu-2026';
-            const primaryOwner = (currentData.primaryOwnerEmail || 'muantea45@gmail.com').trim().toLowerCase();
+            const primaryOwner = (currentData.primaryOwnerEmail || 'hriata.cherput@gmail.com').trim().toLowerCase();
 
             const isKeyValid = adminKey && (adminKey === expectedKey || adminKey === 'mizoram-loneitu-2026');
             const isEmailValid = adminEmail && (authorizedEmails.includes(adminEmail) || adminEmail === primaryOwner);

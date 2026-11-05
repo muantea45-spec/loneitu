@@ -87,6 +87,10 @@ export const Footer: React.FC = () => {
             <Link to="/archive" className="hover:text-[#BFDC28] transition-colors">
               Archive
             </Link>
+            <span>•</span>
+            <Link to="/admin" className="hover:text-[#BFDC28] transition-colors">
+              Admin Console
+            </Link>
           </div>
         </div>
       </div>

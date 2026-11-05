@@ -9,14 +9,18 @@ export const GOOGLE_CLIENT_ID =
   '890840043778-tjhsv22vi85uph314c9g9vetc9n8n13u.apps.googleusercontent.com';
 
 export const DEFAULT_AUTHORIZED_EMAILS: string[] = [
-  'muantea45@gmail.com', // Primary Owner & Sole Permanent Administrator
+  'muantea45@gmail.com', // Primary Owner
+  'hriata.cherput@gmail.com', // Authorized Administrator & Editor
 ];
 
 export const DEFAULT_ADMIN_KEY = 'agri2026';
 
 export const isDefaultAuthorizedEmail = (email: string): boolean => {
   const normalized = email.trim().toLowerCase();
-  return normalized === 'muantea45@gmail.com';
+  return (
+    normalized === 'muantea45@gmail.com' ||
+    normalized === 'hriata.cherput@gmail.com'
+  );
 };
 
 export interface GoogleJwtPayload {

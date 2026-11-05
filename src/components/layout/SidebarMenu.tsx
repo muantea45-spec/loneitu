@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
+import { X, Sprout, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar, Shield } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -99,6 +99,17 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               >
                 <Info className="w-4 h-4 text-[#256B3A]" />
                 <span>About</span>
+              </Link>
+              <Link
+                to="/admin"
+                onClick={onClose}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname.startsWith('/admin')
+                  ? 'bg-[#EBF1EA] text-[#143520]'
+                  : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
+                  }`}
+              >
+                <Shield className="w-4 h-4 text-[#256B3A]" />
+                <span>Admin Console</span>
               </Link>
             </div>
 

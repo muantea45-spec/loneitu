@@ -46,7 +46,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as AdminTab | null;
-  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'categories', 'tags', 'authors', 'about', 'footer', 'settings'];
+  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'farmers', 'categories', 'tags', 'authors', 'about', 'footer', 'settings'];
 
   const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
     if (tabParam && validTabs.includes(tabParam)) {

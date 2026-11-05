@@ -4,7 +4,7 @@ import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, 
 import type { FarmerRecord, FarmerFieldDefinition } from '../types/farmer';
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA, INITIAL_FOOTER_DATA } from '../data/initialData';
 import { INITIAL_FARMERS } from '../data/initialFarmers';
-import { DEFAULT_ADMIN_KEY, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
+import { DEFAULT_ADMIN_KEY, DEFAULT_AUTHORIZED_EMAILS, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
 
@@ -54,6 +54,7 @@ interface BlogContextType {
   addAuthorizedEmail: (email: string) => boolean;
   removeAuthorizedEmail: (email: string) => boolean;
   isAuthorizedEmail: (email: string) => boolean;
+  checkAndRefreshAuthorization: (email: string) => Promise<boolean>;
   
   // Article CRUD & Actions
   addArticle: (data: Partial<Article> & { title: string; content: string; category: string }) => Article;
@@ -472,15 +473,18 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const list = parsed.map((e: string) => e.trim().toLowerCase()).filter(Boolean);
-          if (!list.includes('muantea45@gmail.com')) {
-            list.unshift('muantea45@gmail.com');
-          }
+          DEFAULT_AUTHORIZED_EMAILS.forEach(def => {
+            const defNorm = def.trim().toLowerCase();
+            if (!list.includes(defNorm)) {
+              list.push(defNorm);
+            }
+          });
           return list;
         }
       }
-      return ['muantea45@gmail.com'];
+      return DEFAULT_AUTHORIZED_EMAILS.map(e => e.trim().toLowerCase());
     } catch {
-      return ['muantea45@gmail.com'];
+      return DEFAULT_AUTHORIZED_EMAILS.map(e => e.trim().toLowerCase());
     }
   });
 
@@ -796,6 +800,44 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       authorizedEmails.some(e => e.trim().toLowerCase() === normalized) ||
       isDefaultAuthorizedEmail(normalized)
     );
+  };
+
+  const checkAndRefreshAuthorization = async (email: string): Promise<boolean> => {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized.includes('@')) return false;
+
+    // 1. Instant check in memory
+    if (isAuthorizedEmail(normalized)) {
+      return true;
+    }
+
+    // 2. Real-time fetch against central cloud database to pick up new admins instantly
+    try {
+      const cloudData = await fetchRemoteDatabase();
+      if (cloudData) {
+        const remoteAuthEmails: string[] = Array.isArray(cloudData.authorizedEmails)
+          ? cloudData.authorizedEmails.map((e: string) => e.trim().toLowerCase())
+          : [];
+        const remoteOwner = (cloudData.primaryOwnerEmail || '').trim().toLowerCase();
+
+        if (
+          remoteAuthEmails.includes(normalized) ||
+          remoteOwner === normalized ||
+          isDefaultAuthorizedEmail(normalized)
+        ) {
+          const merged = Array.from(new Set([...authorizedEmails, ...remoteAuthEmails, normalized]));
+          setAuthorizedEmails(merged);
+          try {
+            localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(merged));
+          } catch {}
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Real-time auth check failed to contact cloud database', err);
+    }
+
+    return isAuthorizedEmail(normalized);
   };
 
   const addAuthorizedEmail = (email: string): boolean => {
@@ -1704,6 +1746,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addAuthorizedEmail,
         removeAuthorizedEmail,
         isAuthorizedEmail,
+        checkAndRefreshAuthorization,
         addArticle,
         updateArticle,
         deleteArticle,

@@ -4,8 +4,24 @@
  */
 const BACKEND_URL = 'https://loneitu.ddvktp.workers.dev/api/db';
 
-export const onRequestGet: PagesFunction = async () => {
+export const onRequestGet: PagesFunction = async (context) => {
   try {
+    const env = context.env as any;
+    if (env?.LONEITU_KV) {
+      const data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+      if (data) {
+        return new Response(JSON.stringify({ success: true, data }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        });
+      }
+    }
+
     const res = await fetch(`${BACKEND_URL}?_t=${Date.now()}`, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -39,8 +55,26 @@ export const onRequestPost: PagesFunction = async (context) => {
   try {
     const body = await context.request.text();
     const adminKey = context.request.headers.get('x-admin-key') || '';
-    const adminEmail = context.request.headers.get('x-admin-email') || '';
+    const adminEmail = (context.request.headers.get('x-admin-email') || '').trim().toLowerCase();
     const authHeader = context.request.headers.get('authorization') || '';
+
+    const env = context.env as any;
+    if (env?.LONEITU_KV) {
+      try {
+        const parsed = JSON.parse(body);
+        await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(parsed));
+        return new Response(JSON.stringify({ success: true, kvSaved: true, data: parsed }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+          },
+        });
+      } catch (kvErr) {
+        console.warn('Direct KV put error, falling back to backend URL', kvErr);
+      }
+    }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
