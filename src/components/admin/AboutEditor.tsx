@@ -33,7 +33,10 @@ import {
   Plus,
   CornerDownLeft,
   ListIndentIncrease,
-  Info
+  Info,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
 } from 'lucide-react';
 import {
   InstagramIcon,
@@ -105,47 +108,50 @@ export const AboutEditor: React.FC = () => {
   const [isCustomTableModalOpen, setIsCustomTableModalOpen] = useState(false);
   const [customCols, setCustomCols] = useState(3);
   const [customRows, setCustomRows] = useState(3);
+  const [tableOutputFormat, setTableOutputFormat] = useState<'markdown' | 'html'>('markdown');
 
-  // Column Configuration interface for manual column sizing
+  // Column Configuration interface for manual column sizing and alignment
   interface ColumnConfig {
     name: string;
     width: number; // Percentage (e.g. 20, 50, 30)
+    align?: 'left' | 'center' | 'right';
   }
 
   const getDefaultColumns = (count: number): ColumnConfig[] => {
     if (count === 2) {
       return [
-        { name: 'Thupui / Metric', width: 50 },
-        { name: 'Dinhmun / Details', width: 50 }
+        { name: 'Thupui / Metric', width: 50, align: 'left' },
+        { name: 'Dinhmun / Details', width: 50, align: 'left' }
       ];
     }
     if (count === 3) {
       return [
-        { name: 'Sl No', width: 20 },
-        { name: 'Thupui / Description', width: 50 },
-        { name: 'Dinhmun / Status', width: 30 }
+        { name: 'Sl No', width: 20, align: 'left' },
+        { name: 'Thupui / Description', width: 50, align: 'left' },
+        { name: 'Dinhmun / Status', width: 30, align: 'left' }
       ];
     }
     if (count === 4) {
       return [
-        { name: 'Thlai / Item', width: 25 },
-        { name: 'Hmun / Location', width: 25 },
-        { name: 'Hmalakna', width: 30 },
-        { name: 'Status', width: 20 }
+        { name: 'Thlai / Item', width: 25, align: 'left' },
+        { name: 'Hmun / Location', width: 25, align: 'left' },
+        { name: 'Hmalakna', width: 30, align: 'left' },
+        { name: 'Status', width: 20, align: 'left' }
       ];
     }
     if (count === 5) {
       return [
-        { name: 'Sl No', width: 12 },
-        { name: 'Thupui', width: 28 },
-        { name: 'Hmun', width: 20 },
-        { name: 'Hmalakna', width: 25 },
-        { name: 'Status', width: 15 }
+        { name: 'Sl No', width: 12, align: 'left' },
+        { name: 'Thupui', width: 28, align: 'left' },
+        { name: 'Hmun', width: 20, align: 'left' },
+        { name: 'Hmalakna', width: 25, align: 'left' },
+        { name: 'Status', width: 15, align: 'left' }
       ];
     }
     return Array.from({ length: count }, (_, i) => ({
       name: `Col ${i + 1}`,
-      width: Math.round(100 / count)
+      width: Math.round(100 / count),
+      align: 'left' as const
     }));
   };
 
@@ -161,6 +167,16 @@ export const AboutEditor: React.FC = () => {
       const copy = [...prev];
       if (copy[index]) {
         copy[index] = { ...copy[index], name };
+      }
+      return copy;
+    });
+  };
+
+  const updateColumnAlign = (index: number, align: 'left' | 'center' | 'right') => {
+    setColumnsConfig(prev => {
+      const copy = [...prev];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], align };
       }
       return copy;
     });
@@ -391,6 +407,26 @@ export const AboutEditor: React.FC = () => {
   };
 
   const insertCustomConfiguredTable = () => {
+    if (tableOutputFormat === 'markdown') {
+      const headerRow = `| ${columnsConfig.map(c => c.name || 'Header').join(' | ')} |`;
+      const separatorRow = `| ${columnsConfig.map(c => {
+        if (c.align === 'center') return ':---:';
+        if (c.align === 'right') return '---:';
+        return ':---';
+      }).join(' | ')} |`;
+
+      const rows = Array.from({ length: customRows }, (_, rIdx) => {
+        const cells = columnsConfig.map((c, cIdx) => `Sample ${c.name || `Data ${cIdx + 1}`} ${rIdx + 1}`);
+        return `| ${cells.join(' | ')} |`;
+      }).join('\n');
+
+      const tableMarkdown = `\n${headerRow}\n${separatorRow}\n${rows}\n\n`;
+      insertTextAtCursor(tableMarkdown);
+      showToast(`Clean Markdown table with ${customCols} columns inserted!`, 'success');
+      setIsCustomTableModalOpen(false);
+      return;
+    }
+
     const sum = totalWidth;
     const finalCols = columnsConfig.map(col => {
       if (sum === 100) return col;
@@ -429,94 +465,30 @@ ${rowsHtml}
   };
 
   const insertTable = (_cols?: number, _rows?: number, presetType: 'standard' | 'comparison' | 'agronomy' = 'standard') => {
-    let tableHtml = '';
+    let tableMarkdown = '';
 
     if (presetType === 'comparison') {
-      tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-  <thead>
-    <tr style="background: #143520; color: #BFDC28;">
-      <th style="width: 50%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Hmanlai Dan (Traditional)</th>
-      <th style="width: 50%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Loneitu Kalpui Dan (Modern Agro-Tech)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Kut hnathawh hahthlak</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Khawl leh automated monitoring</td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Leitha tlem</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Soil test hmanga leitha pek</td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Thlai hralhna harsa</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Direct market & digital registry</td>
-    </tr>
-  </tbody>
-</table>\n\n`;
+      tableMarkdown = `\n| Hmanlai Dan (Traditional) | Loneitu Kalpui Dan (Modern Agro-Tech) |
+| :--- | :--- |
+| Kut hnathawh hahthlak | Khawl leh automated monitoring |
+| Leitha tlem | Soil test hmanga leitha pek |
+| Thlai hralhna harsa | Direct market & digital registry |\n\n`;
     } else if (presetType === 'agronomy') {
-      tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-  <thead>
-    <tr style="background: #143520; color: #BFDC28;">
-      <th style="width: 25%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Thlai Hming</th>
-      <th style="width: 25%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Hmun / District</th>
-      <th style="width: 30%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Hmalakna</th>
-      <th style="width: 20%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Dinhmun (Status)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Chawnpui Grape</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Champhai</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Drip Irrigation</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Ṭha tluang</td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Dragon Fruit</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Kolasib</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Trellis support system</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Rah chhuak mek</td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Assam Lemon</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Serchhip</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Organic composting</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Zirchianna kal mek</td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Ginger (Sawhthing)</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Lunglei</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Value-added processing</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Hralh chhuah theih</td>
-    </tr>
-  </tbody>
-</table>\n\n`;
+      tableMarkdown = `\n| Thlai Hming | Hmun / District | Hmalakna | Dinhmun (Status) |
+| :--- | :--- | :--- | :--- |
+| Chawnpui Grape | Champhai | Drip Irrigation | Ṭha tluang |
+| Dragon Fruit | Kolasib | Trellis support system | Rah chhuak mek |
+| Assam Lemon | Serchhip | Organic composting | Zirchianna kal mek |
+| Ginger (Sawhthing) | Lunglei | Value-added processing | Hralh chhuah theih |\n\n`;
     } else {
-      tableHtml = `\n<table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-  <thead>
-    <tr style="background: #143520; color: #BFDC28;">
-      <th style="width: 20%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Sl No</th>
-      <th style="width: 50%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Thupui / Description</th>
-      <th style="width: 30%; padding: 10px 14px; text-align: left; border: 1px solid #DDD4BC;">Dinhmun / Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">1</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Sample research record</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Active</td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">2</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Field survey update</td>
-      <td style="padding: 10px 14px; border: 1px solid #DDD4BC;">Completed</td>
-    </tr>
-  </tbody>
-</table>\n\n`;
+      tableMarkdown = `\n| Sl No | Thupui / Description | Dinhmun / Status |
+| :--- | :--- | :--- |
+| 1 | Sample research record | Active |
+| 2 | Field survey update | Completed |\n\n`;
     }
 
-    insertTextAtCursor(tableHtml);
-    showToast('Table inserted with balanced column widths!', 'success');
+    insertTextAtCursor(tableMarkdown);
+    showToast('Clean Markdown table inserted! Edit cells directly between the | bars.', 'success');
     setIsTableDropdownOpen(false);
     setIsCustomTableModalOpen(false);
   };
@@ -528,17 +500,81 @@ ${rowsHtml}
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // 1. Tab key: insert 4 spaces indent without losing focus
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Check if cursor is currently on a Markdown table line
+    const start = textarea.selectionStart;
+    const text = textarea.value;
+    const lastNewline = text.lastIndexOf('\n', start - 1);
+    const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+    const nextNewline = text.indexOf('\n', start);
+    const lineEnd = nextNewline === -1 ? text.length : nextNewline;
+    const currentLine = text.substring(lineStart, lineEnd);
+    const isTableLine = currentLine.trim().startsWith('|');
+
+    // 1. Tab key
     if (e.key === 'Tab') {
       e.preventDefault();
-      handleInsertTab();
+      if (isTableLine) {
+        // Inside a table: insert " | " to quickly advance to or create the next column cell
+        const savedScrollTop = textarea.scrollTop;
+        const separator = ' | ';
+        const nextValue = text.substring(0, start) + separator + text.substring(textarea.selectionEnd);
+        handleChange('editorialBody', nextValue);
+        const newPos = start + separator.length;
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus({ preventScroll: true });
+            textareaRef.current.setSelectionRange(newPos, newPos);
+            textareaRef.current.scrollTop = savedScrollTop;
+          }
+        });
+      } else {
+        // Normal text: insert 4 spaces indent
+        handleInsertTab();
+      }
       return;
     }
 
-    // 2. Enter key: pressing Enter inserts a new paragraph break (\n\n) so markdown and live link render a true separate paragraph
+    // 2. Enter key
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      handleInsertNewParagraph();
+      if (isTableLine) {
+        const trimmed = currentLine.trim();
+        // If the line is only '|' or '| ' (user finished entering table data and hit Enter on an empty row)
+        if (trimmed === '|' || trimmed === '||' || trimmed === '| ' || trimmed === '| :--- |') {
+          // Clean up the empty table row and exit table with paragraph break
+          const savedScrollTop = textarea.scrollTop;
+          const nextValue = text.substring(0, lineStart) + '\n\n' + text.substring(lineEnd);
+          handleChange('editorialBody', nextValue);
+          const newPos = lineStart + 2;
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus({ preventScroll: true });
+              textareaRef.current.setSelectionRange(newPos, newPos);
+              textareaRef.current.scrollTop = savedScrollTop;
+            }
+          });
+        } else {
+          // Inside a table row: hitting Enter starts the next table row with '| '
+          const savedScrollTop = textarea.scrollTop;
+          const nextRowPrefix = '\n| ';
+          const nextValue = text.substring(0, start) + nextRowPrefix + text.substring(textarea.selectionEnd);
+          handleChange('editorialBody', nextValue);
+          const newPos = start + nextRowPrefix.length;
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus({ preventScroll: true });
+              textareaRef.current.setSelectionRange(newPos, newPos);
+              textareaRef.current.scrollTop = savedScrollTop;
+            }
+          });
+        }
+      } else {
+        // Normal text: insert a new paragraph break (\n\n)
+        handleInsertNewParagraph();
+      }
       return;
     }
 
@@ -1008,7 +1044,7 @@ ${rowsHtml}
                   required
                 />
                 <div className="flex items-center justify-between text-[11px] text-[#8F7855] px-2 pt-1 font-mono">
-                  <span>Shortcuts: <strong>Ctrl+B</strong> (Bold), <strong>Ctrl+I</strong> (Italic), <strong>Tab</strong> (Indent), <strong>Enter</strong> (New Para)</span>
+                  <span>Shortcuts: <strong>Ctrl+B</strong> (Bold), <strong>Ctrl+I</strong> (Italic), <strong>Tab</strong> (Indent / Table Cell), <strong>Enter</strong> (New Para / Next Row)</span>
                   <span>{formData.editorialBody.length} characters</span>
                 </div>
               </div>
@@ -1271,7 +1307,7 @@ ${rowsHtml}
         </div>
       </div>
 
-      {/* Custom Table Builder Modal with Manual Column Size Controls */}
+      {/* Custom Table Builder Modal with Markdown & HTML support */}
       {isCustomTableModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 border-2 border-emerald-300 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-scaleUp">
@@ -1282,8 +1318,12 @@ ${rowsHtml}
                   <TableIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-lg text-[#143520]">Custom Table & Column Sizing</h3>
-                  <p className="text-xs text-[#8F7855]">Manually adjust column widths (%) and headers</p>
+                  <h3 className="font-serif font-bold text-lg text-[#143520]">Custom Table Builder</h3>
+                  <p className="text-xs text-[#8F7855]">
+                    {tableOutputFormat === 'markdown'
+                      ? 'Clean Markdown pipe table — easy to fill and edit in text canvas'
+                      : 'Advanced HTML table with custom column width percentages'}
+                  </p>
                 </div>
               </div>
               <button
@@ -1292,6 +1332,33 @@ ${rowsHtml}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Format Selector: Markdown (Option 3) vs HTML */}
+            <div className="flex items-center gap-2 bg-[#F6F4EB] p-1.5 rounded-2xl border border-[#DDD4BC]">
+              <button
+                type="button"
+                onClick={() => setTableOutputFormat('markdown')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  tableOutputFormat === 'markdown'
+                    ? 'bg-[#143520] text-[#BFDC28] shadow-xs'
+                    : 'text-[#6F5B3C] hover:text-[#143520]'
+                }`}
+              >
+                <span>Clean Markdown Table (| ... |)</span>
+                <span className="text-[10px] px-1.5 py-0.5 bg-[#BFDC28]/20 text-[#BFDC28] rounded-md uppercase font-bold">Recommended</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTableOutputFormat('html')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  tableOutputFormat === 'html'
+                    ? 'bg-[#143520] text-[#BFDC28] shadow-xs'
+                    : 'text-[#6F5B3C] hover:text-[#143520]'
+                }`}
+              >
+                <span>HTML Table (% Width)</span>
               </button>
             </div>
 
@@ -1352,126 +1419,202 @@ ${rowsHtml}
               </div>
             </div>
 
-            {/* Preset Width Ratios */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#6F5B3C] uppercase tracking-wider text-[11px]">Quick Width Presets</span>
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                  totalWidth === 100 
-                    ? 'bg-emerald-100 text-emerald-800' 
-                    : 'bg-amber-100 text-amber-800'
-                }`}>
-                  Total Width: {totalWidth}% {totalWidth !== 100 && '(Auto-normalizes to 100%)'}
-                </span>
-              </div>
+            {tableOutputFormat === 'markdown' ? (
+              <>
+                {/* Column Headers & Alignment for Markdown */}
+                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                  <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Configure Column Titles & Alignment:</span>
+                  {columnsConfig.map((col, idx) => (
+                    <div key={idx} className="p-3 bg-[#FAF8F3] rounded-xl border border-[#DDD4BC] flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="w-5 h-5 rounded-full bg-[#143520] text-[#BFDC28] text-[10px] font-black flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={col.name}
+                          onChange={(e) => updateColumnName(idx, e.target.value)}
+                          placeholder={`Column ${idx + 1} Title`}
+                          className="flex-1 px-2.5 py-1 text-xs font-bold bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                        />
+                      </div>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={applyEqualWidths}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
-                >
-                  Equal ({Math.round(100 / customCols)}% each)
-                </button>
-                <button
-                  type="button"
-                  onClick={applyCompactFirstCol}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
-                >
-                  Compact 1st Col (15% Index / Serial)
-                </button>
-                <button
-                  type="button"
-                  onClick={applyDominantMiddleCol}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
-                >
-                  Wide Content Col
-                </button>
-                {totalWidth !== 100 && (
-                  <button
-                    type="button"
-                    onClick={normalizeTo100}
-                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer ml-auto"
-                  >
-                    Normalize to 100%
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Visual Proportion Bar Preview */}
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Column Proportions Preview:</span>
-              <div className="h-8 w-full rounded-xl overflow-hidden flex border border-[#DDD4BC] shadow-xs text-[10px] font-bold text-white text-center">
-                {columnsConfig.map((col, idx) => {
-                  const colors = ['bg-[#143520]', 'bg-[#256B3A]', 'bg-[#3A8D55]', 'bg-[#5CB578]', 'bg-[#82D099]', 'bg-[#B0E5C0]'];
-                  return (
-                    <div
-                      key={idx}
-                      style={{ width: `${(col.width / (totalWidth || 1)) * 100}%` }}
-                      className={`${colors[idx % colors.length]} h-full flex items-center justify-center px-1 truncate transition-all duration-200 border-r border-white/20 last:border-r-0`}
-                      title={`${col.name || `Col ${idx + 1}`}: ${col.width}%`}
-                    >
-                      <span className="truncate">{col.name || `Col ${idx + 1}`} ({col.width}%)</span>
+                      {/* Alignment Buttons */}
+                      <div className="flex items-center bg-white border border-[#DDD4BC] rounded-lg p-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => updateColumnAlign(idx, 'left')}
+                          className={`p-1 rounded-md transition-colors cursor-pointer ${
+                            (col.align || 'left') === 'left' ? 'bg-[#143520] text-[#BFDC28]' : 'text-slate-400 hover:text-slate-700'
+                          }`}
+                          title="Align Left (:---)"
+                        >
+                          <AlignLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateColumnAlign(idx, 'center')}
+                          className={`p-1 rounded-md transition-colors cursor-pointer ${
+                            col.align === 'center' ? 'bg-[#143520] text-[#BFDC28]' : 'text-slate-400 hover:text-slate-700'
+                          }`}
+                          title="Align Center (:---:)"
+                        >
+                          <AlignCenter className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateColumnAlign(idx, 'right')}
+                          className={`p-1 rounded-md transition-colors cursor-pointer ${
+                            col.align === 'right' ? 'bg-[#143520] text-[#BFDC28]' : 'text-slate-400 hover:text-slate-700'
+                          }`}
+                          title="Align Right (---:)"
+                        >
+                          <AlignRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  ))}
+                </div>
 
-            {/* Individual Column Sliders & Name Customizers */}
-            <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-              <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Configure Each Column Size:</span>
-              {columnsConfig.map((col, idx) => (
-                <div key={idx} className="p-3 bg-[#FAF8F3] rounded-xl border border-[#DDD4BC] space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="w-5 h-5 rounded-full bg-[#143520] text-[#BFDC28] text-[10px] font-black flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <input
-                        type="text"
-                        value={col.name}
-                        onChange={(e) => updateColumnName(idx, e.target.value)}
-                        placeholder={`Column ${idx + 1} Title`}
-                        className="flex-1 px-2.5 py-1 text-xs font-bold bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <input
-                        type="number"
-                        min={5}
-                        max={90}
-                        value={col.width}
-                        onChange={(e) => updateColumnWidth(idx, parseInt(e.target.value) || 10)}
-                        className="w-16 px-2 py-1 text-xs font-bold text-center bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                      />
-                      <span className="text-xs font-bold text-[#6F5B3C]">%</span>
-                    </div>
-                  </div>
-
-                  {/* Slider */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min={5}
-                      max={85}
-                      step={1}
-                      value={col.width}
-                      onChange={(e) => updateColumnWidth(idx, parseInt(e.target.value))}
-                      className="flex-1 h-1.5 bg-[#DDD4BC] rounded-lg appearance-none cursor-pointer accent-[#256B3A]"
-                    />
-                    <span className="text-[11px] font-mono text-[#8F7855] w-10 text-right">{col.width}%</span>
+                {/* Helpful Tip Card for Easy Data Entry */}
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-[#143520] flex items-start gap-2.5">
+                  <Sparkles className="w-4 h-4 text-[#256B3A] shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-[#143520]">Effortless Data Entry in Canvas:</p>
+                    <p className="text-[11px] text-[#256B3A] leading-relaxed">
+                      Once inserted, simply type or edit text between the <code className="bg-white px-1 py-0.5 rounded font-mono font-bold text-slate-800">|</code> bars. Press <kbd className="px-1.5 py-0.5 bg-white border border-emerald-300 rounded font-mono font-bold text-[10px]">Tab</kbd> to jump between cells (<code className="bg-white px-1 py-0.5 rounded font-mono font-bold text-slate-800"> | </code>) and <kbd className="px-1.5 py-0.5 bg-white border border-emerald-300 rounded font-mono font-bold text-[10px]">Enter</kbd> to automatically start the next row!
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <>
+                {/* Preset Width Ratios for HTML */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#6F5B3C] uppercase tracking-wider text-[11px]">Quick Width Presets</span>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      totalWidth === 100 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      Total Width: {totalWidth}% {totalWidth !== 100 && '(Auto-normalizes to 100%)'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={applyEqualWidths}
+                      className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                    >
+                      Equal ({Math.round(100 / customCols)}% each)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applyCompactFirstCol}
+                      className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                    >
+                      Compact 1st Col (15% Index / Serial)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applyDominantMiddleCol}
+                      className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-[#DDD4BC] hover:border-[#256B3A] text-[#143520] hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                    >
+                      Wide Content Col
+                    </button>
+                    {totalWidth !== 100 && (
+                      <button
+                        type="button"
+                        onClick={normalizeTo100}
+                        className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer ml-auto"
+                      >
+                        Normalize to 100%
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Visual Proportion Bar Preview */}
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Column Proportions Preview:</span>
+                  <div className="h-8 w-full rounded-xl overflow-hidden flex border border-[#DDD4BC] shadow-xs text-[10px] font-bold text-white text-center">
+                    {columnsConfig.map((col, idx) => {
+                      const colors = ['bg-[#143520]', 'bg-[#256B3A]', 'bg-[#3A8D55]', 'bg-[#5CB578]', 'bg-[#82D099]', 'bg-[#B0E5C0]'];
+                      return (
+                        <div
+                          key={idx}
+                          style={{ width: `${(col.width / (totalWidth || 1)) * 100}%` }}
+                          className={`${colors[idx % colors.length]} h-full flex items-center justify-center px-1 truncate transition-all duration-200 border-r border-white/20 last:border-r-0`}
+                          title={`${col.name || `Col ${idx + 1}`}: ${col.width}%`}
+                        >
+                          <span className="truncate">{col.name || `Col ${idx + 1}`} ({col.width}%)</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Individual Column Sliders & Name Customizers */}
+                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                  <span className="text-[11px] font-bold text-[#8F7855] uppercase tracking-wider">Configure Each Column Size:</span>
+                  {columnsConfig.map((col, idx) => (
+                    <div key={idx} className="p-3 bg-[#FAF8F3] rounded-xl border border-[#DDD4BC] space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="w-5 h-5 rounded-full bg-[#143520] text-[#BFDC28] text-[10px] font-black flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={col.name}
+                            onChange={(e) => updateColumnName(idx, e.target.value)}
+                            placeholder={`Column ${idx + 1} Title`}
+                            className="flex-1 px-2.5 py-1 text-xs font-bold bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <input
+                            type="number"
+                            min={5}
+                            max={90}
+                            value={col.width}
+                            onChange={(e) => updateColumnWidth(idx, parseInt(e.target.value) || 10)}
+                            className="w-16 px-2 py-1 text-xs font-bold text-center bg-white border border-[#DDD4BC] rounded-lg text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                          />
+                          <span className="text-xs font-bold text-[#6F5B3C]">%</span>
+                        </div>
+                      </div>
+
+                      {/* Slider */}
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          min={5}
+                          max={85}
+                          step={1}
+                          value={col.width}
+                          onChange={(e) => updateColumnWidth(idx, parseInt(e.target.value))}
+                          className="flex-1 h-1.5 bg-[#DDD4BC] rounded-lg appearance-none cursor-pointer accent-[#256B3A]"
+                        />
+                        <span className="text-[11px] font-mono text-[#8F7855] w-10 text-right">{col.width}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* Modal Actions */}
             <div className="flex items-center justify-between pt-3 border-t border-[#EBE6D6]">
               <div className="text-[11px] text-[#8F7855]">
-                Generates editable <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">&lt;th style="width: ...%"&gt;</code> tags
+                {tableOutputFormat === 'markdown' ? (
+                  <span>Inserts clean Markdown pipes <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">| Col 1 | Col 2 |</code> — no messy HTML</span>
+                ) : (
+                  <span>Generates HTML <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">&lt;th style="width: ...%"&gt;</code> tags</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
