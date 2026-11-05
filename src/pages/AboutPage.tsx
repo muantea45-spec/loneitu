@@ -18,7 +18,7 @@ function getStaffCardDetails(card: any) {
 }
 
 export const AboutPage: React.FC = () => {
-  const { aboutData, authors } = useBlog();
+  const { aboutData } = useBlog();
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +65,7 @@ export const AboutPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
+    <div className="w-full min-h-screen bg-[#FBFBF8] pb-16 overflow-x-hidden">
       {/* Hero Header */}
       <div className="w-full bg-[#143520] text-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
         <div className="max-w-4xl mx-auto space-y-6 text-center">
@@ -91,7 +91,7 @@ export const AboutPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-16 w-full max-w-full overflow-x-hidden sm:overflow-x-visible">
         {/* Editorial Vision & Manifesto */}
         <div className="bg-white p-8 sm:p-12 rounded-3xl border border-[#EBE6D6] shadow-xs space-y-6">
           <span className="text-xs font-bold uppercase tracking-wider text-[#256B3A]">
@@ -172,11 +172,11 @@ export const AboutPage: React.FC = () => {
             )}
 
             {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
-            <div className="space-y-4">
+            <div className="space-y-4 w-full overflow-hidden sm:overflow-visible">
               <div
                 ref={carouselRef}
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none"
-                >
+                className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none touch-pan-x overscroll-x-contain"
+              >
                   {filteredCards.map(card => {
                     const details = getStaffCardDetails(card);
                     return (
@@ -333,61 +333,7 @@ export const AboutPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Staff & Specialists of the Firm */}
-        {authors && authors.length > 0 && (
-          <div className="pt-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {authors.map(author => (
-              <div
-                key={author.id}
-                className="group bg-white p-6 rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col sm:flex-row gap-5 items-start relative overflow-hidden"
-              >
-                {/* Decorative background glow on hover */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#BFDC28]/10 to-transparent rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform duration-300" />
-
-                {/* Staff Photo */}
-                <div className="relative shrink-0">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-3 ring-[#256B3A]/15 group-hover:ring-[#256B3A]/40 transition-all shadow-xs bg-[#F6F4EB]">
-                    <img
-                      src={author.avatar}
-                      alt={author.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-
-                {/* Staff Details */}
-                <div className="space-y-2 flex-1 min-w-0">
-                  <div>
-                    <h4 className="font-serif font-bold text-lg sm:text-xl text-[#143520] leading-tight group-hover:text-[#1E542E] transition-colors">
-                      {author.name}
-                    </h4>
-                    <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#EBF1EA] text-[#1E542E] border border-[#256B3A]/20">
-                      <span>{author.role}</span>
-                    </div>
-                  </div>
-
-                  {author.institution && (
-                    <div className="text-xs font-semibold text-[#6F5B3C] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#6F5B3C]/60" />
-                      <span className="truncate">{author.institution}</span>
-                    </div>
-                  )}
-
-                  {author.bio && (
-                    <p className="text-xs text-[#54432C] pt-1 leading-relaxed text-justify [text-align:justify]">
-                      {author.bio}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
-  </div>
-);
+  );
 };
