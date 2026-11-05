@@ -454,6 +454,62 @@ export const INITIAL_ABOUT_DATA: AboutPageData = {
 
 Today, a quiet agricultural revolution is underway. Farmers worldwide are demonstrating that by fostering subterranean mycorrhizal fungal webs, crimping dense cover crops, deploying low-power wireless tension sensors, and integrating timber trees with livestock, farms can thrive through extreme weather while slashing overhead costs.`,
   quote: 'To heal the climate and nourish human communities, we must first restore the microbial dignity of the soil beneath our feet.',
+  customCardsSection: {
+    enabled: true,
+    tag: 'Operational Units & Field Stations',
+    title: 'Our Specialist Units & Field Stations',
+    subtitle: 'Explore our registered agricultural branches, nodal officers, field trial stations, and advisory facilities.',
+    columns: [
+      { id: 'col-role', name: 'Role / Specialty', type: 'text' },
+      { id: 'col-location', name: 'Location / District', type: 'text' },
+      { id: 'col-contact', name: 'Contact / Phone', type: 'text' },
+      { id: 'col-status', name: 'Status', type: 'badge' },
+    ],
+    cards: [
+      {
+        id: 'card-1',
+        title: 'Champhai Agro-Tech & Soil Lab',
+        subtitle: 'Eastern Agricultural Division',
+        badge: 'Active Station',
+        description: 'High-altitude soil testing, compost nutrient analysis, and cold-climate grape vineyard monitoring station.',
+        image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=600&q=80',
+        columnValues: {
+          'col-role': 'Soil Health & Field Diagnostics',
+          'col-location': 'Champhai (Bethel Veng)',
+          'col-contact': '+91 94361 23456',
+          'col-status': 'Open 9:00 AM - 4:00 PM',
+        },
+      },
+      {
+        id: 'card-2',
+        title: 'Kolasib Tropical Horticulture Hub',
+        subtitle: 'Northern Fruit & Nursery Center',
+        badge: 'Research Station',
+        description: 'Specialized propagation unit for dragon fruit trellising, Assam lemon nursery care, and disease-resistant saplings.',
+        image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb22509?auto=format&fit=crop&w=600&q=80',
+        columnValues: {
+          'col-role': 'Fruit Nursery & Trellis Architecture',
+          'col-location': 'Kolasib District',
+          'col-contact': '+91 98623 78901',
+          'col-status': 'Field Trials Active',
+        },
+      },
+      {
+        id: 'card-3',
+        title: 'Serchhip Organic Farmers Consortium',
+        subtitle: 'Central Hill Collective',
+        badge: 'Certified Partner',
+        description: 'Community vermicomposting network, natural pest deterrent formulation, and collective market logistics.',
+        image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80',
+        columnValues: {
+          'col-role': 'Bio-Fertilizer & Value Addition',
+          'col-location': 'Serchhip (Thenzawl Road)',
+          'col-contact': '+91 96120 45678',
+          'col-status': 'Direct Supply Link',
+        },
+      },
+    ],
+  },
   authorsTitle: 'Contributing Agronomists & Field Researchers',
   authorsSubtitle: 'Researchers and farmers authoring our peer-informed investigations',
   socialLinks: {

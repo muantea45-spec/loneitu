@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react';
-import { Sprout } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Sprout, Search } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { useBlog } from '../context/BlogContext';
 import { SocialIconsRow } from '../components/common/SocialIcons';
+import { INITIAL_ABOUT_DATA } from '../data/initialData';
 
 export const AboutPage: React.FC = () => {
   const { aboutData, authors } = useBlog();
+  const [cardSearchQuery, setCardSearchQuery] = useState('');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -16,6 +18,21 @@ export const AboutPage: React.FC = () => {
 
   const social = aboutData.socialLinks || {};
   const hasAnySocial = Object.values(social).some(v => !!v && v.trim() !== '');
+
+  const customCardsSection = aboutData.customCardsSection || INITIAL_ABOUT_DATA.customCardsSection;
+
+  const filteredCards = useMemo(() => {
+    if (!customCardsSection?.cards) return [];
+    if (!cardSearchQuery.trim()) return customCardsSection.cards;
+    const q = cardSearchQuery.toLowerCase();
+    return customCardsSection.cards.filter(c => {
+      if (c.title?.toLowerCase().includes(q)) return true;
+      if (c.subtitle?.toLowerCase().includes(q)) return true;
+      if (c.badge?.toLowerCase().includes(q)) return true;
+      if (c.description?.toLowerCase().includes(q)) return true;
+      return Object.values(c.columnValues || {}).some(v => v?.toLowerCase().includes(q));
+    });
+  }, [customCardsSection, cardSearchQuery]);
 
   return (
     <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
@@ -112,6 +129,134 @@ export const AboutPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* 3. Custom Dynamic Card View Section (Editable Title & Dynamic Columns) */}
+        {customCardsSection && customCardsSection.enabled !== false && customCardsSection.cards && customCardsSection.cards.length > 0 && (
+          <div className="space-y-6 pt-2">
+            <div className="border-b border-[#EBE6D6] pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#256B3A] flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#256B3A] animate-pulse" />
+                  <span>{customCardsSection.tag || 'Specialist Directory'}</span>
+                </span>
+                <h3 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] mt-1.5">
+                  {customCardsSection.title || 'Our Specialist Units & Field Stations'}
+                </h3>
+                {customCardsSection.subtitle && (
+                  <p className="text-xs sm:text-sm text-[#8F7855] mt-1">
+                    {customCardsSection.subtitle}
+                  </p>
+                )}
+              </div>
+
+              {/* Instant Search Bar (if 3 or more cards) */}
+              {customCardsSection.cards.length >= 3 && (
+                <div className="relative w-full sm:w-64 shrink-0">
+                  <Search className="w-4 h-4 text-[#8F7855] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={cardSearchQuery}
+                    onChange={e => setCardSearchQuery(e.target.value)}
+                    placeholder="Search cards..."
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A] shadow-2xs"
+                  />
+                  {cardSearchQuery && (
+                    <button
+                      onClick={() => setCardSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8F7855] hover:text-[#143520]"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cards Grid */}
+            {filteredCards.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredCards.map(card => (
+                  <div
+                    key={card.id}
+                    className="group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative"
+                  >
+                    {/* Optional Card Image Banner */}
+                    {card.image ? (
+                      <div className="w-full h-44 overflow-hidden bg-[#F6F4EB] relative shrink-0">
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                        {card.badge && (
+                          <span className="absolute top-3 right-3 px-3 py-1 rounded-full text-[11px] font-bold bg-[#143520]/90 text-[#BFDC28] backdrop-blur-xs shadow-xs border border-white/20">
+                            {card.badge}
+                          </span>
+                        )}
+                      </div>
+                    ) : card.badge ? (
+                      <div className="p-6 pb-0 flex justify-end">
+                        <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#EBF1EA] text-[#1E542E] border border-[#256B3A]/20">
+                          {card.badge}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {/* Card Content */}
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="font-serif font-bold text-lg sm:text-xl text-[#143520] leading-snug group-hover:text-[#1E542E] transition-colors">
+                          {card.title}
+                        </h4>
+
+                        {card.subtitle && (
+                          <div className="text-xs font-semibold text-[#8F7855] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#8F7855]/60" />
+                            <span>{card.subtitle}</span>
+                          </div>
+                        )}
+
+                        {card.description && (
+                          <p className="text-xs text-[#54432C] leading-relaxed pt-1 text-justify [text-align:justify]">
+                            {card.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Dynamic Columns List */}
+                      {customCardsSection.columns && customCardsSection.columns.length > 0 && (
+                        <div className="pt-3 border-t border-[#F2ECE1] space-y-2">
+                          {customCardsSection.columns.map(col => {
+                            const val = card.columnValues?.[col.id];
+                            if (!val || !val.trim()) return null;
+                            return (
+                              <div
+                                key={col.id}
+                                className="flex items-start justify-between gap-3 text-xs"
+                              >
+                                <span className="text-[10px] font-bold tracking-wider text-[#8F7855] uppercase shrink-0 pt-0.5">
+                                  {col.name}:
+                                </span>
+                                <span className="font-semibold text-[#143520] text-right break-words max-w-[65%]">
+                                  {val}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-white rounded-3xl border border-[#EBE6D6] text-xs text-[#8F7855]">
+                No cards match your search "{cardSearchQuery}".
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Social Media & Community Channels Section (Only rendered if at least one link is filled) */}
         {hasAnySocial && (

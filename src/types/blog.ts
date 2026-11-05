@@ -72,6 +72,31 @@ export interface SocialLinks {
   twitter?: string;
 }
 
+export interface CustomCardColumn {
+  id: string;
+  name: string;
+  type?: 'text' | 'badge' | 'link' | 'number';
+}
+
+export interface CustomCardItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  description?: string;
+  image?: string;
+  columnValues: Record<string, string>;
+}
+
+export interface CustomCardSectionData {
+  enabled: boolean;
+  tag?: string;
+  title: string;
+  subtitle?: string;
+  columns: CustomCardColumn[];
+  cards: CustomCardItem[];
+}
+
 export interface AboutPageData {
   badge: string;
   heroTitle: string;
@@ -80,6 +105,7 @@ export interface AboutPageData {
   editorialTitle: string;
   editorialBody: string;
   quote?: string;
+  customCardsSection?: CustomCardSectionData;
   authorsTitle: string;
   authorsSubtitle: string;
   socialLinks?: SocialLinks;
