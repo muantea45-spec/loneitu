@@ -79,3 +79,4 @@ export const CORE_FARMER_FIELDS: FarmerFieldDefinition[] = [
   // 22: Government Scheme
   { key: 'pmKisanEnrolled', label: 'PM-Kisan Scheme Enrolled', type: 'select', options: ['Yes', 'No', 'In Progress'], category: 'financial' },
 ];
+

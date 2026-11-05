@@ -36,6 +36,7 @@ interface BlogContextType {
   addFarmer: (data: Partial<FarmerRecord> & { fullName: string }) => FarmerRecord;
   updateFarmer: (id: string, updates: Partial<FarmerRecord>) => void;
   deleteFarmer: (id: string) => void;
+  wipeAllFarmers: () => void;
   batchImportFarmers: (records: FarmerRecord[]) => { count: number };
   addFarmerCustomField: (field: FarmerFieldDefinition) => void;
   deleteFarmerCustomField: (key: string) => void;
@@ -110,7 +111,7 @@ const STORAGE_KEYS = {
   GOOGLE_CLIENT_ID: 'loneitu_google_client_id_v2',
   ABOUT_PAGE: 'loneitu_mizo_about_page_v1',
   FOOTER: 'loneitu_mizo_footer_v1',
-  FARMERS: 'loneitu_mizo_farmers_v1',
+  FARMERS: 'loneitu_mizo_farmers_v2',
   FARMER_CUSTOM_FIELDS: 'loneitu_farmer_custom_fields_v1',
 };
 
@@ -612,7 +613,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      if (Array.isArray(cloudData.farmers) && cloudData.farmers.length > 0) {
+      if (Array.isArray(cloudData.farmers)) {
         setFarmers(cloudData.farmers);
         try {
           localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cloudData.farmers));
@@ -1329,6 +1330,18 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, []);
 
+  const wipeAllFarmers = useCallback(() => {
+    lastMutationTimeRef.current = Date.now();
+    setFarmers([]);
+    setFarmerCustomFields([]);
+    try {
+      localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify([]));
+      localStorage.removeItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS);
+    } catch {}
+    pushToCloudDatabase({ farmers: [], farmerCustomFields: [] });
+    broadcastLocalChange('FARMERS', []);
+  }, []);
+
   const batchImportFarmers = useCallback((records: FarmerRecord[]) => {
     lastMutationTimeRef.current = Date.now();
     setFarmers(prev => {
@@ -1588,6 +1601,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addFarmer,
         updateFarmer,
         deleteFarmer,
+        wipeAllFarmers,
         batchImportFarmers,
         addFarmerCustomField,
         deleteFarmerCustomField,

@@ -36,6 +36,7 @@ export const FarmerManager: React.FC = () => {
     addFarmer, 
     updateFarmer, 
     deleteFarmer, 
+    wipeAllFarmers,
     batchImportFarmers,
     uploadImage
   } = useBlog();
@@ -267,6 +268,21 @@ export const FarmerManager: React.FC = () => {
               <Download className="w-4 h-4" />
               <span>Export (.xlsx)</span>
             </button>
+
+            {farmers.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to completely wipe all ${farmers.length} farmer registry records? This cannot be undone.`)) {
+                    wipeAllFarmers();
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-all cursor-pointer"
+                title="Wipe all farmer registry records completely"
+              >
+                <Trash2 className="w-4 h-4 text-rose-300" />
+                <span>Wipe All</span>
+              </button>
+            )}
           </div>
         </div>
 

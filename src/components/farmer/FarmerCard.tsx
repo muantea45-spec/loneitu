@@ -163,3 +163,4 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
     </div>
   );
 };
+

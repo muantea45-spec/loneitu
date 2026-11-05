@@ -94,15 +94,23 @@ export const FarmerRegistrySpotlight: React.FC = () => {
       </div>
 
       {/* Responsive Multi-Column Card Grid (No internal card scrolling) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {spotlightFarmers.map(farmer => (
-          <FarmerCard
-            key={farmer.id}
-            farmer={farmer}
-            onSelect={(f) => setSelectedFarmer(f)}
-          />
-        ))}
-      </div>
+      {spotlightFarmers.length === 0 ? (
+        <div className="p-12 text-center bg-slate-50 dark:bg-slate-900/60 rounded-3xl border border-slate-200/70 dark:border-slate-800">
+          <Sprout className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Farmer Registry is currently empty</p>
+          <p className="text-xs text-slate-400 mt-1">Verified records will appear here once registered or imported via the Admin Console.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {spotlightFarmers.map(farmer => (
+            <FarmerCard
+              key={farmer.id}
+              farmer={farmer}
+              onSelect={(f) => setSelectedFarmer(f)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Interactive Detail Modal */}
       <FarmerDetailModal
@@ -112,3 +120,4 @@ export const FarmerRegistrySpotlight: React.FC = () => {
     </section>
   );
 };
+
