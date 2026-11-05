@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
   const contactEmail = data.contactEmail || 'muantea45@gmail.com';
 
   return (
-    <footer className="w-full bg-[#143520] text-[#EBF1EA] border-t border-[#1E542E] mt-20">
+    <footer className="w-full bg-[#143520] text-[#EBF1EA] border-t border-[#1E542E] mt-4 sm:mt-6">
       {/* Active Announcement / Notice Banner in Footer (Editable strictly via Admin Console) */}
       {data.bannerEnabled && (data.bannerTitle || data.bannerText) && (
         <div className="w-full bg-gradient-to-r from-[#173F26] via-[#215E34] to-[#173F26] text-white py-4 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]/60 shadow-inner">
@@ -56,9 +56,10 @@ export const Footer: React.FC = () => {
         </div>
       )}
 
-      <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2.5 mb-2">
+      <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Left Column: Brand, Mission Tagline & Contact Email (Centered on Mobile, Left-aligned on Desktop) */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-2.5 mb-2">
             <div className="w-10 h-10 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
               <img src="/logo.png" alt="Loneitu" className="w-full h-full object-contain" />
             </div>
@@ -73,7 +74,7 @@ export const Footer: React.FC = () => {
 
           {/* Contact Us @ (Email) */}
           {contactEmail && (
-            <div className="mt-3.5 flex items-center gap-2 text-xs">
+            <div className="mt-3.5 flex items-center justify-center md:justify-start gap-2 text-xs">
               <span className="text-[#ADC6A7] font-medium">Contact Us @</span>
               <a
                 href={`mailto:${contactEmail}`}
@@ -86,9 +87,12 @@ export const Footer: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-col items-start md:items-end gap-3.5">
-          <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
-          <div className="flex items-center gap-4 text-xs font-semibold text-[#D7E3D5] flex-wrap">
+        {/* Right Column: Social Media Links & HOME, ABOUT, ARCHIVE (Perfect Center on Mobile) */}
+        <div className="flex flex-col items-center md:items-end justify-center w-full md:w-auto gap-3.5">
+          <div className="flex justify-center w-full md:w-auto">
+            <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
+          </div>
+          <div className="flex items-center justify-center gap-4 text-xs font-semibold text-[#D7E3D5] flex-wrap w-full md:w-auto">
             <Link to="/" className="hover:text-[#BFDC28] transition-colors">
               Home
             </Link>

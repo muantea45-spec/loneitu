@@ -65,7 +65,7 @@ export const AboutPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#FBFBF8] pb-16 overflow-x-hidden">
+    <div className="w-full min-h-screen bg-[#FBFBF8] pb-2 sm:pb-3 overflow-x-hidden">
       {/* Hero Header */}
       <div className="w-full bg-[#143520] text-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
         <div className="max-w-4xl mx-auto space-y-6 text-center">
@@ -317,18 +317,13 @@ export const AboutPage: React.FC = () => {
           </div>
         )}
 
-        {/* Social Media & Community Channels Section (Only rendered if at least one link is filled) */}
+        {/* Connect With Us Section (Clean single title & social links) */}
         {hasAnySocial && (
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#EBE6D6] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#256B3A]">
-                Connect With Us
-              </span>
-              <h3 className="font-serif font-bold text-lg sm:text-xl text-[#143520] mt-0.5">
-                Official Channels & Social Communities
-              </h3>
-            </div>
-            <div className="pt-2 sm:pt-0 shrink-0">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#EBE6D6] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+            <h3 className="font-serif font-bold text-base sm:text-lg text-[#143520]">
+              Connect With Us
+            </h3>
+            <div className="shrink-0">
               <SocialIconsRow links={aboutData.socialLinks} variant="light" />
             </div>
           </div>
