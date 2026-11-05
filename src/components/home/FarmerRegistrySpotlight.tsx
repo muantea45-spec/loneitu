@@ -4,24 +4,25 @@ import { useBlog } from '../../context/BlogContext';
 import { FarmerCard } from '../farmer/FarmerCard';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 import type { FarmerRecord } from '../../types/farmer';
-import { ShieldCheck, ArrowRight, Sprout, Award, MapPin } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Users, Sparkles } from 'lucide-react';
 
 export const FarmerRegistrySpotlight: React.FC = () => {
   const { farmers } = useBlog();
   const [selectedFarmer, setSelectedFarmer] = useState<FarmerRecord | null>(null);
 
-  // Take up to 6 featured/verified farmers to showcase on homepage
+  // Take up to 6 verified records to showcase on homepage
   const spotlightFarmers = farmers.slice(0, 6);
 
-  // Stats
-  const totalAcreage = farmers.reduce((sum, f) => {
-    const acres = typeof f.landSizeAcre === 'number' ? f.landSizeAcre : parseFloat(String(f.landSizeAcre)) || 0;
-    return sum + acres;
-  }, 0);
-
-  const organicFarmers = farmers.filter(f => 
-    f.farmingType.toLowerCase().includes('organic') || f.farmingType.toLowerCase().includes('natural')
-  ).length;
+  // Collect all unique columns across all records
+  const allColumns = Array.from(
+    new Set(
+      farmers.flatMap(f => {
+        const fromCols = f.columns || [];
+        const fromData = Object.keys(f.data || {});
+        return [...fromCols, ...fromData];
+      })
+    )
+  ).filter(c => !['name', 'farmer name', 'full name', 'hming', 'avatar', 'photo'].includes(c.toLowerCase().trim()));
 
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-200/60 dark:border-slate-800/80">
@@ -33,10 +34,10 @@ export const FarmerRegistrySpotlight: React.FC = () => {
             <span>Mizoram State Agricultural Registry</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            Verified Farmer Registry
+            Farmer Registry
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base mt-2 leading-relaxed">
-            Authentic profiles of progressive farmers across Mizoram's 11 districts—showcasing landholdings, sustainable practices, crop yields, and direct market credentials.
+            Verified records of agriculturalists across Mizoram. Profiles reflect the exact columns uploaded through the registry system.
           </p>
         </div>
 
@@ -45,60 +46,50 @@ export const FarmerRegistrySpotlight: React.FC = () => {
           to="/farmers"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-[#143520] text-white hover:bg-[#1E542E] transition-all duration-200 shadow-sm hover:shadow-md shrink-0 self-start md:self-auto group"
         >
-          <span>View All Farmers ({farmers.length})</span>
+          <span>View All Records ({farmers.length})</span>
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
 
       {/* Highlights Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 sm:p-6 rounded-2xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 mb-10 text-xs text-slate-600 dark:text-slate-400">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 sm:p-6 rounded-2xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 mb-10 text-xs text-slate-600 dark:text-slate-400">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-xs text-[#256B3A]">
-            <Sprout className="w-5 h-5" />
+            <Users className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{farmers.length} Producers</p>
-            <p className="text-[11px] text-slate-500">Officially Registered</p>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{farmers.length} Records</p>
+            <p className="text-[11px] text-slate-500">Registered</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-xs text-emerald-600">
-            <Award className="w-5 h-5" />
+            <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{totalAcreage.toFixed(1)} Acres</p>
-            <p className="text-[11px] text-slate-500">Under Cultivation</p>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{allColumns.length} Columns</p>
+            <p className="text-[11px] text-slate-500">Uploaded Attributes</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 col-span-2 sm:col-span-1">
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-xs text-amber-600">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{organicFarmers} Eco-Growers</p>
-            <p className="text-[11px] text-slate-500">Organic & Natural</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-xs text-blue-600">
-            <MapPin className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">11 Districts</p>
-            <p className="text-[11px] text-slate-500">Statewide Coverage</p>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{farmers.length === 0 ? 'Empty' : 'Live'}</p>
+            <p className="text-[11px] text-slate-500">Database Status</p>
           </div>
         </div>
       </div>
 
-      {/* Responsive Multi-Column Card Grid (No internal card scrolling) */}
+      {/* Responsive Multi-Column Card Grid (Displays ONLY uploaded columns) */}
       {spotlightFarmers.length === 0 ? (
         <div className="p-12 text-center bg-slate-50 dark:bg-slate-900/60 rounded-3xl border border-slate-200/70 dark:border-slate-800">
-          <Sprout className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <Users className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
           <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Farmer Registry is currently empty</p>
-          <p className="text-xs text-slate-400 mt-1">Verified records will appear here once registered or imported via the Admin Console.</p>
+          <p className="text-xs text-slate-400 mt-1">Uploaded farmer records will appear here as soon as an Excel file is imported in the Admin Console.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -120,4 +111,3 @@ export const FarmerRegistrySpotlight: React.FC = () => {
     </section>
   );
 };
-

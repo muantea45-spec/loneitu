@@ -1257,38 +1257,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Farmer Registry actions
-  const addFarmer = useCallback((data: Partial<FarmerRecord> & { fullName: string }): FarmerRecord => {
+  const addFarmer = useCallback((recordData: Partial<FarmerRecord> & { fullName: string }): FarmerRecord => {
     lastMutationTimeRef.current = Date.now();
     const newId = `farmer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const newRecord: FarmerRecord = {
       id: newId,
-      farmerId: data.farmerId || `MZ-REG-${String(farmers.length + 1).padStart(3, '0')}`,
-      fullName: data.fullName.trim(),
-      phone: data.phone || 'N/A',
-      gender: data.gender || 'Other',
-      age: data.age || '',
-      village: data.village || 'Mizoram',
-      district: data.district || 'Champhai',
-      state: data.state || 'Mizoram',
-      aadhaarNumber: data.aadhaarNumber || '',
-      landSizeAcre: data.landSizeAcre !== undefined ? data.landSizeAcre : 1,
-      landOwnership: data.landOwnership || 'Owned (Patu)',
-      farmingType: data.farmingType || 'Organic Farming',
-      primaryCrops: data.primaryCrops || 'Mixed Crops',
-      secondaryCrops: data.secondaryCrops || '',
-      soilType: data.soilType || 'Loamy Mountain Soil',
-      irrigationSource: data.irrigationSource || 'Rainfed & Spring',
-      annualYieldKg: data.annualYieldKg !== undefined ? data.annualYieldKg : 0,
-      annualIncomeInr: data.annualIncomeInr || '₹0',
-      bankName: data.bankName || 'Mizoram Rural Bank',
-      accountNumber: data.accountNumber || '',
-      ifscCode: data.ifscCode || '',
-      pmKisanEnrolled: data.pmKisanEnrolled || 'Yes',
-      avatar: data.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
-      status: data.status || 'Verified',
-      registrationDate: data.registrationDate || new Date().toISOString().split('T')[0],
-      notes: data.notes || '',
-      customAttributes: data.customAttributes || {},
+      fullName: recordData.fullName.trim(),
+      avatar: recordData.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
+      registrationDate: recordData.registrationDate || new Date().toISOString().split('T')[0],
+      status: recordData.status || 'Verified',
+      data: recordData.data || {},
+      columns: recordData.columns || Object.keys(recordData.data || {}),
     };
 
     setFarmers(prev => {
@@ -1302,7 +1281,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     return newRecord;
-  }, [farmers]);
+  }, []);
 
   const updateFarmer = useCallback((id: string, updates: Partial<FarmerRecord>) => {
     lastMutationTimeRef.current = Date.now();
@@ -1345,19 +1324,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const batchImportFarmers = useCallback((records: FarmerRecord[]) => {
     lastMutationTimeRef.current = Date.now();
     setFarmers(prev => {
-      const existingMap = new Map(prev.map(f => [f.farmerId, f]));
-      const newItems: FarmerRecord[] = [];
-
-      records.forEach(rec => {
-        if (rec.farmerId && existingMap.has(rec.farmerId)) {
-          const existing = existingMap.get(rec.farmerId)!;
-          existingMap.set(rec.farmerId, { ...existing, ...rec, id: existing.id });
-        } else {
-          newItems.push(rec);
-        }
-      });
-
-      const updated = [...newItems, ...Array.from(existingMap.values())];
+      const updated = [...records, ...prev];
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
       } catch {}
