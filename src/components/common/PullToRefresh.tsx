@@ -169,7 +169,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
                 >
                   <ArrowDown className="w-4 h-4" />
                 </div>
-                <span className="text-[#6F5B3C] font-medium">Hnuk thla rawh...</span>
+                <span className="text-[#6F5B3C] font-medium">Pawt thla rawh...</span>
               </>
             )}
           </div>
