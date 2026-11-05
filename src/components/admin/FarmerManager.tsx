@@ -45,15 +45,25 @@ const PAGE_SIZE = 8;
 // Helper to canonicalize and format block names (e.g. CHAMPHAI, Champhai -> Champhai; khawbung, KHAWBUNG -> Khawbung)
 function formatBlockName(raw: string): string {
   if (!raw) return '';
-  const trimmed = raw.trim();
-  if (!trimmed) return '';
+  // 1. Clean invisible zero-width chars and whitespace
+  let clean = String(raw)
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+  if (!clean) return '';
 
-  // Clean up redundant trailing 'Block' / 'RD Block' if entered (e.g. "CHAMPHAI BLOCK" -> "Champhai")
-  const withoutSuffix = trimmed.replace(/\s+(?:r\.?d\.?\s+)?block$/i, '').trim();
-  const base = withoutSuffix || trimmed;
+  // 2. Remove trailing punctuation e.g. .,;:-
+  clean = clean.replace(/[.,;:\-_/]+$/, '').trim();
 
-  // Convert to Title Case words (e.g., 'CHAMPHAI' -> 'Champhai', 'khawbung' -> 'Khawbung')
-  return base
+  // 3. Remove common block suffixes/prefixes:
+  // e.g. "RD Block", "R.D. Block", "C.D. Block", "CD Block", "Block", "(Block)"
+  clean = clean.replace(/\s*\(?(?:r\.?d\.?|c\.?d\.?|dev\.?)?\s*block\)?$/i, '').trim();
+  clean = clean.replace(/^(?:r\.?d\.?|c\.?d\.?|dev\.?)?\s*block\s*:?\s*/i, '').trim();
+  clean = clean.replace(/[.,;:\-_/]+$/, '').trim();
+
+  if (!clean) clean = String(raw).trim();
+
+  // 4. Convert to Title Case words (e.g., 'CHAMPHAI' -> 'Champhai', 'khawbung' -> 'Khawbung')
+  return clean
     .toLowerCase()
     .split(/\s+/)
     .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1) : '')
@@ -64,12 +74,58 @@ function formatBlockName(raw: string): string {
 // Helper to extract block from farmer record data
 function getFarmerBlock(farmer: FarmerRecord): string {
   if (!farmer || !farmer.data) return '';
-  for (const [key, val] of Object.entries(farmer.data)) {
+  const entries = Object.entries(farmer.data);
+
+  // 1. Direct exact block header: Block, RD Block, Block Name, etc.
+  for (const [key, val] of entries) {
+    if (/^(block|block\s*name|rd\s*block|r\.d\.\s*block)$/i.test(key.trim())) {
+      const s = String(val || '').trim();
+      if (s) return formatBlockName(s);
+    }
+  }
+
+  // 2. Key contains block (excluding id, code, sl, no, number)
+  for (const [key, val] of entries) {
+    if (/block/i.test(key) && !/(code|id|no|number|sl|num)/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return formatBlockName(s);
+    }
+  }
+
+  // 3. Composite keys like District/Block or Cluster or Circle
+  for (const [key, val] of entries) {
+    if (/(cluster|circle|district.*block|block.*district)/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return formatBlockName(s);
+    }
+  }
+
+  // 4. Any key containing block
+  for (const [key, val] of entries) {
     if (/block/i.test(key)) {
       const s = String(val || '').trim();
       if (s) return formatBlockName(s);
     }
   }
+
+  // 5. If record has no block column, check if District matches Champhai or Khawbung
+  for (const [key, val] of entries) {
+    if (/district/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s && /(champhai|khawbung)/i.test(s)) {
+        return formatBlockName(s);
+      }
+    }
+  }
+
+  // 6. Any field that equals Champhai or Khawbung (case-insensitive)
+  for (const [_, val] of entries) {
+    const s = String(val || '').trim();
+    if (/^(champhai|khawbung)$/i.test(s)) {
+      return formatBlockName(s);
+    }
+  }
+
   return '';
 }
 

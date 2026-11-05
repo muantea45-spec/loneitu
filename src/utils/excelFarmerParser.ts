@@ -9,6 +9,32 @@ export interface ParseResult {
 }
 
 /**
+ * Normalizes and formats block names to clean Title Case
+ * (e.g. CHAMPHAI, Champhai -> Champhai; khawbung, KHAWBUNG -> Khawbung)
+ */
+export function formatBlockName(raw: string): string {
+  if (!raw) return '';
+  let clean = String(raw)
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+  if (!clean) return '';
+
+  clean = clean.replace(/[.,;:\-_/]+$/, '').trim();
+  clean = clean.replace(/\s*\(?(?:r\.?d\.?|c\.?d\.?|dev\.?)?\s*block\)?$/i, '').trim();
+  clean = clean.replace(/^(?:r\.?d\.?|c\.?d\.?|dev\.?)?\s*block\s*:?\s*/i, '').trim();
+  clean = clean.replace(/[.,;:\-_/]+$/, '').trim();
+
+  if (!clean) clean = String(raw).trim();
+
+  return clean
+    .toLowerCase()
+    .split(/\s+/)
+    .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1) : '')
+    .join(' ')
+    .trim();
+}
+
+/**
  * Parses an Excel (.xlsx, .xls) or CSV file into dynamic FarmerRecord objects.
  * Only the exact columns present in the uploaded spreadsheet are saved.
  * Avatars are left blank unless a specific valid image URL is in the spreadsheet,
@@ -81,7 +107,12 @@ export async function parseExcelToFarmers(file: File): Promise<ParseResult> {
         } else if (typeof rawVal === 'number') {
           rowData[header] = rawVal;
         } else {
-          rowData[header] = String(rawVal).trim();
+          const strVal = String(rawVal).trim();
+          if (/block/i.test(header) && !/(code|id|no|number|sl|num)/i.test(header)) {
+            rowData[header] = formatBlockName(strVal);
+          } else {
+            rowData[header] = strVal;
+          }
         }
       }
     });
