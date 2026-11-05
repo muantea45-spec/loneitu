@@ -35,7 +35,8 @@ import {
   List,
   Database,
   MessageCircle,
-  Building2
+  Building2,
+  Phone
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 
@@ -74,6 +75,16 @@ function getWhatsAppUrl(contact: string, name?: string): string | null {
     name ? `Chibai ${name}! Loneitu (Mizoram Tan) atanga biak i ni e.` : 'Chibai! Loneitu (Mizoram Tan) atanga biak i ni e.'
   );
   return `https://wa.me/${phone}?text=${msg}`;
+}
+
+// Helper to format direct phone call link
+function getDirectCallUrl(contact: string): string | null {
+  const digits = (contact || '').replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 10) return `tel:+91${digits}`;
+  if (digits.length > 10) return `tel:+${digits}`;
+  if (digits.length >= 6) return `tel:${digits}`;
+  return null;
 }
 
 export const FarmerManager: React.FC = () => {
@@ -934,6 +945,7 @@ export const FarmerManager: React.FC = () => {
               {paginatedFarmers.map(farmer => {
                 const farmerContact = getFarmerContact(farmer);
                 const farmerWaUrl = farmerContact ? getWhatsAppUrl(farmerContact, farmer.fullName) : null;
+                const farmerCallUrl = farmerContact ? getDirectCallUrl(farmerContact) : null;
 
                 return (
                 <div
@@ -988,6 +1000,7 @@ export const FarmerManager: React.FC = () => {
                             const val = farmer.data?.[col];
                             const isContact = /contact|phone|mobile|call|cell|whatsapp|ph/i.test(col);
                             const rowWaUrl = isContact && val ? getWhatsAppUrl(String(val), farmer.fullName) : null;
+                            const rowCallUrl = isContact && val ? getDirectCallUrl(String(val)) : null;
 
                             return (
                               <div 
@@ -1004,19 +1017,32 @@ export const FarmerManager: React.FC = () => {
                                   >
                                     {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
                                   </span>
-                                  {rowWaUrl && (
-                                    <a
-                                      href={rowWaUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#25D366] hover:bg-[#20ba5a] text-white text-[9px] font-black shadow-2xs hover:scale-105 transition-transform shrink-0"
-                                      title={`Direct WhatsApp to ${farmer.fullName} (${val})`}
-                                    >
-                                      <MessageCircle className="w-2.5 h-2.5 fill-current" />
-                                      <span>WA</span>
-                                    </a>
-                                  )}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {rowCallUrl && (
+                                      <a
+                                        href={rowCallUrl}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black shadow-2xs hover:scale-105 transition-transform"
+                                        title={`Call ${farmer.fullName} (${val})`}
+                                      >
+                                        <Phone className="w-2.5 h-2.5 fill-current" />
+                                        <span>Call</span>
+                                      </a>
+                                    )}
+                                    {rowWaUrl && (
+                                      <a
+                                        href={rowWaUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#25D366] hover:bg-[#20ba5a] text-white text-[9px] font-black shadow-2xs hover:scale-105 transition-transform"
+                                        title={`Direct WhatsApp to ${farmer.fullName} (${val})`}
+                                      >
+                                        <MessageCircle className="w-2.5 h-2.5 fill-current" />
+                                        <span>WA</span>
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -1031,8 +1057,18 @@ export const FarmerManager: React.FC = () => {
                         {extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}
                       </div>
 
-                      {/* Action buttons with 1-Click WhatsApp Quick Action */}
+                      {/* Action buttons with Direct Call & 1-Click WhatsApp Quick Action */}
                       <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {farmerCallUrl && (
+                          <a
+                            href={farmerCallUrl}
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-500 transition-all shadow-2xs hover:scale-105"
+                            title={`Direct Phone Call: ${farmer.fullName} (${farmerContact})`}
+                          >
+                            <Phone className="w-3.5 h-3.5 fill-current" />
+                          </a>
+                        )}
                         {farmerWaUrl && (
                           <a
                             href={farmerWaUrl}
@@ -1168,6 +1204,7 @@ export const FarmerManager: React.FC = () => {
                   paginatedFarmers.map((farmer, idx) => {
                     const farmerContact = getFarmerContact(farmer);
                     const farmerWaUrl = farmerContact ? getWhatsAppUrl(farmerContact, farmer.fullName) : null;
+                    const farmerCallUrl = farmerContact ? getDirectCallUrl(farmerContact) : null;
 
                     return (
                     <tr 
@@ -1253,6 +1290,7 @@ export const FarmerManager: React.FC = () => {
                         const cellVal = farmer.data && farmer.data[col] !== undefined ? String(farmer.data[col]) : '';
                         const isContact = /contact|phone|mobile|cell|whatsapp|ph/i.test(col);
                         const cellWaUrl = isContact && cellVal ? getWhatsAppUrl(cellVal, farmer.fullName) : null;
+                        const cellCallUrl = isContact && cellVal ? getDirectCallUrl(cellVal) : null;
 
                         return (
                           <td
@@ -1297,19 +1335,32 @@ export const FarmerManager: React.FC = () => {
                                   <span className="truncate" title={cellVal || '-'}>
                                     {cellVal || <span className="text-slate-400 font-normal italic">-</span>}
                                   </span>
-                                  {cellWaUrl && (
-                                    <a
-                                      href={cellWaUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#25D366] hover:bg-[#20ba5a] text-white text-[9px] font-bold shadow-2xs shrink-0"
-                                      title={`WhatsApp ${farmer.fullName} (${cellVal})`}
-                                    >
-                                      <MessageCircle className="w-2.5 h-2.5 fill-current" />
-                                      <span>WA</span>
-                                    </a>
-                                  )}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {cellCallUrl && (
+                                      <a
+                                        href={cellCallUrl}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold shadow-2xs shrink-0"
+                                        title={`Call ${farmer.fullName} (${cellVal})`}
+                                      >
+                                        <Phone className="w-2.5 h-2.5 fill-current" />
+                                        <span>Call</span>
+                                      </a>
+                                    )}
+                                    {cellWaUrl && (
+                                      <a
+                                        href={cellWaUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#25D366] hover:bg-[#20ba5a] text-white text-[9px] font-bold shadow-2xs shrink-0"
+                                        title={`WhatsApp ${farmer.fullName} (${cellVal})`}
+                                      >
+                                        <MessageCircle className="w-2.5 h-2.5 fill-current" />
+                                        <span>WA</span>
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
                                 <button
                                   onClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
@@ -1326,6 +1377,16 @@ export const FarmerManager: React.FC = () => {
 
                       <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
+                          {farmerCallUrl && (
+                            <a
+                              href={farmerCallUrl}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-all shadow-2xs hover:scale-105"
+                              title={`Direct Call: ${farmer.fullName} (${farmerContact})`}
+                            >
+                              <Phone className="w-3.5 h-3.5 fill-current" />
+                            </a>
+                          )}
                           {farmerWaUrl && (
                             <a
                               href={farmerWaUrl}

@@ -76,20 +76,12 @@ export const Footer: React.FC = () => {
               Home
             </Link>
             <span>•</span>
-            <Link to="/farmers" className="hover:text-[#BFDC28] transition-colors">
-              Farmer Registry
-            </Link>
-            <span>•</span>
             <Link to="/about" className="hover:text-[#BFDC28] transition-colors">
               About
             </Link>
             <span>•</span>
             <Link to="/archive" className="hover:text-[#BFDC28] transition-colors">
               Archive
-            </Link>
-            <span>•</span>
-            <Link to="/admin" className="hover:text-[#BFDC28] transition-colors">
-              Admin Console
             </Link>
           </div>
         </div>

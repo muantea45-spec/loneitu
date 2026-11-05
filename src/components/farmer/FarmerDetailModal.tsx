@@ -6,7 +6,8 @@ import {
   Share2, 
   Printer, 
   Check,
-  MessageCircle
+  MessageCircle,
+  Phone
 } from 'lucide-react';
 
 interface FarmerDetailModalProps {
@@ -34,6 +35,15 @@ function getWhatsAppLink(contact: string, name?: string): string | null {
   return `https://wa.me/${phone}?text=${msg}`;
 }
 
+function getDirectCallLink(contact: string): string | null {
+  const digits = (contact || '').replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 10) return `tel:+91${digits}`;
+  if (digits.length > 10) return `tel:+${digits}`;
+  if (digits.length >= 6) return `tel:${digits}`;
+  return null;
+}
+
 export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose }) => {
   const [copied, setCopied] = useState(false);
 
@@ -57,6 +67,7 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
   const uploadedEntries = farmer.data ? Object.entries(farmer.data) : [];
   const contactNo = getFarmerContactNo(farmer.data);
   const primaryWaUrl = contactNo ? getWhatsAppLink(contactNo, farmer.fullName) : null;
+  const primaryCallUrl = contactNo ? getDirectCallLink(contactNo) : null;
 
   return (
     <div 
@@ -109,6 +120,18 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
               {uploadedEntries.length} Uploaded Columns
             </span>
 
+            {/* Direct Phone Call Quick Action Button in Header */}
+            {primaryCallUrl && (
+              <a
+                href={primaryCallUrl}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-2xs hover:scale-105 transition-all cursor-pointer"
+                title={`Call ${farmer.fullName} directly (${contactNo})`}
+              >
+                <Phone className="w-3.5 h-3.5 fill-current" />
+                <span>Call ({contactNo})</span>
+              </a>
+            )}
+
             {/* 1-Click WhatsApp Quick Action Button in Header */}
             {primaryWaUrl && (
               <a
@@ -136,6 +159,7 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
               uploadedEntries.map(([key, val]) => {
                 const isContact = /contact|phone|mobile|cell|whatsapp|ph/i.test(key);
                 const fieldWaUrl = isContact && val ? getWhatsAppLink(String(val), farmer.fullName) : null;
+                const fieldCallUrl = isContact && val ? getDirectCallLink(String(val)) : null;
 
                 return (
                   <div 
@@ -149,18 +173,30 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
                       <p className="font-bold text-sm text-slate-900 dark:text-white break-words">
                         {String(val)}
                       </p>
-                      {fieldWaUrl && (
-                        <a
-                          href={fieldWaUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-[11px] font-bold shadow-2xs hover:scale-105 transition-all cursor-pointer shrink-0"
-                          title="Chat on WhatsApp"
-                        >
-                          <MessageCircle className="w-3 h-3 fill-current" />
-                          <span>WhatsApp</span>
-                        </a>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {fieldCallUrl && (
+                          <a
+                            href={fieldCallUrl}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold shadow-2xs hover:scale-105 transition-all cursor-pointer shrink-0"
+                            title={`Call directly: ${val}`}
+                          >
+                            <Phone className="w-3 h-3 fill-current" />
+                            <span>Call</span>
+                          </a>
+                        )}
+                        {fieldWaUrl && (
+                          <a
+                            href={fieldWaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-[11px] font-bold shadow-2xs hover:scale-105 transition-all cursor-pointer shrink-0"
+                            title="Chat on WhatsApp"
+                          >
+                            <MessageCircle className="w-3 h-3 fill-current" />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

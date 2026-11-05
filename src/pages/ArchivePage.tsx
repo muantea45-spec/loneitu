@@ -17,18 +17,18 @@ import { ShareModal } from '../components/common/ShareModal';
 import type { Article } from '../types/blog';
 
 const MONTHS_DATA = [
-  { num: 1, name: 'January', mizo: 'Pawlkut thla', short: 'Jan' },
-  { num: 2, name: 'February', mizo: 'Ramtuk thla', short: 'Feb' },
-  { num: 3, name: 'March', mizo: 'Vau thla', short: 'Mar' },
-  { num: 4, name: 'April', mizo: 'Tau thla', short: 'Apr' },
-  { num: 5, name: 'May', mizo: 'Tomir thla', short: 'May' },
-  { num: 6, name: 'June', mizo: 'Nikir thla', short: 'Jun' },
-  { num: 7, name: 'July', mizo: 'Vawkhniakzawn thla', short: 'Jul' },
-  { num: 8, name: 'August', mizo: 'Thiitin thla', short: 'Aug' },
-  { num: 9, name: 'September', mizo: 'Mimkut thla', short: 'Sep' },
-  { num: 10, name: 'October', mizo: 'Khuangchawi thla', short: 'Oct' },
-  { num: 11, name: 'November', mizo: 'Tlangkâwng thla', short: 'Nov' },
-  { num: 12, name: 'December', mizo: 'Pawltlak thla', short: 'Dec' },
+  { num: 1, name: 'January', short: 'Jan' },
+  { num: 2, name: 'February', short: 'Feb' },
+  { num: 3, name: 'March', short: 'Mar' },
+  { num: 4, name: 'April', short: 'Apr' },
+  { num: 5, name: 'May', short: 'May' },
+  { num: 6, name: 'June', short: 'Jun' },
+  { num: 7, name: 'July', short: 'Jul' },
+  { num: 8, name: 'August', short: 'Aug' },
+  { num: 9, name: 'September', short: 'Sep' },
+  { num: 10, name: 'October', short: 'Oct' },
+  { num: 11, name: 'November', short: 'Nov' },
+  { num: 12, name: 'December', short: 'Dec' },
 ];
 
 export const ArchivePage: React.FC = () => {
@@ -199,10 +199,10 @@ export const ArchivePage: React.FC = () => {
                 onChange={e => updateFilters(selectedYear, e.target.value)}
                 className="w-full px-3 py-2 bg-[#FAF8F3] hover:bg-[#F2EFE6] border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] transition-colors outline-hidden cursor-pointer"
               >
-                <option value="all">Thla Zawng Zawng (All Months)</option>
+                <option value="all">All Months</option>
                 {MONTHS_DATA.map(m => (
                   <option key={m.num} value={m.num.toString()}>
-                    {m.name} ({m.mizo})
+                    {m.name}
                   </option>
                 ))}
               </select>
@@ -352,10 +352,11 @@ export const ArchivePage: React.FC = () => {
 
                             <Link
                               to={`/article/${art.slug}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#143520] text-[#BFDC28] hover:bg-[#1E542E] text-[11px] font-bold transition-all shadow-2xs group-hover:translate-x-0.5"
+                              className="inline-flex items-center justify-center p-1.5 px-2.5 rounded-lg bg-[#143520] text-[#BFDC28] hover:bg-[#1E542E] transition-all shadow-2xs group-hover:translate-x-0.5 cursor-pointer"
+                              title="Read article"
+                              aria-label="Read article"
                             >
-                              <span>Chhiar</span>
-                              <ArrowRight className="w-3 h-3" />
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                           </div>
                         </td>
