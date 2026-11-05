@@ -25,6 +25,59 @@ const PageLoadingFallback: React.FC = () => (
   </div>
 );
 
+class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('AppErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+          <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-[#DDD4BC] shadow-lg space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto text-xl font-bold">
+              ⚠️
+            </div>
+            <h2 className="font-serif font-bold text-xl text-[#143520]">
+              Page Refresh Required
+            </h2>
+            <p className="text-xs text-[#6F5B3C] leading-relaxed">
+              Khawngaihin page hi refresh la, i lut nawn leh dawn nia.
+            </p>
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
+              >
+                Refresh Page
+              </button>
+              <a
+                href="/"
+                className="px-5 py-2.5 rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] font-bold text-xs transition-colors"
+              >
+                Go Home
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const AppLayout: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -42,27 +95,29 @@ const AppLayout: React.FC = () => {
         />
       )}
 
-      {/* Main Page Routing with Suspense code-splitting */}
+      {/* Main Page Routing with Suspense and ErrorBoundary */}
       <div className="flex-1">
-        <Suspense fallback={<PageLoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/thuziak-thar" element={<HomePage />} />
-            <Route path="/article/:slug" element={<ArticleDetailPage />} />
-            <Route path="/category/:slug" element={<CategoryArchivePage />} />
-            <Route path="/tag/:slug" element={<TagArchivePage />} />
-            <Route path="/archive" element={<ArchivePage />} />
-            <Route path="/archive/:year" element={<ArchivePage />} />
-            <Route path="/archive/:year/:month" element={<ArchivePage />} />
-            <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
-            <Route path="/archives" element={<ArchivePage />} />
-            <Route path="/farmers" element={<Navigate to="/admin" replace />} />
-            <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/admin/*" element={<AdminDashboardPage />} />
-            <Route path="*" element={<HomePage />} />
-          </Routes>
-        </Suspense>
+        <AppErrorBoundary>
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/thuziak-thar" element={<HomePage />} />
+              <Route path="/article/:slug" element={<ArticleDetailPage />} />
+              <Route path="/category/:slug" element={<CategoryArchivePage />} />
+              <Route path="/tag/:slug" element={<TagArchivePage />} />
+              <Route path="/archive" element={<ArchivePage />} />
+              <Route path="/archive/:year" element={<ArchivePage />} />
+              <Route path="/archive/:year/:month" element={<ArchivePage />} />
+              <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
+              <Route path="/archives" element={<ArchivePage />} />
+              <Route path="/farmers" element={<Navigate to="/admin" replace />} />
+              <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/admin/*" element={<AdminDashboardPage />} />
+              <Route path="*" element={<HomePage />} />
+            </Routes>
+          </Suspense>
+        </AppErrorBoundary>
       </div>
 
       {/* Public Footer */}

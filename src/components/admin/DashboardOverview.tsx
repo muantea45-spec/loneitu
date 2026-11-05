@@ -162,7 +162,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-[#54432C]">
-                    {art.author.name}
+                    {art.author?.name || 'Editorial Team'}
                   </td>
                   <td className="px-5 py-3.5 text-[#8F7855]">
                     {formatDate(art.publishedAt)}

@@ -12,7 +12,9 @@ export const CategoryArchivePage: React.FC = () => {
   const category = categories.find(c => c.slug === slug || slugify(c.name) === slug);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    try {
+      window.scrollTo(0, 0);
+    } catch {}
     if (category) {
       document.title = `${category.name} — Agronomy Research & Field Notes`;
     }

@@ -74,7 +74,9 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     document.title = 'Editorial CMS Console — Loneitu (MIZORAM TAN)';
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    try {
+      window.scrollTo(0, 0);
+    } catch {}
   }, [currentTab]);
 
   if (!isAdminLoggedIn) {
@@ -281,7 +283,8 @@ export const AdminDashboardPage: React.FC = () => {
                 {/* Whitelist items */}
                 <div className="divide-y divide-[#EBE6D6] border border-[#DDD4BC] rounded-xl overflow-hidden bg-white shadow-xs">
                   {authorizedEmails.map(email => {
-                    const isPrimary = email.toLowerCase() === primaryOwnerEmail.toLowerCase();
+                    const safePrimary = (primaryOwnerEmail || 'muantea45@gmail.com').toLowerCase();
+                    const isPrimary = (email || '').toLowerCase() === safePrimary;
                     return (
                       <div key={email} className="flex items-center justify-between p-3.5 bg-white hover:bg-[#FBFBF8] text-xs transition-colors">
                         <div className="flex items-center gap-2.5 min-w-0">

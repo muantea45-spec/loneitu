@@ -47,7 +47,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
         art.title.toLowerCase().includes(q) ||
         art.slug.toLowerCase().includes(q) ||
         art.category.toLowerCase().includes(q) ||
-        art.author.name.toLowerCase().includes(q)
+        (art.author?.name || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -174,7 +174,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                               {art.title}
                             </Link>
                             <div className="flex items-center gap-2 text-[11px] text-[#8F7855] mt-0.5 min-w-0">
-                              <span className="truncate">by {art.author.name}</span>
+                              <span className="truncate">by {art.author?.name || 'Editorial Team'}</span>
                               <span className="hidden sm:inline text-[#DDD4BC]">•</span>
                               <span className="font-mono text-[10px] text-[#8F7855]/70 truncate hidden sm:inline">
                                 /{art.slug}
@@ -346,7 +346,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                               </div>
                               <div className="text-[11px] text-[#54432C] flex items-center gap-1.5">
                                 <User className="w-3.5 h-3.5 text-[#8F7855]" />
-                                <span>{art.author.name} ({art.author.role})</span>
+                                <span>{art.author?.name || 'Editorial Team'}{art.author?.role ? ` (${art.author.role})` : ''}</span>
                               </div>
                               <div className="flex flex-wrap gap-1 pt-1">
                                 <TagIcon className="w-3 h-3 text-[#8F7855] self-center mr-0.5" />

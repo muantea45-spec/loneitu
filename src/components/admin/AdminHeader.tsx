@@ -5,7 +5,9 @@ import { useBlog } from '../../context/BlogContext';
 
 export const AdminHeader: React.FC = () => {
   const { logoutAdmin, adminEmail, primaryOwnerEmail } = useBlog();
-  const isPrimary = (adminEmail || '').toLowerCase() === primaryOwnerEmail.toLowerCase();
+  const safePrimary = (primaryOwnerEmail || 'muantea45@gmail.com').toLowerCase();
+  const safeAdmin = (adminEmail || safePrimary).toLowerCase();
+  const isPrimary = safeAdmin === safePrimary;
 
   return (
     <header className="bg-[#143520] text-white border-b border-[#1E542E] px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-md">

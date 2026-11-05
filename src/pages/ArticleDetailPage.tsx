@@ -31,7 +31,9 @@ export const ArticleDetailPage: React.FC = () => {
   const article = articles.find(a => a.slug === slug);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    try {
+      window.scrollTo(0, 0);
+    } catch {}
     if (article) {
       incrementViews(article.id);
       document.title = `${article.title} — Loneitu (MIZORAM TAN)`;

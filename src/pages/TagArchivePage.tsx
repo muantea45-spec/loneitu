@@ -14,7 +14,9 @@ export const TagArchivePage: React.FC = () => {
   const tagName = tag ? tag.name : currentSlug;
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    try {
+      window.scrollTo(0, 0);
+    } catch {}
     document.title = `#${tagName} — Agronomic Practice Index`;
   }, [slug, tagName]);
 

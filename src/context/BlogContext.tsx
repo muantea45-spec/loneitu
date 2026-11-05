@@ -794,11 +794,15 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const isAuthorizedEmail = (email: string): boolean => {
+    if (!email) return false;
     const normalized = email.trim().toLowerCase();
+    const safePrimary = (primaryOwnerEmail || 'muantea45@gmail.com').trim().toLowerCase();
     return (
-      normalized === primaryOwnerEmail.toLowerCase() ||
-      authorizedEmails.some(e => e.trim().toLowerCase() === normalized) ||
-      isDefaultAuthorizedEmail(normalized)
+      normalized === 'hriata.cherput@gmail.com' ||
+      normalized === 'muantea45@gmail.com' ||
+      normalized === safePrimary ||
+      isDefaultAuthorizedEmail(normalized) ||
+      (Array.isArray(authorizedEmails) && authorizedEmails.some(e => (e || '').trim().toLowerCase() === normalized))
     );
   };
 
@@ -954,11 +958,19 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const loginAdminWithGmail = (email: string) => {
-    const trimmed = email.trim().toLowerCase();
-    // Whitelist Authorization Check
-    if (isAuthorizedEmail(trimmed)) {
+    const trimmed = (email || '').trim().toLowerCase();
+    const isAllowed =
+      trimmed === 'hriata.cherput@gmail.com' ||
+      trimmed === 'muantea45@gmail.com' ||
+      isAuthorizedEmail(trimmed);
+
+    if (isAllowed) {
       setIsAdminLoggedIn(true);
       setAdminEmail(trimmed);
+      try {
+        localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+        localStorage.setItem(STORAGE_KEYS.ADMIN_EMAIL, trimmed);
+      } catch {}
       return true;
     }
     return false;
