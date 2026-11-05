@@ -1,4 +1,19 @@
-import type { Article, Category, Tag, Author, AboutPageData, FooterData } from '../types/blog';
+import type { Article, Category, Tag, Author, AboutPageData, FooterData, CompanyBannerData } from '../types/blog';
+
+export const DEFAULT_COMPANY_BANNER: CompanyBannerData = {
+  enabled: true,
+  heading: 'ABOUT US',
+  companyName: 'Mizo Farm Solutions',
+  badge: 'Champhai-based Registered Society',
+  showCompanyName: true,
+  picture: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=1200&q=80',
+  paragraphs: [
+    'Mizo Farm Solutions is a Champhai-based registered society headed by Project Director Dr. C. Lalhriatpuia.',
+    'Backed by four years of operations and award-winning post-harvest innovations, the organization partners with Cod Nerc and the Impulse NGO Network to drive rural development, youth upliftment, and women\'s empowerment.',
+    'Its key initiatives include AI/IoT precision farming, mechanization, greenhouse cultivation, organic inputs, cold storage, and direct market access. Additionally, the society fosters off-farm resilience through handloom clusters, agro-processing, IT literacy, and livestock farming.',
+    'Supported by experienced personnel in agricultural extension, civil engineering, and financial administration, the agency operates out of a fully equipped, connected office in Jail Veng, Champhai.'
+  ]
+};
 
 export const INITIAL_AUTHORS: Author[] = [
   {
@@ -545,6 +560,7 @@ Today, a quiet agricultural revolution is underway. Farmers worldwide are demons
     youtube: '',
     twitter: '',
   },
+  companyBanner: DEFAULT_COMPANY_BANNER,
 };
 
 export const INITIAL_FOOTER_DATA: FooterData = {

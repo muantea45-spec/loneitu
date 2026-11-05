@@ -6,7 +6,6 @@ import {
   Edit,
   Trash2,
   Eye,
-  Star,
   CheckCircle,
   Clock,
   ChevronDown,
@@ -30,16 +29,15 @@ export const ArticleList: React.FC<ArticleListProps> = ({
   onNewArticle,
   onEditArticle,
 }) => {
-  const { articles, deleteArticle, toggleFeatured, toggleStatus } = useBlog();
+  const { articles, deleteArticle, toggleStatus } = useBlog();
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'featured'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = articles.filter(art => {
     if (statusFilter === 'published' && art.status !== 'published') return false;
     if (statusFilter === 'draft' && art.status !== 'draft') return false;
-    if (statusFilter === 'featured' && !art.isFeatured) return false;
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -106,7 +104,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 self-start sm:self-auto overflow-x-auto no-scrollbar w-full sm:w-auto py-1">
-            {(['all', 'published', 'draft', 'featured'] as const).map(tab => (
+            {(['all', 'published', 'draft'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setStatusFilter(tab)}
@@ -132,17 +130,16 @@ export const ArticleList: React.FC<ArticleListProps> = ({
               <th className="px-3 sm:px-5 py-3 w-auto min-w-0">Article</th>
               {/* Secondary Metadata - selectively hidden on intermediate breakpoints */}
               <th className="hidden md:table-cell px-3 py-3 w-36 lg:w-44">Sector</th>
-              <th className="hidden md:table-cell px-2 py-3 w-16 text-center">Featured</th>
               <th className="px-2 sm:px-3 py-3 w-24 sm:w-28 text-center">Status</th>
               <th className="hidden xl:table-cell px-2 py-3 w-24 text-center">Metrics</th>
-              <th className="hidden sm:table-cell px-3 py-3 w-24 text-[#8F7855]">Date</th>
+              <th className="hidden sm:table-cell px-3 py-3 w-24 text-[#6F5B3C]">Date</th>
               <th className="px-3 py-3 w-24 sm:w-28 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F6F4EB]">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-5 py-12 text-center text-[#8F7855]">
+                <td colSpan={6} className="px-5 py-12 text-center text-[#6F5B3C]">
                   No articles found matching your criteria.
                 </td>
               </tr>
@@ -201,34 +198,6 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                         >
                           {art.category}
                         </span>
-                      </td>
-
-                      {/* Featured Toggle */}
-                      <td className="hidden md:table-cell px-2 py-3 w-16 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toggleFeatured(art.id);
-                            showToast(
-                              art.isFeatured
-                                ? `Removed from Featured`
-                                : `Marked as Featured lead`,
-                              'success'
-                            );
-                          }}
-                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                            art.isFeatured
-                              ? 'bg-amber-100 text-amber-600'
-                              : 'text-[#DDD4BC] hover:text-amber-500'
-                          }`}
-                          title={art.isFeatured ? 'Featured on home screen (Click to unfeature)' : 'Mark as featured lead'}
-                        >
-                          <Star
-                            className={`w-4 h-4 mx-auto ${
-                              art.isFeatured ? 'fill-amber-500 text-amber-500' : ''
-                            }`}
-                          />
-                        </button>
                       </td>
 
                       {/* Status Toggle Badge */}
@@ -306,7 +275,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                     {/* Expandable Row Details (Drawer) for complete metadata without table overflow */}
                     {isExpanded && (
                       <tr className="bg-[#F6F4EB]/80 border-y border-[#DDD4BC]/60">
-                        <td colSpan={7} className="p-4 sm:p-5">
+                        <td colSpan={6} className="p-4 sm:p-5">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                             {/* URL & Direct Navigation */}
                             <div className="space-y-2 bg-white p-3.5 rounded-xl border border-[#DDD4BC]">
@@ -325,7 +294,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                                   <Copy className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                              <div className="flex items-center gap-3 text-[11px] text-[#8F7855]">
+                              <div className="flex items-center gap-3 text-[11px] text-[#6F5B3C]">
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" /> {art.readingTimeMinutes} min read
                                 </span>
@@ -341,15 +310,15 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                                 <span>Sector & Contributor</span>
                               </div>
                               <div className="text-[11px] text-[#54432C]">
-                                <span className="text-[#8F7855]">Sector:</span>{' '}
+                                <span className="text-[#6F5B3C]">Sector:</span>{' '}
                                 <span className="font-medium text-[#143520]">{art.category}</span>
                               </div>
                               <div className="text-[11px] text-[#54432C] flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5 text-[#8F7855]" />
+                                <User className="w-3.5 h-3.5 text-[#6F5B3C]" />
                                 <span>{art.author?.name || 'Editorial Team'}{art.author?.role ? ` (${art.author.role})` : ''}</span>
                               </div>
                               <div className="flex flex-wrap gap-1 pt-1">
-                                <TagIcon className="w-3 h-3 text-[#8F7855] self-center mr-0.5" />
+                                <TagIcon className="w-3 h-3 text-[#6F5B3C] self-center mr-0.5" />
                                 {art.tags.map(t => (
                                   <span
                                     key={t}
@@ -361,55 +330,27 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                               </div>
                             </div>
 
-                            {/* Metrics & Quick Controls */}
+                            {/* Metrics & Engagement Details */}
                             <div className="space-y-2 bg-white p-3.5 rounded-xl border border-[#DDD4BC]">
                               <div className="font-semibold text-[#143520]">
-                                Reader Engagement & Lead Feature
+                                Reader Engagement
                               </div>
                               <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="p-2 bg-[#F6F4EB] rounded-lg">
                                   <div className="font-bold text-sm text-[#143520]">{art.views || 0}</div>
-                                  <div className="text-[10px] text-[#8F7855]">Views</div>
+                                  <div className="text-[10px] text-[#6F5B3C]">Views</div>
                                 </div>
                                 <div className="p-2 bg-[#F6F4EB] rounded-lg">
                                   <div className="font-bold text-sm text-[#143520]">{art.likes || 0}</div>
-                                  <div className="text-[10px] text-[#8F7855]">Likes</div>
+                                  <div className="text-[10px] text-[#6F5B3C]">Likes</div>
                                 </div>
                                 <div className="p-2 bg-[#F6F4EB] rounded-lg">
                                   <div className="font-bold text-sm text-[#143520]">
                                     {art.comments?.length || 0}
                                   </div>
-                                  <div className="text-[10px] text-[#8F7855]">Comments</div>
+                                  <div className="text-[10px] text-[#6F5B3C]">Comments</div>
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  toggleFeatured(art.id);
-                                  showToast(
-                                    art.isFeatured
-                                      ? `Removed from Featured`
-                                      : `Marked as Featured lead`,
-                                    'success'
-                                  );
-                                }}
-                                className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                                  art.isFeatured
-                                    ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                    : 'bg-[#F6F4EB] text-[#54432C] border-[#DDD4BC] hover:bg-[#EBE6D6]'
-                                }`}
-                              >
-                                <Star
-                                  className={`w-3.5 h-3.5 ${
-                                    art.isFeatured ? 'fill-amber-500 text-amber-500' : ''
-                                  }`}
-                                />
-                                <span>
-                                  {art.isFeatured
-                                    ? 'Featured as Hero Lead'
-                                    : 'Promote to Hero Lead'}
-                                </span>
-                              </button>
                             </div>
                           </div>
                         </td>

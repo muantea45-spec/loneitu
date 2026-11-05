@@ -103,6 +103,16 @@ export interface CustomCardSectionData {
   cards: CustomCardItem[];
 }
 
+export interface CompanyBannerData {
+  enabled?: boolean;
+  heading?: string;
+  companyName?: string;
+  badge?: string;
+  paragraphs?: string[];
+  picture?: string;
+  showCompanyName?: boolean;
+}
+
 export interface AboutPageData {
   badge: string;
   heroTitle: string;
@@ -115,6 +125,7 @@ export interface AboutPageData {
   authorsTitle: string;
   authorsSubtitle: string;
   socialLinks?: SocialLinks;
+  companyBanner?: CompanyBannerData;
 }
 
 export interface FooterData {

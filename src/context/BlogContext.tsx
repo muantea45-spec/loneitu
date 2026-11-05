@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef,
 import type { ReactNode } from 'react';
 import type { Article, Category, Tag, Author, FilterState, SortOption, Comment, AboutPageData, FooterData } from '../types/blog';
 import type { FarmerRecord, FarmerFieldDefinition } from '../types/farmer';
-import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA, INITIAL_FOOTER_DATA } from '../data/initialData';
+import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_TAGS, INITIAL_AUTHORS, INITIAL_ABOUT_DATA, INITIAL_FOOTER_DATA, DEFAULT_COMPANY_BANNER } from '../data/initialData';
 import { INITIAL_FARMERS } from '../data/initialFarmers';
 import { DEFAULT_ADMIN_KEY, DEFAULT_AUTHORIZED_EMAILS, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
@@ -280,7 +280,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [aboutData, setAboutData] = useState<AboutPageData>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.ABOUT_PAGE);
-      return stored ? JSON.parse(stored) : INITIAL_ABOUT_DATA;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          ...INITIAL_ABOUT_DATA,
+          ...parsed,
+          companyBanner: parsed.companyBanner
+            ? { ...DEFAULT_COMPANY_BANNER, ...parsed.companyBanner }
+            : DEFAULT_COMPANY_BANNER,
+        };
+      }
+      return INITIAL_ABOUT_DATA;
     } catch {
       return INITIAL_ABOUT_DATA;
     }
@@ -633,10 +643,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (cloudData.aboutData && typeof cloudData.aboutData === 'object') {
-        const newStr = JSON.stringify(cloudData.aboutData);
+        const mergedAbout = {
+          ...INITIAL_ABOUT_DATA,
+          ...cloudData.aboutData,
+          companyBanner: cloudData.aboutData.companyBanner
+            ? { ...DEFAULT_COMPANY_BANNER, ...cloudData.aboutData.companyBanner }
+            : DEFAULT_COMPANY_BANNER,
+        };
+        const newStr = JSON.stringify(mergedAbout);
         const oldStr = JSON.stringify(latestDbStateRef.current.aboutData);
         if (newStr !== oldStr) {
-          setAboutData(cloudData.aboutData);
+          setAboutData(mergedAbout);
           try {
             localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, newStr);
           } catch {}

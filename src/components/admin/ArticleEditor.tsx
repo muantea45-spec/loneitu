@@ -16,7 +16,6 @@ import {
   Unlink,
   Plus,
   X,
-  Star,
   CheckCircle2,
   Clock,
   Bold,
@@ -113,9 +112,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [status, setStatus] = useState<'published' | 'draft'>(
     existingArticle?.status || 'published'
   );
-  const [isFeatured, setIsFeatured] = useState<boolean>(
-    existingArticle?.isFeatured ?? false
-  );
+  const isFeatured = existingArticle?.isFeatured ?? false;
   const [authorId, setAuthorId] = useState<string>(
     existingArticle?.author?.id || authors[0]?.id || ''
   );
@@ -1377,26 +1374,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
               </div>
             </div>
 
-            {/* Feature on Home Screen Toggle */}
-            <div className="pt-2 border-t border-[#F6F4EB]">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div className="space-y-0.5">
-                  <div className="text-xs font-semibold text-[#143520] flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>Feature on Home Screen</span>
-                  </div>
-                  <p className="text-[11px] text-[#8F7855]">
-                    Positions as hero lead or highlighted story
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={isFeatured}
-                  onChange={e => setIsFeatured(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#256B3A] focus:ring-[#256B3A] cursor-pointer"
-                />
-              </label>
-            </div>
           </div>
 
           {/* Core Taxonomy Fields */}

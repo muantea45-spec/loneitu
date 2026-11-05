@@ -4,8 +4,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { useBlog } from '../../context/BlogContext';
 import { useToast } from '../common/Toast';
-import type { AboutPageData, SocialLinks, CustomCardItem, CustomCardSectionData } from '../../types/blog';
-import { INITIAL_ABOUT_DATA } from '../../data/initialData';
+import type { AboutPageData, SocialLinks, CustomCardItem, CustomCardSectionData, CompanyBannerData } from '../../types/blog';
+import { INITIAL_ABOUT_DATA, DEFAULT_COMPANY_BANNER } from '../../data/initialData';
 import { compressImage } from '../../utils/imageCompressor';
 import {
   Save,
@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   RefreshCw,
   Share2,
+  Building2,
+  Upload,
+  Image as ImageIcon,
   Bold,
   Italic,
   Strikethrough,
@@ -92,6 +95,7 @@ export const AboutEditor: React.FC = () => {
   const [formData, setFormData] = useState<AboutPageData>(() => ({
     ...aboutData,
     customCardsSection: aboutData.customCardsSection || initialCardsSection,
+    companyBanner: aboutData.companyBanner || DEFAULT_COMPANY_BANNER,
     socialLinks: {
       instagram: aboutData.socialLinks?.instagram || '',
       facebook: aboutData.socialLinks?.facebook || '',
@@ -112,6 +116,7 @@ export const AboutEditor: React.FC = () => {
       setFormData({
         ...aboutData,
         customCardsSection: aboutData.customCardsSection || initialCardsSection,
+        companyBanner: aboutData.companyBanner || DEFAULT_COMPANY_BANNER,
         socialLinks: {
           instagram: aboutData.socialLinks?.instagram || '',
           facebook: aboutData.socialLinks?.facebook || '',
@@ -122,6 +127,43 @@ export const AboutEditor: React.FC = () => {
       });
     }
   }, [aboutData]);
+
+  const handleBannerChange = (field: keyof CompanyBannerData, value: any) => {
+    isDirtyRef.current = true;
+    setFormData(prev => ({
+      ...prev,
+      companyBanner: {
+        ...(prev.companyBanner || DEFAULT_COMPANY_BANNER),
+        [field]: value
+      }
+    }));
+    setIsSaved(false);
+  };
+
+  const handleBannerPictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const result = await compressImage(file, 1200, 0.85);
+      const cdnUrl = await uploadImage(result.dataUrl, file.name);
+      handleBannerChange('picture', cdnUrl);
+      showToast('Right corner banner picture uploaded successfully!', 'success');
+    } catch {
+      showToast('Failed to upload banner picture. Please try again.', 'error');
+    }
+  };
+
+  const bannerParagraphsText = useMemo(() => {
+    const p = formData.companyBanner?.paragraphs && formData.companyBanner.paragraphs.length > 0
+      ? formData.companyBanner.paragraphs
+      : DEFAULT_COMPANY_BANNER.paragraphs || [];
+    return p.join('\n\n');
+  }, [formData.companyBanner?.paragraphs]);
+
+  const handleBannerParagraphsChange = (text: string) => {
+    const split = text.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+    handleBannerChange('paragraphs', split);
+  };
 
   const handleChange = (field: keyof AboutPageData, value: any) => {
     isDirtyRef.current = true;
@@ -864,6 +906,182 @@ ${rowsHtml}
             <span>{isCloudSyncing ? 'Syncing...' : isSaved ? 'Saved & Synced' : 'Save Changes'}</span>
           </button>
         </div>
+      </div>
+
+      {/* Section 0: Homepage Company Banner (About Us) */}
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EBE6D6] pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center font-bold">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-serif font-bold text-lg text-[#143520]">
+                  Homepage Company Banner (About Us)
+                </h2>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EBF1EA] text-[#1E542E]">
+                  Homepage Lead
+                </span>
+              </div>
+              <p className="text-xs text-[#6F5B3C]">
+                Full-width company banner displayed on the homepage in place of the old Featured story.
+              </p>
+            </div>
+          </div>
+
+          {/* Master Enable/Disable Switch */}
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-[#143520] cursor-pointer bg-[#F6F4EB] px-3.5 py-2 rounded-xl border border-[#DDD4BC]">
+            <input
+              type="checkbox"
+              checked={formData.companyBanner?.enabled !== false}
+              onChange={e => handleBannerChange('enabled', e.target.checked)}
+              className="w-4 h-4 rounded text-[#256B3A] focus:ring-[#256B3A] cursor-pointer"
+            />
+            <span>Show Banner on Homepage</span>
+          </label>
+        </div>
+
+        {formData.companyBanner?.enabled !== false && (
+          <div className="space-y-5">
+            {/* Display Company's Option & Name */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
+                  Company Name (Organization)
+                </label>
+                <input
+                  type="text"
+                  value={formData.companyBanner?.companyName || ''}
+                  onChange={e => handleBannerChange('companyName', e.target.value)}
+                  placeholder="e.g. Mizo Farm Solutions"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-medium text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
+                  Company Badge / Location Tag
+                </label>
+                <input
+                  type="text"
+                  value={formData.companyBanner?.badge || ''}
+                  onChange={e => handleBannerChange('badge', e.target.value)}
+                  placeholder="e.g. Champhai-based Registered Society"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-medium text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+            </div>
+
+            {/* Display Company Name Toggle */}
+            <label className="flex items-center gap-2 text-xs font-semibold text-[#143520] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.companyBanner?.showCompanyName !== false}
+                onChange={e => handleBannerChange('showCompanyName', e.target.checked)}
+                className="w-4 h-4 rounded text-[#256B3A] focus:ring-[#256B3A] cursor-pointer"
+              />
+              <span>Display Company Name & Badge on Banner</span>
+            </label>
+
+            {/* Heading: ABOUT US */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
+                Main Heading
+              </label>
+              <input
+                type="text"
+                value={formData.companyBanner?.heading || ''}
+                onChange={e => handleBannerChange('heading', e.target.value)}
+                placeholder="ABOUT US"
+                className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-bold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+              />
+            </div>
+
+            {/* Paragraphs Copy */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C]">
+                  About Us Text (Separate paragraphs with a blank line)
+                </label>
+                <span className="text-[11px] text-[#6F5B3C]">
+                  {(formData.companyBanner?.paragraphs || []).length} paragraphs
+                </span>
+              </div>
+              <textarea
+                rows={8}
+                value={bannerParagraphsText}
+                onChange={e => handleBannerParagraphsChange(e.target.value)}
+                placeholder="Enter the company about text..."
+                className="w-full p-3.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs sm:text-sm text-[#143520] leading-relaxed focus:outline-hidden focus:border-[#256B3A]"
+              />
+            </div>
+
+            {/* Desktop Right Corner Picture Option */}
+            <div className="p-4 bg-[#FBFBF8] rounded-xl border border-[#DDD4BC] space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#143520]">
+                    Right Corner Picture (Desktop View)
+                  </h4>
+                  <p className="text-[11px] text-[#6F5B3C]">
+                    Displayed on the right side of the banner in desktop view.
+                  </p>
+                </div>
+                {formData.companyBanner?.picture && (
+                  <button
+                    type="button"
+                    onClick={() => handleBannerChange('picture', '')}
+                    className="text-xs font-semibold text-rose-700 hover:text-rose-900 cursor-pointer"
+                  >
+                    Remove Picture
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 items-start">
+                {formData.companyBanner?.picture ? (
+                  <div className="relative w-36 h-24 rounded-xl overflow-hidden border border-[#DDD4BC] shadow-xs shrink-0 bg-[#EBF1EA]">
+                    <img
+                      src={formData.companyBanner.picture}
+                      alt="Banner Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-36 h-24 rounded-xl border-2 border-dashed border-[#DDD4BC] flex flex-col items-center justify-center text-[#6F5B3C] text-[11px] shrink-0 bg-white">
+                    <ImageIcon className="w-6 h-6 mb-1 text-[#DDD4BC]" />
+                    <span>No Picture</span>
+                  </div>
+                )}
+
+                <div className="flex-1 space-y-2 w-full">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#143520] text-white hover:bg-[#1E542E] text-xs font-semibold cursor-pointer transition-colors shadow-2xs">
+                      <Upload className="w-3.5 h-3.5 text-[#BFDC28]" />
+                      <span>Upload Picture</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerPictureUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-xs text-[#6F5B3C]">or enter direct image URL below:</span>
+                  </div>
+
+                  <input
+                    type="url"
+                    value={formData.companyBanner?.picture || ''}
+                    onChange={e => handleBannerChange('picture', e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full px-3 py-2 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Section 1: Hero Banner */}
