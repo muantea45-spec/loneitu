@@ -133,7 +133,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       {/* Pull Indicator Floating Capsule */}
       {(pullDistance > 0 || status === 'refreshing' || status === 'completed') && (
         <div
-          className="fixed left-0 right-0 top-20 z-30 pointer-events-none flex justify-center transition-transform duration-200"
+          className="fixed left-0 right-0 top-22 sm:top-24 z-30 pointer-events-none flex justify-center transition-transform duration-200"
           style={{
             transform: `translateY(${Math.max(0, pullDistance - 16)}px)`,
           }}

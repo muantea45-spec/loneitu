@@ -31,19 +31,19 @@ export const Navbar: React.FC<NavbarProps> = ({
       }`}
     >
       {/* Main Navbar */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto h-20 flex items-center justify-between">
-        {/* Brand / Logo with uploaded artwork & typography */}
-        <Link to="/" className="flex items-center gap-3 sm:gap-3.5 group py-1" aria-label="Loneitu - MIZORAM TAN">
+      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto h-22 sm:h-24 flex items-center justify-between">
+        {/* Brand / Logo with uploaded artwork & typography (+25% enlarged) */}
+        <Link to="/" className="flex items-center gap-3.5 sm:gap-4 group py-1" aria-label="Loneitu - MIZORAM TAN">
           <img
             src="/logo.png"
             alt="Loneitu"
-            className="w-12 h-12 sm:w-14 sm:h-14 object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-200 shrink-0"
+            className="w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-200 shrink-0"
           />
           <div className="flex flex-col items-start justify-center leading-none">
-            <span className="font-serif font-bold text-2xl tracking-tight text-[#143520] leading-none block">
+            <span className="font-serif font-bold text-[29px] sm:text-[31px] tracking-tight text-[#143520] leading-none block">
               Lone<span className="text-[#32864A]">itu</span>
             </span>
-            <span className="text-[9.5px] uppercase font-bold tracking-[0.25em] text-[#256B3A] leading-none mt-1.5 block">
+            <span className="text-[12px] uppercase font-bold tracking-[0.25em] text-[#256B3A] leading-none mt-2 block">
               MIZORAM TAN
             </span>
           </div>
