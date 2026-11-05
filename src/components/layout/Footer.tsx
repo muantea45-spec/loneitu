@@ -73,15 +73,15 @@ export const Footer: React.FC = () => {
           <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
           <div className="flex items-center gap-4 text-xs font-semibold text-[#D7E3D5]">
             <Link to="/" className="hover:text-[#BFDC28] transition-colors">
-              Kawtchhuah (Home)
+              Home
             </Link>
             <span>•</span>
             <Link to="/about" className="hover:text-[#BFDC28] transition-colors">
-              Kan Chanchin (About)
+              About
             </Link>
             <span>•</span>
             <Link to="/archive" className="hover:text-[#BFDC28] transition-colors">
-              Thuziak Dahkhawm (Archive)
+              Archive
             </Link>
           </div>
         </div>

@@ -5,7 +5,6 @@ import { ToastProvider } from './components/common/Toast';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { SidebarMenu } from './components/layout/SidebarMenu';
-import { BookmarkDrawer } from './components/common/BookmarkDrawer';
 import { SearchModal } from './components/common/SearchModal';
 
 // Fast Initial Load: Primary homepage is statically imported
@@ -28,7 +27,6 @@ const PageLoadingFallback: React.FC = () => (
 
 const AppLayout: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const location = useLocation();
@@ -40,7 +38,6 @@ const AppLayout: React.FC = () => {
       {!isAdminRoute && (
         <Navbar
           onOpenSearch={() => setIsSearchOpen(true)}
-          onOpenBookmarks={() => setIsBookmarksOpen(true)}
           onOpenSidebarMenu={() => setIsSidebarOpen(true)}
         />
       )}
@@ -75,16 +72,10 @@ const AppLayout: React.FC = () => {
         onClose={() => setIsSearchOpen(false)}
       />
 
-      <BookmarkDrawer
-        isOpen={isBookmarksOpen}
-        onClose={() => setIsBookmarksOpen(false)}
-      />
-
       <SidebarMenu
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenBookmarks={() => setIsBookmarksOpen(true)}
       />
     </div>
   );

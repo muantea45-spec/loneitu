@@ -13,12 +13,11 @@ import {
   Sparkles,
   ArrowUpDown,
   X,
-  Bookmark,
+  Share2,
 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatDate } from '../utils/formatDate';
-import { WhatsAppIcon } from '../components/common/SocialIcons';
-import { shareToWhatsApp } from '../utils/shareUtils';
+import { ShareModal } from '../components/common/ShareModal';
 import type { Article } from '../types/blog';
 
 // Mizo & English Month Data
@@ -62,7 +61,8 @@ interface YearGroup {
 }
 
 export const ArchivePage: React.FC = () => {
-  const { articles, bookmarks, toggleBookmark } = useBlog();
+  const { articles } = useBlog();
+  const [shareArticle, setShareArticle] = useState<Article | null>(null);
   const routeParams = useParams<{ year?: string; month?: string; day?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -768,7 +768,7 @@ export const ArchivePage: React.FC = () => {
                                               </span>
                                               <span className="text-[#8F7855] flex items-center gap-1">
                                                 <Clock className="w-3 h-3" />
-                                                <span>{article.readingTimeMinutes} min read</span>
+                                                <span>Min {article.readingTimeMinutes} read</span>
                                               </span>
                                             </div>
 
@@ -804,26 +804,11 @@ export const ArchivePage: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                               <button
                                                 type="button"
-                                                onClick={() => {
-                                                  const fullUrl = `${window.location.origin}/article/${article.slug}`;
-                                                  shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
-                                                }}
-                                                className="p-1.5 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer"
-                                                title="Share to WhatsApp"
+                                                onClick={() => setShareArticle(article)}
+                                                className="p-1.5 rounded-lg bg-[#F6F4EB] hover:bg-[#143520] text-[#143520] hover:text-[#BFDC28] transition-colors cursor-pointer"
+                                                title="Share article"
                                               >
-                                                <WhatsAppIcon className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => toggleBookmark(article.id)}
-                                                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                                                  bookmarks.includes(article.id)
-                                                    ? 'bg-[#256B3A] text-white border-[#256B3A]'
-                                                    : 'text-[#8F7855] hover:text-[#143520] border-transparent'
-                                                }`}
-                                                title="Save field note"
-                                              >
-                                                <Bookmark className="w-3.5 h-3.5" />
+                                                <Share2 className="w-3.5 h-3.5" />
                                               </button>
                                               <Link
                                                 to={`/article/${article.slug}`}
@@ -911,7 +896,7 @@ export const ArchivePage: React.FC = () => {
                                 {article.author.name}
                               </div>
                               <div className="text-[10px] text-[#8F7855]">
-                                {article.readingTimeMinutes} min read
+                                Min {article.readingTimeMinutes} read
                               </div>
                             </div>
                           </div>
@@ -919,14 +904,11 @@ export const ArchivePage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => {
-                                const fullUrl = `${window.location.origin}/article/${article.slug}`;
-                                shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
-                              }}
-                              className="p-1.5 rounded-lg bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer"
-                              title="Share to WhatsApp"
+                              onClick={() => setShareArticle(article)}
+                              className="p-1.5 rounded-lg bg-[#F6F4EB] hover:bg-[#143520] text-[#143520] hover:text-[#BFDC28] transition-colors cursor-pointer"
+                              title="Share article"
                             >
-                              <WhatsAppIcon className="w-3.5 h-3.5" />
+                              <Share2 className="w-3.5 h-3.5" />
                             </button>
                             <Link
                               to={`/article/${article.slug}`}
@@ -989,15 +971,12 @@ export const ArchivePage: React.FC = () => {
                               <div className="inline-flex items-center gap-2.5">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const fullUrl = `${window.location.origin}/article/${art.slug}`;
-                                    shareToWhatsApp(art.title, art.excerpt || art.content, fullUrl);
-                                  }}
-                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1e8341] hover:text-[#25D366] cursor-pointer"
-                                  title="Share to WhatsApp"
+                                  onClick={() => setShareArticle(art)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#143520] hover:text-[#256B3A] cursor-pointer"
+                                  title="Share article"
                                 >
-                                  <WhatsAppIcon className="w-3 h-3 text-[#25D366]" />
-                                  <span>WhatsApp</span>
+                                  <Share2 className="w-3 h-3 text-[#256B3A]" />
+                                  <span>Share</span>
                                 </button>
                                 <Link
                                   to={`/article/${art.slug}`}
@@ -1019,6 +998,17 @@ export const ArchivePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Universal Share Modal Dialog */}
+      {shareArticle && (
+        <ShareModal
+          isOpen={!!shareArticle}
+          onClose={() => setShareArticle(null)}
+          title={shareArticle.title}
+          excerpt={shareArticle.excerpt || shareArticle.content}
+          url={typeof window !== 'undefined' ? `${window.location.origin}/article/${shareArticle.slug}` : undefined}
+        />
+      )}
     </div>
   );
 };

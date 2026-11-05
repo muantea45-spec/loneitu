@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, Search, Bookmark, Menu, Calendar } from 'lucide-react';
-import { useBlog } from '../../context/BlogContext';
+import { Sprout, Search, Menu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch: () => void;
-  onOpenBookmarks: () => void;
+  onOpenBookmarks?: () => void;
   onOpenSidebarMenu: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenSearch,
-  onOpenBookmarks,
   onOpenSidebarMenu,
 }) => {
-  const { bookmarks } = useBlog();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -35,35 +32,23 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       {/* Main Navbar */}
       <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto h-20 flex items-center justify-between">
-        {/* Brand / Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1E542E] to-[#143520] text-[#F7FAF6] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
+        {/* Brand / Logo with perfectly aligned typography */}
+        <Link to="/" className="flex items-center gap-3.5 group">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1E542E] to-[#143520] text-[#F7FAF6] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200 shrink-0">
             <Sprout className="w-6 h-6 text-[#BFDC28]" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-serif font-bold text-2xl tracking-tight text-[#143520]">
-                Lone<span className="text-[#32864A]">itu</span>
-              </span>
-            </div>
-            <p className="text-[10px] uppercase font-bold tracking-widest text-[#8F7855] -mt-0.5">
+          <div className="flex flex-col items-start justify-center leading-none">
+            <span className="font-serif font-bold text-2xl tracking-tight text-[#143520] leading-none block">
+              Lone<span className="text-[#32864A]">itu</span>
+            </span>
+            <span className="text-[9.5px] uppercase font-bold tracking-[0.25em] text-[#256B3A] leading-none mt-1.5 block">
               MIZORAM TAN
-            </p>
+            </span>
           </div>
         </Link>
 
         {/* Right Action Icons & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Chronological Archive Trigger */}
-          <Link
-            to="/archive"
-            className="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#143520] hover:text-[#256B3A] bg-[#F6F4EB] hover:bg-[#EBE6D6] rounded-xl border border-[#DDD4BC] transition-colors"
-            title="Thuziak Dahkhawm (Chronological Post Archive)"
-          >
-            <Calendar className="w-4 h-4 text-[#256B3A]" />
-            <span>Archive</span>
-          </Link>
-
           {/* Search Trigger */}
           <button
             onClick={onOpenSearch}
@@ -77,22 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </kbd>
           </button>
 
-          {/* Bookmarks Counter Trigger */}
-          <button
-            onClick={onOpenBookmarks}
-            className="relative p-2.5 rounded-xl text-[#143520] hover:bg-[#F6F4EB] border border-transparent hover:border-[#DDD4BC] transition-colors cursor-pointer"
-            title="View saved field notes"
-            aria-label="Bookmarks"
-          >
-            <Bookmark className="w-5 h-5 text-[#256B3A]" />
-            {bookmarks.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#C2623D] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-scale">
-                {bookmarks.length}
-              </span>
-            )}
-          </button>
-
-          {/* Universal Sidebar Menu Trigger (Desktop & Mobile) */}
+          {/* Universal Sidebar Menu Trigger (Desktop & Mobile) - Archive is inside MENU */}
           <button
             onClick={onOpenSidebarMenu}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[#143520] hover:text-white bg-[#F6F4EB] hover:bg-[#143520] border border-[#DDD4BC] hover:border-[#143520] font-semibold text-xs transition-all duration-200 cursor-pointer shadow-2xs group"

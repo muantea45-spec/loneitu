@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,7 +9,8 @@ import {
   ArrowLeft,
   ChevronRight,
   Eye,
-  BookOpen
+  BookOpen,
+  Share2
 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatDate } from '../utils/formatDate';
@@ -19,12 +20,12 @@ import { AuthorBio } from '../components/article/AuthorBio';
 import { ShareButtons } from '../components/article/ShareButtons';
 import { RelatedPosts } from '../components/article/RelatedPosts';
 import { CommentsSection } from '../components/article/CommentsSection';
-import { WhatsAppIcon } from '../components/common/SocialIcons';
-import { shareToWhatsApp } from '../utils/shareUtils';
+import { ShareModal } from '../components/common/ShareModal';
 
 export const ArticleDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { articles, incrementViews, setFilterTag } = useBlog();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const article = articles.find(a => a.slug === slug);
@@ -127,22 +128,22 @@ export const ArticleDetailPage: React.FC = () => {
               </Link>
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-[#256B3A]" />
-                {article.readingTimeMinutes} min read
+                Min {article.readingTimeMinutes} read
               </span>
               <span className="flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-[#256B3A]" />
                 {article.views || 1} views
               </span>
 
-              {/* Direct WhatsApp Share button in article header */}
+              {/* Universal Share button in article header */}
               <button
                 type="button"
-                onClick={() => shareToWhatsApp(article.title, article.excerpt || article.content)}
-                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20be5a] text-white text-xs font-bold shadow-2xs transition-all hover:scale-102 cursor-pointer"
-                title="Share this article directly to WhatsApp"
+                onClick={() => setIsShareModalOpen(true)}
+                className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold shadow-2xs transition-all hover:scale-102 cursor-pointer"
+                title="Share this article"
               >
-                <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
-                <span>Share to WhatsApp</span>
+                <Share2 className="w-3.5 h-3.5 text-[#BFDC28]" />
+                <span>Share</span>
               </button>
             </div>
           </div>
@@ -267,6 +268,15 @@ export const ArticleDetailPage: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {/* Universal Share Modal Dialog */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={article.title}
+        excerpt={article.excerpt || article.content}
+        url={typeof window !== 'undefined' ? `${window.location.origin}/article/${article.slug}` : undefined}
+      />
     </div>
   );
 };

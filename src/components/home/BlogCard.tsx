@@ -1,21 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, Calendar, Bookmark, Heart, ArrowUpRight } from 'lucide-react';
+import { Clock, Calendar, Heart, ArrowUpRight, Share2 } from 'lucide-react';
 import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
-import { WhatsAppIcon } from '../common/SocialIcons';
-import { shareToWhatsApp } from '../../utils/shareUtils';
+import { ShareModal } from '../common/ShareModal';
 
 interface BlogCardProps {
   article: Article;
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
-  const { bookmarks, toggleBookmark, likedArticles, toggleLike, setFilterCategory, categories } = useBlog();
+  const { likedArticles, toggleLike, setFilterCategory, categories } = useBlog();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  const isBookmarked = bookmarks.includes(article.id);
   const isLiked = likedArticles.includes(article.id);
 
   const handleCategoryClick = (e: React.MouseEvent, catName: string) => {
@@ -25,6 +24,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
     const slug = found ? found.slug : catName.toLowerCase();
     setFilterCategory(slug);
     navigate(`/category/${slug}`);
+  };
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsShareModalOpen(true);
   };
 
   return (
@@ -50,45 +55,36 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
           </button>
         </div>
 
-        {/* Action icons floating top right */}
+        {/* Action icons floating top right: Share and Like */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-          {/* Direct WhatsApp Share button */}
+          {/* Universal Share button */}
           <button
+            type="button"
+            onClick={handleShareClick}
+            className="p-2 rounded-full backdrop-blur-md bg-black/45 text-white hover:bg-[#143520] shadow-xs transition-all hover:scale-105 cursor-pointer"
+            title="Share article (WhatsApp, Facebook, X, etc.)"
+            aria-label="Share article"
+          >
+            <Share2 className="w-3.5 h-3.5 text-white" />
+          </button>
+
+          {/* Like button */}
+          <button
+            type="button"
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
-              const fullUrl = `${window.location.origin}/article/${article.slug}`;
-              shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
+              toggleLike(article.id);
             }}
-            className="p-2 rounded-full backdrop-blur-md bg-[#25D366] text-white hover:bg-[#20be5a] shadow-xs transition-all hover:scale-105 cursor-pointer"
-            title="Share directly to WhatsApp"
-            aria-label="Share to WhatsApp"
-          >
-            <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
-          </button>
-
-          <button
-            onClick={() => toggleLike(article.id)}
-            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${isLiked
-              ? 'bg-rose-50 text-rose-600 shadow-sm'
-              : 'bg-black/40 text-white hover:bg-black/60'
-              }`}
+            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${
+              isLiked
+                ? 'bg-rose-50 text-rose-600 shadow-sm'
+                : 'bg-black/45 text-white hover:bg-black/65'
+            }`}
             title="Applaud research"
             aria-label="Like article"
           >
             <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-500' : ''}`} />
-          </button>
-
-          <button
-            onClick={() => toggleBookmark(article.id)}
-            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${isBookmarked
-              ? 'bg-[#BFDC28] text-[#143520] shadow-sm'
-              : 'bg-black/40 text-white hover:bg-black/60'
-              }`}
-            title={isBookmarked ? 'Saved to queue' : 'Save for offline reading'}
-            aria-label="Bookmark article"
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-[#143520]' : ''}`} />
           </button>
         </div>
       </div>
@@ -96,7 +92,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
       {/* Content Body */}
       <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
         <div className="space-y-3">
-          {/* Metadata info */}
+          {/* Metadata info: Min capitalized */}
           <div className="flex items-center justify-between text-xs text-[#8F7855]">
             <span className="flex items-center gap-1.5 font-medium">
               <Calendar className="w-3.5 h-3.5" />
@@ -104,7 +100,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
             </span>
             <span className="flex items-center gap-1.5 font-medium">
               <Clock className="w-3.5 h-3.5" />
-              min {article.readingTimeMinutes} chhiar
+              Min {article.readingTimeMinutes} chhiar
             </span>
           </div>
 
@@ -118,7 +114,6 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
 
         {/* Bottom author and read action */}
         <div className="mt-5 pt-4 border-t border-[#F6F4EB]">
-          {/* Author and Read arrow */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <img
@@ -139,17 +134,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
             <div className="flex items-center gap-1.5 shrink-0 ml-2">
               <button
                 type="button"
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const fullUrl = `${window.location.origin}/article/${article.slug}`;
-                  shareToWhatsApp(article.title, article.excerpt || article.content, fullUrl);
-                }}
-                className="w-8 h-8 rounded-full bg-[#25D366]/10 hover:bg-[#25D366] text-[#143520] hover:text-white flex items-center justify-center transition-all cursor-pointer"
-                title="Share to WhatsApp"
-                aria-label="Share to WhatsApp"
+                onClick={handleShareClick}
+                className="w-8 h-8 rounded-full bg-[#F6F4EB] hover:bg-[#143520] text-[#143520] hover:text-[#BFDC28] flex items-center justify-center transition-all cursor-pointer"
+                title="Share article"
+                aria-label="Share article"
               >
-                <WhatsAppIcon className="w-4 h-4 text-[#1e8341] hover:text-white" />
+                <Share2 className="w-4 h-4" />
               </button>
 
               <Link
@@ -163,7 +153,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
           </div>
         </div>
       </div>
+
+      {/* Share Modal Dialog */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={article.title}
+        excerpt={article.excerpt || article.content}
+        url={typeof window !== 'undefined' ? `${window.location.origin}/article/${article.slug}` : undefined}
+      />
     </article>
   );
 };
-

@@ -34,7 +34,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentArticle, allA
             Chhiar Zau Duh Tan
           </span>
           <h3 className="font-serif font-bold text-2xl text-[#143520] mt-1">
-            Thuziak thar leh Hriatzauna Dangte
+            Hriatzauna Thuziak Dangte
           </h3>
         </div>
       </div>
@@ -65,7 +65,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentArticle, allA
                     <Calendar className="w-3 h-3" /> {formatDate(art.publishedAt)}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {art.readingTimeMinutes}m
+                    <Clock className="w-3 h-3" /> Min {art.readingTimeMinutes}
                   </span>
                 </div>
                 <h4 className="font-serif font-semibold text-base text-[#143520] group-hover:text-[#256B3A] line-clamp-2 leading-snug">

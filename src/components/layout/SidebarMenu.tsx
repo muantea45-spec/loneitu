@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
+import { X, Sprout, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -8,16 +8,15 @@ interface SidebarMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSearch: () => void;
-  onOpenBookmarks: () => void;
+  onOpenBookmarks?: () => void;
 }
 
 export const SidebarMenu: React.FC<SidebarMenuProps> = ({
   isOpen,
   onClose,
   onOpenSearch,
-  onOpenBookmarks,
 }) => {
-  const { categories, tags, bookmarks, articles, aboutData } = useBlog();
+  const { categories, tags, articles, aboutData } = useBlog();
   const location = useLocation();
 
   if (!isOpen) return null;
@@ -53,26 +52,16 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             </div>
 
             {/* Quick Actions Bar */}
-            <div className="grid grid-cols-2 gap-2.5 p-4 bg-[#F6F4EB] border-b border-[#EBE6D6]">
+            <div className="p-4 bg-[#F6F4EB] border-b border-[#EBE6D6]">
               <button
                 onClick={() => {
                   onClose();
                   onOpenSearch();
                 }}
-                className="flex items-center justify-center gap-2 p-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-xs"
+                className="w-full flex items-center justify-center gap-2 p-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-xs"
               >
                 <Search className="w-4 h-4 text-[#256B3A]" />
-                <span>Zawnna (Search)</span>
-              </button>
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenBookmarks();
-                }}
-                className="flex items-center justify-center gap-2 p-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-xs"
-              >
-                <Bookmark className="w-4 h-4 text-[#256B3A]" />
-                <span>Khaihlawn ({bookmarks.length})</span>
+                <span>Zawnna (Search Articles)</span>
               </button>
             </div>
 
@@ -88,7 +77,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 }`}
               >
                 <Home className="w-4 h-4 text-[#256B3A]" />
-                <span>Kawtchhuah (Home)</span>
+                <span>Home</span>
               </Link>
               <Link
                 to="/archive"
@@ -100,7 +89,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 }`}
               >
                 <Calendar className="w-4 h-4 text-[#256B3A]" />
-                <span>Thuziak Dahkhawm (Archive)</span>
+                <span>Archive</span>
               </Link>
               <Link
                 to="/about"
@@ -112,7 +101,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                 }`}
               >
                 <Info className="w-4 h-4 text-[#256B3A]" />
-                <span>Kan Chanchin (About)</span>
+                <span>About</span>
               </Link>
             </div>
 

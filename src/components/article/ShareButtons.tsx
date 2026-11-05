@@ -1,9 +1,10 @@
-import React from 'react';
-import { Share2, Link as LinkIcon, Heart, Bookmark, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Share2, Link as LinkIcon, Heart, Check } from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { useBlog } from '../../context/BlogContext';
-import { WhatsAppIcon } from '../common/SocialIcons';
-import { shareToWhatsApp, shareToTwitter, shareToLinkedIn, copyArticleLink } from '../../utils/shareUtils';
+import { WhatsAppIcon, FacebookIcon } from '../common/SocialIcons';
+import { shareToWhatsApp, shareToFacebook, shareToTwitter, shareToLinkedIn, copyArticleLink } from '../../utils/shareUtils';
+import { ShareModal } from '../common/ShareModal';
 
 interface ShareButtonsProps {
   title: string;
@@ -12,13 +13,13 @@ interface ShareButtonsProps {
 
 export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) => {
   const { showToast } = useToast();
-  const { bookmarks, toggleBookmark, likedArticles, toggleLike, articles } = useBlog();
-  const [copied, setCopied] = React.useState(false);
+  const { likedArticles, toggleLike, articles } = useBlog();
+  const [copied, setCopied] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const article = articles.find(a => a.id === articleId);
   const likesCount = article?.likes || 0;
   const isLiked = likedArticles.includes(articleId);
-  const isBookmarked = bookmarks.includes(articleId);
 
   const handleCopyLink = async () => {
     const ok = await copyArticleLink();
@@ -33,22 +34,40 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
     shareToWhatsApp(title, article?.excerpt || article?.content);
   };
 
+  const handleShareFacebook = () => {
+    shareToFacebook();
+  };
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 py-6 border-y border-[#EBE6D6] my-8">
       {/* Social / Sharing buttons */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-semibold text-[#8F7855] mr-1 flex items-center gap-1">
-          <Share2 className="w-3.5 h-3.5" /> Share:
-        </span>
+        {/* Main Share Button with Logo */}
+        <button
+          onClick={() => setIsShareModalOpen(true)}
+          className="px-3.5 py-2 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all hover:scale-102 cursor-pointer"
+          title="Share to WhatsApp, Facebook, X, etc."
+        >
+          <Share2 className="w-3.5 h-3.5 text-[#BFDC28]" />
+          <span>Share</span>
+        </button>
 
-        {/* Primary WhatsApp Share Button */}
+        {/* WhatsApp Direct Option */}
         <button
           onClick={handleShareWhatsApp}
-          className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20be5a] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all hover:scale-102 cursor-pointer"
-          title="Direct share to WhatsApp with picture and excerpt"
+          className="p-2 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer"
+          title="Share to WhatsApp"
         >
-          <WhatsAppIcon className="w-4 h-4 text-white" />
-          <span>WhatsApp</span>
+          <WhatsAppIcon className="w-4 h-4" />
+        </button>
+
+        {/* Facebook Direct Option */}
+        <button
+          onClick={handleShareFacebook}
+          className="p-2 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white transition-colors cursor-pointer"
+          title="Share to Facebook"
+        >
+          <FacebookIcon className="w-4 h-4" />
         </button>
 
         <button
@@ -64,7 +83,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
           onClick={() => shareToTwitter(title)}
           className="px-3 py-2 rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-medium transition-colors cursor-pointer"
         >
-          X / Twitter
+          X
         </button>
 
         <button
@@ -75,7 +94,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
         </button>
       </div>
 
-      {/* Interactive likes & bookmark */}
+      {/* Interactive like button */}
       <div className="flex items-center gap-2.5">
         <button
           onClick={() => toggleLike(articleId)}
@@ -89,21 +108,16 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
           <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-[#8F7855]'}`} />
           <span>{likesCount} Likes</span>
         </button>
-
-        <button
-          onClick={() => toggleBookmark(articleId)}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-            isBookmarked
-              ? 'bg-[#143520] text-[#BFDC28]'
-              : 'bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D]'
-          }`}
-          title={isBookmarked ? 'Saved to reading queue' : 'Save article'}
-        >
-          <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-[#BFDC28]' : 'text-[#8F7855]'}`} />
-          <span>{isBookmarked ? 'Saved' : 'Save'}</span>
-        </button>
       </div>
+
+      {/* Share Modal Dialog */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={title}
+        excerpt={article?.excerpt || article?.content}
+        url={typeof window !== 'undefined' && article ? `${window.location.origin}/article/${article.slug}` : undefined}
+      />
     </div>
   );
 };
-

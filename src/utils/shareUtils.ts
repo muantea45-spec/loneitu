@@ -34,6 +34,11 @@ export function shareToWhatsApp(title: string, excerpt?: string, url?: string) {
   window.open(shareUrl, '_blank', 'noopener,noreferrer');
 }
 
+export function shareToFacebook(url?: string) {
+  const articleUrl = url || window.location.href;
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`, '_blank', 'noopener,noreferrer');
+}
+
 export function shareToTwitter(title: string, url?: string) {
   const articleUrl = url || window.location.href;
   const text = encodeURIComponent(`Insightful agronomy read: "${title}" via Loneitu (MIZORAM TAN):`);
