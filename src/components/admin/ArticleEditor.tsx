@@ -7,12 +7,13 @@ import {
   Eye,
   Columns,
   Edit,
+  Code2,
   Sparkles,
   Image as ImageIcon,
   ImagePlus,
   Upload,
   Link2,
-  RefreshCw,
+  Unlink,
   Plus,
   X,
   Star,
@@ -20,20 +21,36 @@ import {
   Clock,
   Bold,
   Italic,
+  Underline,
+  Strikethrough,
+  Subscript,
+  Superscript,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
   AlignJustify,
-  Heading2,
-  Heading3,
   Quote,
   Table as TableIcon,
   List,
+  ListOrdered,
+  Indent,
+  Outdent,
   Code,
-  UserCheck,
+  FileCode,
+  Minus,
+  AlertTriangle,
+  Palette,
+  Highlighter,
+  Eraser,
+  Undo,
+  Redo,
 } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { slugify } from '../../utils/slugify';
 import { calculateReadingTime } from '../../utils/readingTime';
 import { useToast } from '../common/Toast';
 import { compressImage } from '../../utils/imageCompressor';
+import { markdownToHtml } from '../../utils/richTextFormatter';
 
 interface ArticleEditorProps {
   articleId?: string | null;
@@ -52,13 +69,21 @@ const PRESET_COVERS = [
   { label: 'Drone Crop Scouting', url: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=1600&q=80' },
 ];
 
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
+const TEXT_COLORS = [
+  { name: 'Forest Dark', color: '#143520' },
+  { name: 'Field Green', color: '#256B3A' },
+  { name: 'Soil Umber', color: '#6F5B3C' },
+  { name: 'Harvest Amber', color: '#D97706' },
+  { name: 'Alert Crimson', color: '#B91C1C' },
+  { name: 'Charcoal', color: '#1E2922' },
+];
+
+const HIGHLIGHT_COLORS = [
+  { name: 'Lime Light', color: '#F4FBD0' },
+  { name: 'Soft Sage', color: '#EBF1EA' },
+  { name: 'Amber Glow', color: '#FEF3C7' },
+  { name: 'Pale Rose', color: '#FFE4E6' },
+  { name: 'Sky Pale', color: '#E0F2FE' },
 ];
 
 export const ArticleEditor: React.FC<ArticleEditorProps> = ({
@@ -76,18 +101,14 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [slug, setSlug] = useState(existingArticle?.slug || '');
   const [isSlugManual, setIsSlugManual] = useState(Boolean(existingArticle));
   const [content, setContent] = useState(existingArticle?.content || '');
-  const [coverImage, setCoverImage] = useState(
-    existingArticle?.coverImage || ''
-  );
+  const [coverImage, setCoverImage] = useState(existingArticle?.coverImage || '');
   const [coverImageTab, setCoverImageTab] = useState<'upload' | 'embed'>('upload');
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState(
     existingArticle?.category || (categories[0]?.name || 'Agronomy & Soil Health')
   );
-  const [tagsList, setTagsList] = useState<string[]>(
-    existingArticle?.tags || []
-  );
+  const [tagsList, setTagsList] = useState<string[]>(existingArticle?.tags || []);
   const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState<'published' | 'draft'>(
     existingArticle?.status || 'published'
@@ -99,9 +120,18 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     existingArticle?.author?.id || authors[0]?.id || ''
   );
 
-  // Editor View modes: 'split' | 'edit' | 'preview' - Default to 'edit'
-  const [viewMode, setViewMode] = useState<'split' | 'edit' | 'preview'>('edit');
+  // Editor View modes: 'edit' (Visual Canvas) | 'split' | 'preview' | 'code' (Raw HTML/MD)
+  const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview' | 'code'>('edit');
   const [isCanvasJustified, setIsCanvasJustified] = useState(false);
+
+  // Popover controls
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+
+  // Inline Link modal
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkUrlInput, setLinkUrlInput] = useState('https://');
+  const [linkTextInput, setLinkTextInput] = useState('');
 
   // Inline Category modal
   const [showNewCatModal, setShowNewCatModal] = useState(false);
@@ -115,7 +145,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [newAuthorInst, setNewAuthorInst] = useState('');
   const [newAuthorBio, setNewAuthorBio] = useState('');
   const [newAuthorAvatar, setNewAuthorAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80');
-  const [newAuthorAvatarTab, setNewAuthorAvatarTab] = useState<'upload' | 'embed'>('upload');
   const [isNewAuthorAvatarUploading, setIsNewAuthorAvatarUploading] = useState(false);
   const newAuthorAvatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -129,39 +158,285 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Canvas DOM refs
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
+  const isCanvasInitializedRef = useRef<boolean>(false);
+
+  // Initialize canvas with rich HTML on load
+  useEffect(() => {
+    if (canvasRef.current && !isCanvasInitializedRef.current) {
+      const initialHtml = markdownToHtml(existingArticle?.content || '');
+      canvasRef.current.innerHTML = initialHtml;
+      setContent(initialHtml);
+      isCanvasInitializedRef.current = true;
+    }
+  }, [existingArticle]);
+
+  // When switching from raw code mode back to visual canvas, sync innerHTML
+  const handleViewModeChange = (mode: 'edit' | 'split' | 'preview' | 'code') => {
+    if (mode !== 'code' && canvasRef.current && canvasRef.current.innerHTML !== content) {
+      canvasRef.current.innerHTML = content;
+    }
+    setViewMode(mode);
+  };
+
+  // Sync state on canvas input
+  const handleCanvasInput = () => {
+    if (canvasRef.current) {
+      setContent(canvasRef.current.innerHTML);
+    }
+  };
+
+  // Selection preservation
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+      }
+    }
+  };
+
+  // Execute browser document command directly inside the visual canvas
+  const exec = (command: string, value: string | undefined = undefined) => {
+    if (canvasRef.current) {
+      canvasRef.current.focus();
+    }
+    try {
+      document.execCommand(command, false, value);
+    } catch (err) {
+      console.warn('execCommand failed:', err);
+    }
+    handleCanvasInput();
+  };
+
+  // Insert HTML element at current cursor in the visual canvas
+  const insertHtmlAtCursor = (html: string) => {
+    if (canvasRef.current) {
+      canvasRef.current.focus();
+    }
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (canvasRef.current && canvasRef.current.contains(range.commonAncestorContainer)) {
+        range.deleteContents();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const frag = document.createDocumentFragment();
+        let node: ChildNode | null;
+        let lastNode: ChildNode | null = null;
+        while ((node = tempDiv.firstChild)) {
+          lastNode = frag.appendChild(node);
+        }
+        range.insertNode(frag);
+        if (lastNode) {
+          range.setStartAfter(lastNode);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } else if (canvasRef.current) {
+        canvasRef.current.innerHTML += html;
+      }
+    } else if (canvasRef.current) {
+      canvasRef.current.innerHTML += html;
+    }
+    handleCanvasInput();
+  };
+
+  // Photo insertion directly into the visual canvas
   const insertImageAtCursor = (url: string, captionText: string = '') => {
     if (!url.trim()) {
       showToast('Please select or enter an image URL', 'error');
       return;
     }
+    restoreSelection();
     const cleanCaption = captionText.trim();
-    const snippet = cleanCaption
-      ? `\n\n![${cleanCaption}](${url.trim()})\n*${cleanCaption}*\n\n`
-      : `\n\n![](${url.trim()})\n\n`;
-
-    const textarea = document.getElementById('article-content-textarea') as HTMLTextAreaElement | null;
-    if (!textarea) {
-      setContent(prev => (prev ? prev + snippet : snippet.trimStart()));
-    } else {
-      const start = textarea.selectionStart ?? content.length;
-      const end = textarea.selectionEnd ?? content.length;
-      const newContent = content.substring(0, start) + snippet + content.substring(end);
-      setContent(newContent);
-      setTimeout(() => {
-        textarea.focus();
-        const pos = start + snippet.length;
-        textarea.setSelectionRange(pos, pos);
-      }, 50);
-    }
-
+    const imgHtml = `
+<figure style="margin: 24px 0; display: block; text-align: center;">
+  <div style="overflow: hidden; border-radius: 16px; border: 1px solid #ddd4bc; background: #f6f4eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); display: inline-block; max-width: 100%;">
+    <img src="${url.trim()}" alt="${cleanCaption}" style="width: 100%; max-height: 550px; object-fit: cover; display: block;" loading="lazy" />
+  </div>
+  ${cleanCaption ? `<figcaption style="text-align: center; font-size: 12px; color: #8f7855; margin-top: 8px; font-style: italic;">${cleanCaption}</figcaption>` : ''}
+</figure>
+<p><br /></p>
+`;
+    insertHtmlAtCursor(imgHtml);
     setShowImageModal(false);
     setImageUploadPreview('');
     setImageUploadSizeKb(0);
     setImageEmbedUrl('');
     setImageCaption('');
-    showToast('Photo inserted into article!', 'success');
+    showToast('Photo inserted into canvas!', 'success');
   };
 
+  // Link Dialog Handlers
+  const handleOpenLinkModal = () => {
+    saveSelection();
+    const sel = window.getSelection();
+    const selectedText = sel ? sel.toString().trim() : '';
+    setLinkTextInput(selectedText);
+    setLinkUrlInput('https://');
+    setShowLinkModal(true);
+  };
+
+  const handleApplyLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkUrlInput.trim()) return;
+    restoreSelection();
+    const safeUrl = linkUrlInput.trim();
+    const safeText = linkTextInput.trim();
+    if (safeText) {
+      const linkHtml = `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="color: #256b3a; text-decoration: underline; font-weight: 600;">${safeText}</a>`;
+      insertHtmlAtCursor(linkHtml);
+    } else {
+      exec('createLink', safeUrl);
+    }
+    setShowLinkModal(false);
+    setLinkUrlInput('https://');
+    setLinkTextInput('');
+    showToast('Link inserted into canvas!', 'success');
+  };
+
+  const handleUnlink = () => {
+    exec('unlink');
+    showToast('Link removed', 'info');
+  };
+
+  // Table Insertion
+  const handleInsertTable = () => {
+    const tableHtml = `
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #ddd4bc; border-radius: 12px; overflow: hidden;">
+  <thead>
+    <tr style="background: #faf8f3;">
+      <th style="border: 1px solid #ddd4bc; padding: 10px 14px; text-align: left; font-weight: bold; color: #143520;">Zirchianna / Metric</th>
+      <th style="border: 1px solid #ddd4bc; padding: 10px 14px; text-align: left; font-weight: bold; color: #143520;">Hmanlai Dan (Baseline)</th>
+      <th style="border: 1px solid #ddd4bc; padding: 10px 14px; text-align: left; font-weight: bold; color: #143520;">Loneitu Kalpui Dan</th>
+      <th style="border: 1px solid #ddd4bc; padding: 10px 14px; text-align: left; font-weight: bold; color: #143520;">Hmasawnna (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #143520; font-weight: 600;">Leilung Ṭhatna (SOM)</td>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #3b2e1d;">1.2%</td>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #3b2e1d;">Biochar + Hnim phah</td>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #256b3a; font-weight: 600;">+185%</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #143520; font-weight: 600;">Tui Hip Theihna</td>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #3b2e1d;">15 mm/hr</td>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #3b2e1d;">Lei let lova thlai chin</td>
+      <td style="border: 1px solid #ddd4bc; padding: 10px 14px; color: #256b3a; font-weight: 600;">+320%</td>
+    </tr>
+  </tbody>
+</table>
+<p><br /></p>
+`;
+    insertHtmlAtCursor(tableHtml);
+    showToast('Table inserted!', 'success');
+  };
+
+  // Agronomy Field Note Callout
+  const handleInsertNoteCallout = () => {
+    const noteHtml = `
+<div style="background: #ebf1ea; border: 1.5px solid #256b3a; border-left-width: 6px; border-radius: 12px; padding: 16px 20px; margin: 20px 0; color: #143520;">
+  <div style="display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13.5px; margin-bottom: 6px; color: #1e542e;">
+    <span>🌿</span>
+    <span>LONEITU FIELD NOTE:</span>
+  </div>
+  <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #24412b;">
+    Hemi hmunah hian loneitu tana hriattur pawimawh, zirbingna thurawn, emaw thlai enkawl dan thuruk ziak rawh le.
+  </p>
+</div>
+<p><br /></p>
+`;
+    insertHtmlAtCursor(noteHtml);
+    showToast('Field Note Callout inserted!', 'success');
+  };
+
+  // Warning / Caution Callout
+  const handleInsertWarningCallout = () => {
+    const warnHtml = `
+<div style="background: #fffbeb; border: 1.5px solid #d97706; border-left-width: 6px; border-radius: 12px; padding: 16px 20px; margin: 20px 0; color: #92400e;">
+  <div style="display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13.5px; margin-bottom: 6px; color: #b45309;">
+    <span>⚠️</span>
+    <span>FIMKHURNA & VAWNHIM DAN:</span>
+  </div>
+  <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #78350f;">
+    Sik leh sa inthlak danglam thut laka thlai ven dan leh damdawi hman dan fimkhur thurawn hetiang hian tar lang rawh.
+  </p>
+</div>
+<p><br /></p>
+`;
+    insertHtmlAtCursor(warnHtml);
+    showToast('Caution Callout inserted!', 'success');
+  };
+
+  // Code Block Insertion
+  const handleCodeBlock = () => {
+    const sel = window.getSelection();
+    const codeText = sel && sel.toString() ? sel.toString() : '// Enter technical formula or protocol data';
+    insertHtmlAtCursor(`<pre style="background: #143520; color: #fbfbf8; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 13px; margin: 16px 0;"><code>${codeText}</code></pre><p><br /></p>`);
+  };
+
+  // Inline Code
+  const handleInlineCode = () => {
+    const sel = window.getSelection();
+    if (sel && sel.toString()) {
+      insertHtmlAtCursor(`<code style="background: #f6f4eb; color: #143520; padding: 2px 6px; border-radius: 6px; font-family: monospace; font-size: 13px; font-weight: 600;">${sel.toString()}</code>`);
+    } else {
+      insertHtmlAtCursor(`<code style="background: #f6f4eb; color: #143520; padding: 2px 6px; border-radius: 6px; font-family: monospace; font-size: 13px; font-weight: 600;">code</code>`);
+    }
+  };
+
+  // Drag and Drop into Canvas
+  const handleCanvasDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      e.preventDefault();
+      try {
+        const result = await compressImage(file, 1200, 0.82);
+        const cloudUrl = await uploadImage(result.dataUrl, file.name);
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        insertImageAtCursor(cloudUrl, nameWithoutExt);
+      } catch {
+        showToast('Failed to drop image', 'error');
+      }
+    }
+  };
+
+  // Paste image into Canvas
+  const handleCanvasPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          try {
+            const result = await compressImage(file, 1200, 0.82);
+            const cloudUrl = await uploadImage(result.dataUrl, file.name);
+            insertImageAtCursor(cloudUrl, 'Pasted observation photograph');
+          } catch {
+            showToast('Failed to paste image', 'error');
+          }
+          break;
+        }
+      }
+    }
+  };
+
+  // File Upload Handlers for Cover & Author Avatar
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -234,41 +509,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     }
   };
 
-  const handleTextareaDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      e.preventDefault();
-      try {
-        const result = await compressImage(file, 1200, 0.82);
-        const cloudUrl = await uploadImage(result.dataUrl, file.name);
-        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-        insertImageAtCursor(cloudUrl, nameWithoutExt);
-      } catch {
-        showToast('Failed to drop image', 'error');
-      }
-    }
-  };
-
-  const handleTextareaPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          e.preventDefault();
-          try {
-            const result = await compressImage(file, 1200, 0.82);
-            insertImageAtCursor(result.dataUrl, 'Pasted observation photograph');
-          } catch {
-            showToast('Failed to paste image', 'error');
-          }
-          break;
-        }
-      }
-    }
-  };
-
   // Auto-generate slug when title changes unless manually altered
   useEffect(() => {
     if (!isSlugManual && title) {
@@ -277,7 +517,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   }, [title, isSlugManual]);
 
   const readingTime = calculateReadingTime(content);
-  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
 
   // Tag chip handlers
   const handleAddTag = (rawTag: string) => {
@@ -285,7 +525,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     if (!clean) return;
     if (!tagsList.includes(clean)) {
       setTagsList(prev => [...prev, clean]);
-      // Also ensure tag exists in global taxonomy
       if (!tags.some(t => t.name.toLowerCase() === clean.toLowerCase())) {
         addTag({ name: clean });
       }
@@ -301,62 +540,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       handleAddTag(tagInput);
-    }
-  };
-
-  // Toolbar insertion helpers
-  const insertFormatting = (prefix: string, suffix: string = '') => {
-    const textarea = document.getElementById('article-content-textarea') as HTMLTextAreaElement | null;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const replacement = prefix + (selectedText || 'text') + suffix;
-
-    const newContent = content.substring(0, start) + replacement + content.substring(end);
-    setContent(newContent);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, start + prefix.length + (selectedText.length || 4));
-    }, 50);
-  };
-
-  const handleJustifyText = () => {
-    const textarea = document.getElementById('article-content-textarea') as HTMLTextAreaElement | null;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-
-    if (selectedText.trim()) {
-      const justifyMatch =
-        selectedText.match(/^<div align="justify">\s*\n*([\s\S]*?)\s*\n*<\/div>$/i) ||
-        selectedText.match(/^<div style="text-align:\s*justify;?">\s*\n*([\s\S]*?)\s*\n*<\/div>$/i);
-
-      let replacement: string;
-      if (justifyMatch) {
-        replacement = justifyMatch[1];
-        showToast('Justified alignment removed', 'info');
-      } else {
-        replacement = `<div align="justify">\n\n${selectedText.trim()}\n\n</div>`;
-        showToast('Text justified!', 'success');
-      }
-
-      const newContent = content.substring(0, start) + replacement + content.substring(end);
-      setContent(newContent);
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start, start + replacement.length);
-      }, 50);
-    } else {
-      setIsCanvasJustified(prev => {
-        const next = !prev;
-        showToast(next ? 'Text canvas justified!' : 'Text canvas left-aligned', 'info');
-        return next;
-      });
     }
   };
 
@@ -405,7 +588,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
       showToast('Please enter an article title', 'error');
       return;
     }
-    if (!content.trim()) {
+
+    const currentContent = (canvasRef.current && viewMode !== 'code' ? canvasRef.current.innerHTML : content).trim();
+    if (!currentContent) {
       showToast('Please write the article content', 'error');
       return;
     }
@@ -418,7 +603,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
         title,
         slug: slug || slugify(title),
         excerpt: '',
-        content,
+        content: currentContent,
         coverImage: finalCoverImage,
         category,
         tags: tagsList,
@@ -432,7 +617,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
         title,
         slug: slug || slugify(title),
         excerpt: '',
-        content,
+        content: currentContent,
         coverImage: finalCoverImage,
         category,
         tags: tagsList,
@@ -464,7 +649,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
           </h2>
           <div className="flex items-center gap-3 text-xs text-[#8F7855] mt-0.5">
             <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" /> {readingTime} min read
+              <Clock className="w-3.5 h-3.5" /> Min {readingTime} read
             </span>
             <span>•</span>
             <span>{wordCount} words</span>
@@ -489,324 +674,625 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Mobile order prioritizes Title & Markdown Editor (order-1), Metadata on side/bottom (order-2) */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Right Column (displayed first on mobile): Title, Slug & Rich Markdown Editor */}
+        {/* Right Column: Title, Slug & Rich Text Canvas */}
         <div className="order-1 lg:order-2 lg:col-span-8 space-y-5">
-          {/* Article Entry Box with Formatting Toolbar placed JUST ABOVE Article Title */}
-          <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs overflow-hidden">
-            {/* Formatting Toolbar Strip - Exact length/width of this rectangular Article Entry box */}
-            <div className="p-2 sm:p-2.5 bg-[#F6F4EB] border-b border-[#DDD4BC] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-              {/* Quick Formatting Tools */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 min-w-0">
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('**', '**')}
-                  className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer"
-                  title="Bold (**text**)"
-                >
-                  <Bold className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-[11px]">Bold</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('*', '*')}
-                  className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs italic transition-colors cursor-pointer"
-                  title="Italic (*text*)"
-                >
-                  <Italic className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-[11px]">Italic</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleJustifyText}
-                  className={`h-8 px-2.5 hover:bg-[#EBE6D6] active:bg-[#DDD4BC] border rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                    isCanvasJustified ? 'bg-[#EBF1EA] text-[#1E542E] border-[#256B3A]' : 'bg-white text-[#54432C] border-[#DDD4BC]'
-                  }`}
-                  title="Justify Text: Wrap selected text in justified alignment, or toggle canvas justification"
-                >
-                  <AlignJustify className="w-3.5 h-3.5 text-[#256B3A]" />
-                  <span className="hidden sm:inline text-[11px]">Justify</span>
-                </button>
-                <div className="h-4 w-px bg-[#DDD4BC] mx-1 shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n## ')}
-                  className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer"
-                  title="Heading 2 (## Title)"
-                >
-                  <Heading2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-[11px]">H2</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n### ')}
-                  className="h-8 px-2.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer"
-                  title="Heading 3 (### Title)"
-                >
-                  <Heading3 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-[11px]">H3</span>
-                </button>
-                <div className="h-4 w-px bg-[#DDD4BC] mx-1 shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n> ')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Blockquote (> quote)"
-                >
-                  <Quote className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('\n- ')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Bullet list (- item)"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('```\n', '\n```')}
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Code block"
-                >
-                  <Code className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertFormatting(
-                      '\n| Parameter | Baseline | Regenerative Protocol | Impact |\n| :--- | :--- | :--- | :--- |\n| Sample Metric | 10 units | 25 units | +150% |\n'
-                    )
-                  }
-                  className="w-8 h-8 p-1.5 text-[#54432C] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg shrink-0 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Insert Comparison Table"
-                >
-                  <TableIcon className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertFormatting(
-                      '\n> 🌿 **Agronomy Field Note:** Soil organic matter increases of 1% allow soil to hold an additional 20,000 gallons of clean water per acre.\n'
-                    )
-                  }
-                  className="h-8 px-2.5 text-[11px] font-semibold bg-[#EBF1EA] text-[#1E542E] hover:bg-[#DFEDE3] rounded-lg transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
-                  title="Insert Field Note Callout"
-                >
-                  <Sparkles className="w-3 h-3 text-[#BFDC28]" />
-                  <span>Note</span>
-                </button>
-                <div className="h-4 w-px bg-[#DDD4BC] mx-1 shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => setShowImageModal(true)}
-                  className="h-8 px-2.5 bg-[#EBF1EA] text-[#143520] hover:bg-[#DFEDE3] border border-[#B7CEB4] rounded-lg shrink-0 flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                  title="Insert or Upload Picture into Article Body"
-                >
-                  <ImagePlus className="w-3.5 h-3.5 text-[#256B3A]" />
-                  <span className="text-[11px]">Picture / Image</span>
-                </button>
-              </div>
-
-              {/* View Mode Toggle: Edit | Split | Preview */}
-              <div className="flex items-center gap-0.5 bg-[#EBE6D6] p-0.5 rounded-lg shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('edit')}
-                  className={`px-2.5 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                    viewMode === 'edit'
-                      ? 'bg-white text-[#143520] shadow-xs'
-                      : 'text-[#6F5B3C] hover:text-[#143520]'
-                  }`}
-                >
-                  <Edit className="w-3 h-3" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('split')}
-                  className={`hidden lg:flex px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold items-center gap-1 cursor-pointer transition-colors ${
-                    viewMode === 'split'
-                      ? 'bg-white text-[#143520] shadow-xs'
-                      : 'text-[#6F5B3C] hover:text-[#143520]'
-                  }`}
-                >
-                  <Columns className="w-3 h-3" />
-                  <span>Split</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('preview')}
-                  className={`px-2.5 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                    viewMode === 'preview'
-                      ? 'bg-white text-[#143520] shadow-xs'
-                      : 'text-[#6F5B3C] hover:text-[#143520]'
-                  }`}
-                >
-                  <Eye className="w-3 h-3" />
-                  <span>Preview</span>
-                </button>
-              </div>
+          {/* Article Entry Box with Title & Permanent Slug */}
+          <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs p-4 sm:p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
+                Article Title *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="Enter article title..."
+                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl font-serif font-bold text-lg sm:text-xl text-[#143520] placeholder:text-[#8F7855]/50 focus:outline-hidden focus:border-[#256B3A]"
+                required
+              />
             </div>
 
-            {/* Title & Slug section - strictly below the toolbar with plenty of padding */}
-            <div className="p-4 sm:p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
-                  Article Title *
-                </label>
+            {/* Slug input */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center">
+              <div className="sm:col-span-3 text-xs font-medium text-[#6F5B3C]">
+                Permanent URL Slug:
+              </div>
+              <div className="sm:col-span-9 flex items-center">
+                <span className="px-2.5 sm:px-3 py-2 bg-[#EBE6D6] border border-r-0 border-[#DDD4BC] rounded-l-xl text-xs text-[#8F7855] font-mono shrink-0">
+                  /article/
+                </span>
                 <input
                   type="text"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="Enter article title..."
-                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl font-serif font-bold text-lg sm:text-xl text-[#143520] placeholder:text-[#8F7855]/50 focus:outline-hidden focus:border-[#256B3A]"
+                  value={slug}
+                  onChange={e => {
+                    setSlug(e.target.value);
+                    setIsSlugManual(true);
+                  }}
+                  placeholder="auto-generated-or-custom-slug"
+                  className="flex-1 min-w-0 px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-r-xl text-xs font-mono text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
                   required
                 />
-              </div>
-
-              {/* Slug input */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center">
-                <div className="sm:col-span-3 text-xs font-medium text-[#6F5B3C]">
-                  Permanent URL Slug:
-                </div>
-                <div className="sm:col-span-9 flex items-center">
-                  <span className="px-2.5 sm:px-3 py-2 bg-[#EBE6D6] border border-r-0 border-[#DDD4BC] rounded-l-xl text-xs text-[#8F7855] font-mono shrink-0">
-                    /article/
-                  </span>
-                  <input
-                    type="text"
-                    value={slug}
-                    onChange={e => {
-                      setSlug(e.target.value);
-                      setIsSlugManual(true);
-                    }}
-                    placeholder="auto-generated-or-custom-slug"
-                    className="flex-1 min-w-0 px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-r-xl text-xs font-mono text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                    required
-                  />
-                </div>
               </div>
             </div>
           </div>
 
-          {/* Markdown Content Editor - Clean canvas with NO floating toolbar */}
+          {/* Rich Content & Textbox Canvas Box */}
           <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs overflow-hidden flex flex-col">
-            <div className="px-4 sm:px-6 py-2.5 bg-[#FBFBF8] border-b border-[#DDD4BC] flex items-center justify-between text-xs">
-              <div className="flex items-center gap-3">
-                <label htmlFor="article-content-textarea" className="font-bold uppercase tracking-wider text-[#6F5B3C]">
-                  Article Content & Body
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowImageModal(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-[#1E542E] bg-[#EBF1EA] hover:bg-[#DFEDE3] border border-[#B7CEB4] rounded-lg transition-colors cursor-pointer"
-                  title="Insert or upload image at cursor location"
-                >
-                  <ImagePlus className="w-3.5 h-3.5 text-[#256B3A]" />
-                  <span>+ Insert / Upload Photo</span>
-                </button>
+            {/* Header label for canvas */}
+            <div className="px-4 sm:px-6 py-2.5 bg-[#FAF8F3] border-b border-[#DDD4BC] flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-bold uppercase tracking-wider text-[#143520]">
+                  Article Content Canvas
+                </span>
+                <span className="text-[11px] text-[#8F7855] hidden sm:inline">
+                  (WYSIWYG: Formats reflect immediately in the canvas)
+                </span>
               </div>
-              <span className="text-[11px] text-[#8F7855]">
-                {viewMode === 'edit' && 'Edit Mode (Blank Canvas)'}
+              <div className="text-[11px] font-semibold text-[#256B3A]">
+                {viewMode === 'edit' && 'Visual Canvas Mode'}
                 {viewMode === 'split' && 'Split View'}
-                {viewMode === 'preview' && 'Rendered Preview'}
-              </span>
+                {viewMode === 'preview' && 'Full Preview'}
+                {viewMode === 'code' && 'Raw HTML/Markdown Mode'}
+              </div>
             </div>
 
-            {/* Split / Edit / Preview Workspace */}
-            <div className="min-h-[450px] sm:min-h-[550px]">
-              {viewMode === 'edit' && (
-                <textarea
-                  id="article-content-textarea"
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  onDrop={handleTextareaDrop}
-                  onPaste={handleTextareaPaste}
-                  className={`w-full min-h-[450px] sm:h-[650px] p-4 sm:p-6 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-y leading-relaxed ${
-                    isCanvasJustified ? 'text-justify [text-align:justify]' : ''
-                  }`}
-                  placeholder="Start typing your article content here in Markdown... (Tip: Click '+ Insert / Upload Photo', paste screenshots directly with Ctrl+V, or drag & drop pictures here!)"
-                  required
-                />
-              )}
+            {/* MULTI-LINE ORGANIZED TOOLBAR (No Horizontal Scroll Needed) */}
+            <div className="bg-[#F6F4EB] border-b border-[#DDD4BC] p-2.5 sm:p-3 space-y-2 select-none">
+              {/* LINE 1: Typography, Font Formats, Headings & Colors */}
+              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-[#DDD4BC]/60">
+                {/* Heading / Block selector */}
+                <select
+                  onMouseDown={e => e.stopPropagation()}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === 'p') exec('formatBlock', '<p>');
+                    else if (val === 'h1') exec('formatBlock', '<h1>');
+                    else if (val === 'h2') exec('formatBlock', '<h2>');
+                    else if (val === 'h3') exec('formatBlock', '<h3>');
+                    else if (val === 'h4') exec('formatBlock', '<h4>');
+                  }}
+                  className="h-8 px-2.5 bg-white border border-[#DDD4BC] rounded-lg text-xs font-semibold text-[#143520] focus:outline-hidden cursor-pointer"
+                  defaultValue="p"
+                  title="Format block / heading level"
+                >
+                  <option value="p">Paragraph</option>
+                  <option value="h1">Heading 1</option>
+                  <option value="h2">Heading 2</option>
+                  <option value="h3">Heading 3</option>
+                  <option value="h4">Heading 4</option>
+                </select>
 
-              {viewMode === 'preview' && (
-                <div className="p-5 sm:p-8 prose-agri max-w-none bg-white min-h-[450px] sm:min-h-[650px]">
-                  {content ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
-                      components={{
-                        img: ({ node, ...props }) => (
-                          <figure className="my-6 block">
-                            <div className="overflow-hidden rounded-xl border border-[#DDD4BC] bg-[#F6F4EB] shadow-xs">
-                              <img
-                                {...props}
-                                className="w-full max-h-[500px] object-cover block"
-                                loading="lazy"
-                              />
-                            </div>
-                            {props.alt && (
-                              <figcaption className="text-center text-xs text-[#8F7855] mt-2 italic font-serif">
-                                {props.alt}
-                              </figcaption>
-                            )}
-                          </figure>
-                        ),
-                      }}
-                    >
-                      {content}
-                    </ReactMarkdown>
-                  ) : (
-                    <p className="text-sm text-[#8F7855] italic">
-                      Article content is empty. Type in Edit mode to preview your article.
-                    </p>
+                <div className="h-5 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+
+                {/* Bold */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('bold')}
+                  className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1 text-xs font-bold transition-colors cursor-pointer"
+                  title="Bold (Ctrl+B) - Reflects directly in canvas"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Bold</span>
+                </button>
+
+                {/* Italic */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('italic')}
+                  className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1 text-xs italic transition-colors cursor-pointer"
+                  title="Italic (Ctrl+I) - Reflects directly in canvas"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Italic</span>
+                </button>
+
+                {/* Underline */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('underline')}
+                  className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1 text-xs underline transition-colors cursor-pointer"
+                  title="Underline (Ctrl+U) - Reflects directly in canvas"
+                >
+                  <Underline className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Underline</span>
+                </button>
+
+                {/* Strikethrough */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('strikeThrough')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Strikethrough"
+                >
+                  <Strikethrough className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Subscript */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('subscript')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Subscript (e.g. H₂O)"
+                >
+                  <Subscript className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Superscript */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('superscript')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] active:bg-[#DDD4BC] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Superscript (e.g. m²)"
+                >
+                  <Superscript className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="h-5 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+
+                {/* Text Color Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      setShowColorPicker(prev => !prev);
+                      setShowHighlightPicker(false);
+                    }}
+                    className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    title="Change Text Color"
+                  >
+                    <Palette className="w-3.5 h-3.5 text-[#256B3A]" />
+                    <span className="text-[11px]">Color</span>
+                  </button>
+
+                  {showColorPicker && (
+                    <div className="absolute top-10 left-0 z-30 p-2 bg-white rounded-xl border border-[#DDD4BC] shadow-lg flex gap-1.5 items-center">
+                      {TEXT_COLORS.map(c => (
+                        <button
+                          key={c.color}
+                          type="button"
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => {
+                            exec('foreColor', c.color);
+                            setShowColorPicker(false);
+                          }}
+                          className="w-6 h-6 rounded-full border border-black/20 hover:scale-110 transition-transform cursor-pointer"
+                          style={{ backgroundColor: c.color }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Highlight Color Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      setShowHighlightPicker(prev => !prev);
+                      setShowColorPicker(false);
+                    }}
+                    className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    title="Text Background Highlight"
+                  >
+                    <Highlighter className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span className="text-[11px]">Highlight</span>
+                  </button>
+
+                  {showHighlightPicker && (
+                    <div className="absolute top-10 left-0 z-30 p-2 bg-white rounded-xl border border-[#DDD4BC] shadow-lg flex gap-1.5 items-center">
+                      {HIGHLIGHT_COLORS.map(c => (
+                        <button
+                          key={c.color}
+                          type="button"
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => {
+                            exec('hiliteColor', c.color);
+                            setShowHighlightPicker(false);
+                          }}
+                          className="w-6 h-6 rounded-full border border-black/20 hover:scale-110 transition-transform cursor-pointer"
+                          style={{ backgroundColor: c.color }}
+                          title={c.name}
+                        />
+                      ))}
+                      <button
+                        type="button"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => {
+                          exec('hiliteColor', 'transparent');
+                          setShowHighlightPicker(false);
+                        }}
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-[#F6F4EB] text-[#54432C] hover:bg-[#EBE6D6]"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Clear Formatting */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('removeFormat')}
+                  className="h-8 px-2 text-[#6F5B3C] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1 text-xs cursor-pointer"
+                  title="Clear formatting on selection"
+                >
+                  <Eraser className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Clear</span>
+                </button>
+              </div>
+
+              {/* LINE 2: Alignments, Paragraphs, Lists & Blocks */}
+              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-[#DDD4BC]/60">
+                {/* Align Left */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('justifyLeft')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Align Left"
+                >
+                  <AlignLeft className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Align Center */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('justifyCenter')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Align Center"
+                >
+                  <AlignCenter className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Align Right */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('justifyRight')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Align Right"
+                >
+                  <AlignRight className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Align Justify - REFLECTS DIRECTLY IN CANVAS */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => {
+                    exec('justifyFull');
+                    setIsCanvasJustified(prev => !prev);
+                  }}
+                  className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer border ${
+                    isCanvasJustified
+                      ? 'bg-[#143520] text-[#BFDC28] border-[#143520]'
+                      : 'bg-white text-[#143520] border-[#DDD4BC] hover:bg-[#EBE6D6]'
+                  }`}
+                  title="Justify Text - Reflects directly in canvas"
+                >
+                  <AlignJustify className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Justify</span>
+                </button>
+
+                <div className="h-5 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+
+                {/* Bullet List */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('insertUnorderedList')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Bullet List"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Numbered List */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('insertOrderedList')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Numbered List"
+                >
+                  <ListOrdered className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Outdent */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('outdent')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Decrease Indent"
+                >
+                  <Outdent className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Indent */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('indent')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Increase Indent"
+                >
+                  <Indent className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="h-5 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+
+                {/* Blockquote */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('formatBlock', '<blockquote>')}
+                  className="h-8 px-2 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1 text-xs cursor-pointer"
+                  title="Blockquote citation"
+                >
+                  <Quote className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Quote</span>
+                </button>
+
+                {/* Inline Code */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={handleInlineCode}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Inline Code"
+                >
+                  <Code className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Code Block */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={handleCodeBlock}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Code Block"
+                >
+                  <FileCode className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Horizontal Divider Line */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('insertHorizontalRule')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Insert Horizontal Divider Line"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="h-5 w-px bg-[#DDD4BC] mx-1 shrink-0" />
+
+                {/* Undo */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('undo')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Redo */}
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => exec('redo')}
+                  className="w-8 h-8 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* LINE 3: Media, Tables, Custom Agronomy Callouts & View Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {/* Insert / Upload Photo */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      saveSelection();
+                      setShowImageModal(true);
+                    }}
+                    className="h-8 px-3 bg-[#EBF1EA] text-[#143520] hover:bg-[#DFEDE3] border border-[#B7CEB4] rounded-lg flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                    title="Insert Photo / Picture with Caption into Canvas"
+                  >
+                    <ImagePlus className="w-3.5 h-3.5 text-[#256B3A]" />
+                    <span className="text-[11px]">+ Insert / Upload Photo</span>
+                  </button>
+
+                  {/* Insert Link */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={handleOpenLinkModal}
+                    className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer"
+                    title="Insert Hyperlink"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-[#256B3A]" />
+                    <span className="text-[11px]">Link</span>
+                  </button>
+
+                  {/* Remove Link */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={handleUnlink}
+                    className="w-8 h-8 text-[#6F5B3C] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center justify-center cursor-pointer"
+                    title="Remove Link"
+                  >
+                    <Unlink className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Insert Table */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={handleInsertTable}
+                    className="h-8 px-2.5 text-[#143520] hover:bg-[#EBE6D6] bg-white border border-[#DDD4BC] rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    title="Insert Comparison Table"
+                  >
+                    <TableIcon className="w-3.5 h-3.5 text-[#256B3A]" />
+                    <span className="text-[11px]">Table</span>
+                  </button>
+
+                  {/* Agronomy Field Note Callout */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={handleInsertNoteCallout}
+                    className="h-8 px-2.5 bg-[#EBF1EA] text-[#1E542E] hover:bg-[#DFEDE3] border border-[#B7CEB4] rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    title="Insert Styled Agronomy Field Note Box"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#256B3A]" />
+                    <span className="text-[11px]">Note Callout</span>
+                  </button>
+
+                  {/* Warning Callout */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={handleInsertWarningCallout}
+                    className="h-8 px-2.5 bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 rounded-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    title="Insert Caution / Warning Alert Box"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="text-[11px]">Caution Box</span>
+                  </button>
+                </div>
+
+                {/* View Mode Switcher */}
+                <div className="flex items-center gap-0.5 bg-[#EBE6D6] p-0.5 rounded-lg shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleViewModeChange('edit')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                      viewMode === 'edit'
+                        ? 'bg-white text-[#143520] shadow-xs'
+                        : 'text-[#6F5B3C] hover:text-[#143520]'
+                    }`}
+                    title="Visual Canvas Editor"
+                  >
+                    <Edit className="w-3 h-3" />
+                    <span>Canvas</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleViewModeChange('split')}
+                    className={`hidden sm:flex px-2.5 py-1 rounded-md text-[11px] font-bold items-center gap-1 cursor-pointer transition-colors ${
+                      viewMode === 'split'
+                        ? 'bg-white text-[#143520] shadow-xs'
+                        : 'text-[#6F5B3C] hover:text-[#143520]'
+                    }`}
+                    title="Side-by-side Visual & Live Preview"
+                  >
+                    <Columns className="w-3 h-3" />
+                    <span>Split</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleViewModeChange('preview')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                      viewMode === 'preview'
+                        ? 'bg-white text-[#143520] shadow-xs'
+                        : 'text-[#6F5B3C] hover:text-[#143520]'
+                    }`}
+                    title="Full Article Preview"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Preview</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleViewModeChange('code')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                      viewMode === 'code'
+                        ? 'bg-white text-[#143520] shadow-xs'
+                        : 'text-[#6F5B3C] hover:text-[#143520]'
+                    }`}
+                    title="Raw HTML / Markdown Code View"
+                  >
+                    <Code2 className="w-3 h-3" />
+                    <span>Code</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* WORKSPACE AREA: Visual Canvas, Split View, Full Preview, or Raw Code */}
+            <div className="min-h-[500px] sm:min-h-[650px] bg-white relative">
+              {/* Visual Canvas Mode: Formats reflect live inside the canvas */}
+              {viewMode === 'edit' && (
+                <div className="relative w-full h-full">
+                  <div
+                    ref={canvasRef}
+                    contentEditable={true}
+                    suppressContentEditableWarning={true}
+                    onInput={handleCanvasInput}
+                    onDrop={handleCanvasDrop}
+                    onPaste={handleCanvasPaste}
+                    className={`w-full min-h-[500px] sm:min-h-[650px] p-5 sm:p-8 bg-white focus:outline-hidden prose-agri max-w-none text-base leading-relaxed text-[#1E2922] ${
+                      isCanvasJustified ? 'text-justify [text-align:justify]' : ''
+                    }`}
+                    style={{ minHeight: '550px' }}
+                  />
+                  {(!content || content === '<br>' || content === '<p><br></p>') && (
+                    <div className="absolute top-8 left-8 text-sm text-[#8F7855]/50 pointer-events-none select-none font-sans">
+                      Start writing your article here... Click Bold, Italic, Justify, or Add Photo from the toolbar above!
+                    </div>
                   )}
                 </div>
               )}
 
+              {/* Split View: Left Visual Canvas, Right Live Rendered Reader View */}
               {viewMode === 'split' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#DDD4BC] h-[650px]">
-                  <textarea
-                    id="article-content-textarea"
-                    value={content}
-                    onChange={e => setContent(e.target.value)}
-                    onDrop={handleTextareaDrop}
-                    onPaste={handleTextareaPaste}
-                    className={`w-full h-full p-5 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FDFCF9] focus:outline-hidden resize-none leading-relaxed overflow-y-auto ${
-                      isCanvasJustified ? 'text-justify [text-align:justify]' : ''
-                    }`}
-                    placeholder="Start typing your article content here in Markdown... (Tip: Click '+ Insert / Upload Photo', paste screenshots directly with Ctrl+V, or drag & drop pictures here!)"
-                    required
-                  />
-                  <div className="p-6 prose-agri max-w-none bg-white overflow-y-auto h-full text-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#DDD4BC] min-h-[650px]">
+                  <div className="relative h-full overflow-y-auto">
+                    <div
+                      ref={canvasRef}
+                      contentEditable={true}
+                      suppressContentEditableWarning={true}
+                      onInput={handleCanvasInput}
+                      onDrop={handleCanvasDrop}
+                      onPaste={handleCanvasPaste}
+                      className={`w-full h-full min-h-[650px] p-5 sm:p-6 bg-white focus:outline-hidden prose-agri max-w-none text-base leading-relaxed text-[#1E2922] ${
+                        isCanvasJustified ? 'text-justify [text-align:justify]' : ''
+                      }`}
+                    />
+                  </div>
+                  <div className="p-6 prose-agri max-w-none bg-[#FAF8F3] overflow-y-auto h-full text-sm">
                     <div className="text-[10px] uppercase font-bold tracking-wider text-[#8F7855] pb-2 mb-3 border-b border-[#EBE6D6]">
-                      Real-Time Rendered View
+                      Real-Time Rendered Reader View
                     </div>
                     {content ? (
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeRaw]}
-                        components={{
-                          img: ({ node, ...props }) => (
-                            <figure className="my-6 block">
-                              <div className="overflow-hidden rounded-xl border border-[#DDD4BC] bg-[#F6F4EB] shadow-xs">
-                                <img
-                                  {...props}
-                                  className="w-full max-h-[500px] object-cover block"
-                                  loading="lazy"
-                                />
-                              </div>
-                              {props.alt && (
-                                <figcaption className="text-center text-xs text-[#8F7855] mt-2 italic font-serif">
-                                  {props.alt}
-                                </figcaption>
-                              )}
-                            </figure>
-                          ),
-                        }}
                       >
                         {content}
                       </ReactMarkdown>
@@ -818,11 +1304,39 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Full Article Preview */}
+              {viewMode === 'preview' && (
+                <div className="p-6 sm:p-10 prose-agri max-w-none bg-white min-h-[500px] sm:min-h-[650px]">
+                  {content ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                    >
+                      {content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-sm text-[#8F7855] italic">
+                      Article content is empty. Type in Visual Canvas mode to preview your article.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Raw HTML / Markdown Code View */}
+              {viewMode === 'code' && (
+                <textarea
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  className="w-full min-h-[500px] sm:min-h-[650px] p-5 font-mono text-xs sm:text-sm text-[#1E2922] bg-[#FAF8F3] focus:outline-hidden resize-y leading-relaxed"
+                  placeholder="Raw HTML/Markdown code..."
+                />
+              )}
             </div>
           </div>
         </div>
 
-        {/* Left Column (Metadata & Configuration): placed below editor on mobile, on left on desktop */}
+        {/* Left Column: Metadata & Configuration */}
         <div className="order-2 lg:order-1 lg:col-span-4 space-y-5">
           {/* Status & Featured Card */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
@@ -1079,7 +1593,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                 </div>
               </div>
             ) : (
-              /* No Cover Photo chosen yet: Offer Tabs for Upload vs Embed via Link */
               <div className="space-y-3">
                 <div className="flex items-center p-1 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]">
                   <button
@@ -1104,455 +1617,194 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                     }`}
                   >
                     <Link2 className="w-3.5 h-3.5 text-[#256B3A]" />
-                    <span>Embed via Link</span>
+                    <span>Embed Link</span>
                   </button>
                 </div>
 
-                {/* Option 1: Upload Photo Dropzone */}
-                {coverImageTab === 'upload' && (
+                {coverImageTab === 'upload' ? (
                   <div
                     onClick={() => coverFileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#DDD4BC] hover:border-[#256B3A] rounded-2xl p-6 text-center bg-[#FBFBF8] hover:bg-[#F2F7F3] transition-colors cursor-pointer space-y-2"
+                    className="border-2 border-dashed border-[#DDD4BC] hover:border-[#256B3A] rounded-xl p-5 text-center bg-[#FAF8F3] hover:bg-[#F6F4EB] transition-colors cursor-pointer space-y-2"
                   >
-                    <div className="w-12 h-12 rounded-full bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center mx-auto">
-                      {isCoverUploading ? (
-                        <RefreshCw className="w-6 h-6 animate-spin text-[#256B3A]" />
-                      ) : (
-                        <Upload className="w-6 h-6" />
-                      )}
+                    <div className="w-10 h-10 rounded-full bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center mx-auto">
+                      <Upload className="w-5 h-5" />
                     </div>
                     <div>
                       <span className="text-xs font-bold text-[#143520] block">
-                        {isCoverUploading ? 'Uploading cover to cloud...' : 'Click to select cover picture'}
+                        {isCoverUploading ? 'Uploading cover...' : 'Select Cover Image from Device'}
                       </span>
                       <span className="text-[11px] text-[#8F7855]">
-                        Upload JPG, PNG, or WebP from your phone or computer.
+                        JPG, PNG, WEBP. Compressed automatically.
                       </span>
                     </div>
                   </div>
-                )}
-
-                {/* Option 2: Embed via Link Input */}
-                {coverImageTab === 'embed' && (
+                ) : (
                   <div className="space-y-2">
-                    <label className="block text-xs font-medium text-[#6F5B3C]">
-                      Paste Web Image URL (e.g., Unsplash, Cloudinary, etc.)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        value={coverImage}
-                        onChange={e => setCoverImage(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                        placeholder="https://images.unsplash.com/..."
-                      />
+                    <input
+                      type="url"
+                      value={coverImage}
+                      onChange={e => setCoverImage(e.target.value)}
+                      placeholder="Paste image URL (https://...)"
+                      className="w-full px-3.5 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                    />
+                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                      {PRESET_COVERS.slice(0, 4).map((p, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setCoverImage(p.url)}
+                          className="aspect-16/10 rounded-lg overflow-hidden border border-[#DDD4BC] hover:border-[#256B3A] relative group cursor-pointer"
+                        >
+                          <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
-
-                {/* Optional presets */}
-                <div className="pt-2">
-                  <label className="block text-[10px] font-bold text-[#8F7855] uppercase tracking-wider mb-2">
-                    Or pick a stock agricultural cover:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PRESET_COVERS.slice(0, 4).map((p, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setCoverImage(p.url)}
-                        className="p-1.5 rounded-lg border border-[#DDD4BC] hover:border-[#256B3A] bg-[#F6F4EB] text-left flex items-center gap-2 cursor-pointer group"
-                      >
-                        <img
-                          src={p.url}
-                          alt={p.label}
-                          className="w-8 h-8 rounded-md object-cover shrink-0"
-                        />
-                        <span className="text-[10px] font-medium text-[#54432C] group-hover:text-[#143520] line-clamp-1">
-                          {p.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Fixed Mobile Bottom Action Bar (One-Handed Publishing on < 768px) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#DDD4BC] p-3 shadow-2xl flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setStatus(status === 'published' ? 'draft' : 'published')}
-          className={`px-3 py-2.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
-            status === 'published'
-              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-              : 'bg-amber-100 text-amber-800 border-amber-300'
-          }`}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>{status === 'published' ? 'Published' : 'Draft'}</span>
-        </button>
-
-        <button
-          type="submit"
-          className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#143520] active:bg-[#1E542E] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
-        >
-          <Save className="w-4 h-4 text-[#BFDC28]" />
-          <span>{existingArticle ? 'Update' : 'Publish'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-3 py-2.5 rounded-xl border border-[#DDD4BC] text-[#54432C] text-xs font-semibold hover:bg-[#F6F4EB] cursor-pointer"
-        >
-          Cancel
-        </button>
-      </div>
-
-      {/* Inline Create Category Modal */}
-      {showNewCatModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-[#DDD4BC] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif font-bold text-lg text-[#143520]">
-                Add Agricultural Sector Category
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowNewCatModal(false)}
-                className="text-[#8F7855] hover:text-[#13341D]"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                  Sector Name *
-                </label>
-                <input
-                  type="text"
-                  value={newCatName}
-                  onChange={e => setNewCatName(e.target.value)}
-                  placeholder="e.g. Apiculture & Pollinator Stewardship"
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={newCatDesc}
-                  onChange={e => setNewCatDesc(e.target.value)}
-                  placeholder="Focus on honeybee genetics, native pollen corridors, and hive telemetry..."
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowNewCatModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-[#6F5B3C] hover:bg-[#F6F4EB] rounded-xl"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateCategory}
-                className="px-4 py-2 text-xs font-semibold bg-[#143520] text-white hover:bg-[#1E542E] rounded-xl"
-              >
-                Create Sector
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Inline Create Author Modal */}
-      {showNewAuthorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-[#DDD4BC] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif font-bold text-lg text-[#143520] flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-[#256B3A]" />
-                <span>Add Contributor Profile</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowNewAuthorModal(false)}
-                className="text-[#8F7855] hover:text-[#13341D]"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  value={newAuthorName}
-                  onChange={e => setNewAuthorName(e.target.value)}
-                  placeholder="e.g. Dr. Lalramhluna"
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                  autoFocus
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                    Role / Title
-                  </label>
-                  <input
-                    type="text"
-                    value={newAuthorRole}
-                    onChange={e => setNewAuthorRole(e.target.value)}
-                    placeholder="e.g. Hill Agronomist"
-                    className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                    Institution / Org
-                  </label>
-                  <input
-                    type="text"
-                    value={newAuthorInst}
-                    onChange={e => setNewAuthorInst(e.target.value)}
-                    placeholder="e.g. Loneitu Contributor"
-                    className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                  />
-                </div>
-              </div>
-              {/* Avatar Photo (Upload or Embed) */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-medium text-[#6F5B3C]">
-                    Author Profile Avatar
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setNewAuthorAvatarTab('upload')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
-                        newAuthorAvatarTab === 'upload'
-                          ? 'bg-[#143520] text-white'
-                          : 'bg-[#F6F4EB] text-[#6F5B3C] hover:bg-[#EBE6D6]'
-                      }`}
-                    >
-                      Upload
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewAuthorAvatarTab('embed')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
-                        newAuthorAvatarTab === 'embed'
-                          ? 'bg-[#143520] text-white'
-                          : 'bg-[#F6F4EB] text-[#6F5B3C] hover:bg-[#EBE6D6]'
-                      }`}
-                    >
-                      URL
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-2 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]">
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-[#256B3A]/40 shrink-0 bg-white flex items-center justify-center">
-                    {newAuthorAvatar ? (
-                      <img
-                        src={newAuthorAvatar}
-                        alt="Avatar preview"
-                        className="w-full h-full object-cover"
-                        onError={e => {
-                          (e.currentTarget as HTMLImageElement).src = PRESET_AVATARS[0];
-                        }}
-                      />
-                    ) : (
-                      <UserCheck className="w-5 h-5 text-[#8F7855]" />
-                    )}
-                    {isNewAuthorAvatarUploading && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <RefreshCw className="w-4 h-4 text-white animate-spin" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    {newAuthorAvatarTab === 'upload' ? (
-                      <>
-                        <input
-                          ref={newAuthorAvatarInputRef}
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp,image/gif"
-                          onChange={handleNewAuthorAvatarFileChange}
-                          className="hidden"
-                        />
-                        <button
-                          type="button"
-                          disabled={isNewAuthorAvatarUploading}
-                          onClick={() => newAuthorAvatarInputRef.current?.click()}
-                          className="w-full py-1.5 px-2.5 bg-white hover:bg-[#FAF8F3] border border-dashed border-[#256B3A]/60 rounded-lg text-xs font-medium text-[#143520] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
-                          <span>{isNewAuthorAvatarUploading ? 'Uploading...' : 'Choose from Device'}</span>
-                        </button>
-                      </>
-                    ) : (
-                      <input
-                        type="url"
-                        value={newAuthorAvatar}
-                        onChange={e => setNewAuthorAvatar(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full px-2.5 py-1.5 bg-white border border-[#DDD4BC] rounded-lg text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Preset Chips */}
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] text-[#8F7855] mr-1">Presets:</span>
-                  {PRESET_AVATARS.slice(0, 5).map((url, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setNewAuthorAvatar(url)}
-                      className={`w-5 h-5 rounded-md overflow-hidden border cursor-pointer ${
-                        newAuthorAvatar === url ? 'ring-2 ring-[#256B3A] border-transparent' : 'border-[#DDD4BC]'
-                      }`}
-                    >
-                      <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[#6F5B3C] mb-1">
-                  Short Bio
-                </label>
-                <textarea
-                  rows={2}
-                  value={newAuthorBio}
-                  onChange={e => setNewAuthorBio(e.target.value)}
-                  placeholder="Field experience, research area, or agronomic focus..."
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowNewAuthorModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-[#6F5B3C] hover:bg-[#F6F4EB] rounded-xl"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateAuthor}
-                className="px-4 py-2 text-xs font-semibold bg-[#143520] text-white hover:bg-[#1E542E] rounded-xl"
-              >
-                Save & Assign Author
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Inline Insert / Upload Image Modal */}
-      {showImageModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-lg w-full border border-[#DDD4BC] shadow-2xl space-y-4">
-            {/* Modal Header */}
+      {/* MODAL 1: Insert Link Dialog */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-[#DDD4BC] p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center">
-                  <ImagePlus className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold text-lg text-[#143520]">
-                    Insert Picture into Article
-                  </h3>
-                  <p className="text-[11px] text-[#8F7855]">
-                    Embed photos directly in between your paragraphs. (Cover photo remains intact)
-                  </p>
-                </div>
+              <h3 className="font-serif font-bold text-lg text-[#143520] flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-[#256B3A]" />
+                <span>Insert Hyperlink</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowLinkModal(false)}
+                className="p-1 rounded-lg text-[#8F7855] hover:text-[#143520]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Destination Web URL (https://...) *
+                </label>
+                <input
+                  type="url"
+                  value={linkUrlInput}
+                  onChange={e => setLinkUrlInput(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                  required
+                />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Display Text (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={linkTextInput}
+                  onChange={e => setLinkTextInput(e.target.value)}
+                  placeholder="Link label or title..."
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#EBE6D6]">
+              <button
+                type="button"
+                onClick={() => setShowLinkModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-[#6F5B3C] hover:bg-[#F6F4EB] rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyLink}
+                className="px-5 py-2 text-xs font-bold bg-[#143520] hover:bg-[#1E542E] text-white rounded-xl shadow-xs cursor-pointer"
+              >
+                Insert Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Inline Image Insertion Modal */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-[#DDD4BC] p-6 max-w-lg w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
+              <h3 className="font-serif font-bold text-lg text-[#143520] flex items-center gap-2">
+                <ImagePlus className="w-5 h-5 text-[#256B3A]" />
+                <span>Insert Photo into Article</span>
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowImageModal(false)}
-                className="text-[#8F7855] hover:text-[#13341D] p-1 rounded-lg hover:bg-[#F6F4EB] cursor-pointer"
+                className="p-1 rounded-lg text-[#8F7855] hover:text-[#143520]"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Mode Switcher: Upload from Device vs Embed via URL */}
-            <div className="grid grid-cols-2 p-1 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-semibold">
+            {/* Tab Switcher */}
+            <div className="flex items-center p-1 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]">
               <button
                 type="button"
                 onClick={() => setImageModalTab('upload')}
-                className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   imageModalTab === 'upload'
                     ? 'bg-white text-[#143520] shadow-xs'
                     : 'text-[#6F5B3C] hover:text-[#143520]'
                 }`}
               >
-                <Upload className="w-3.5 h-3.5" />
+                <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
                 <span>Upload from Device</span>
               </button>
               <button
                 type="button"
                 onClick={() => setImageModalTab('embed')}
-                className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   imageModalTab === 'embed'
                     ? 'bg-white text-[#143520] shadow-xs'
                     : 'text-[#6F5B3C] hover:text-[#143520]'
                 }`}
               >
-                <Link2 className="w-3.5 h-3.5" />
-                <span>Embed Web URL</span>
+                <Link2 className="w-3.5 h-3.5 text-[#256B3A]" />
+                <span>Web Image Link</span>
               </button>
             </div>
 
-            {/* Tab 1: Upload from Device */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {/* Tab 1: Upload from local device */}
             {imageModalTab === 'upload' && (
               <div className="space-y-4">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
                 {!imageUploadPreview ? (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#DDD4BC] hover:border-[#256B3A] rounded-2xl p-6 text-center bg-[#FBFBF8] hover:bg-[#F2F7F3] transition-colors cursor-pointer space-y-2"
+                    className="border-2 border-dashed border-[#DDD4BC] hover:border-[#256B3A] rounded-xl p-8 text-center bg-[#FAF8F3] hover:bg-[#F6F4EB] transition-colors cursor-pointer space-y-3"
                   >
                     <div className="w-12 h-12 rounded-full bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center mx-auto">
-                      {isCompressing ? (
-                        <RefreshCw className="w-6 h-6 animate-spin" />
-                      ) : (
-                        <Upload className="w-6 h-6" />
-                      )}
+                      <Upload className="w-6 h-6" />
                     </div>
                     <div>
                       <span className="text-xs font-bold text-[#143520] block">
                         {isCompressing ? 'Optimizing photo...' : 'Click to select picture from phone or computer'}
                       </span>
                       <span className="text-[11px] text-[#8F7855]">
-                        Supports JPG, PNG, WEBP. Automatically optimized for fast web loading.
+                        Supports JPG, PNG, WEBP. Optimized automatically for fast web loading.
                       </span>
                     </div>
                   </div>
@@ -1601,9 +1853,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                     placeholder="e.g. Field inspection: Cotton plants in flowering stage"
                     className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
                   />
-                  <p className="text-[10px] text-[#8F7855] mt-1">
-                    Caption will be displayed beneath the picture in your published article.
-                  </p>
                 </div>
               </div>
             )}
@@ -1624,7 +1873,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                   />
                 </div>
 
-                {/* Live Preview if URL is entered */}
                 {imageEmbedUrl && (
                   <div className="relative aspect-16/10 rounded-xl overflow-hidden border border-[#DDD4BC] bg-[#EBE6D6]">
                     <img
@@ -1641,10 +1889,10 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                 {/* Quick Presets */}
                 <div>
                   <label className="block text-[10px] uppercase font-bold text-[#8F7855] tracking-wider mb-1.5">
-                    Or select quick sample photo:
+                    Or select sample agriculture photo:
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {PRESET_COVERS.slice(0, 3).map((p, idx) => (
+                  <div className="grid grid-cols-4 gap-2">
+                    {PRESET_COVERS.slice(0, 4).map((p, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -1652,9 +1900,6 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                         className="rounded-lg overflow-hidden border border-[#DDD4BC] hover:border-[#256B3A] aspect-16/10 relative group cursor-pointer"
                       >
                         <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-                        <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-medium text-center p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {p.label}
-                        </span>
                       </button>
                     ))}
                   </div>
@@ -1699,6 +1944,195 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
               >
                 <Plus className="w-3.5 h-3.5 text-[#BFDC28]" />
                 <span>Insert into Article</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Inline New Category Modal */}
+      {showNewCatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-[#DDD4BC] p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
+              <h3 className="font-serif font-bold text-lg text-[#143520]">
+                Create New Agricultural Sector
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowNewCatModal(false)}
+                className="p-1 rounded-lg text-[#8F7855] hover:text-[#143520]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Sector / Category Name *
+                </label>
+                <input
+                  type="text"
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  placeholder="e.g. Agroforestry & Bamboo"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newCatDesc}
+                  onChange={e => setNewCatDesc(e.target.value)}
+                  placeholder="Brief description of this domain..."
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#EBE6D6]">
+              <button
+                type="button"
+                onClick={() => setShowNewCatModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-[#6F5B3C] hover:bg-[#F6F4EB] rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateCategory}
+                className="px-5 py-2 text-xs font-bold bg-[#143520] hover:bg-[#1E542E] text-white rounded-xl shadow-xs cursor-pointer"
+              >
+                Create Sector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: Inline New Author Modal */}
+      {showNewAuthorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-[#DDD4BC] p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
+              <h3 className="font-serif font-bold text-lg text-[#143520]">
+                Add New Author Profile
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowNewAuthorModal(false)}
+                className="p-1 rounded-lg text-[#8F7855] hover:text-[#143520]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Author Full Name *
+                </label>
+                <input
+                  type="text"
+                  value={newAuthorName}
+                  onChange={e => setNewAuthorName(e.target.value)}
+                  placeholder="e.g. Dr. H. Lalrinchhana"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Professional Role / Job Title
+                </label>
+                <input
+                  type="text"
+                  value={newAuthorRole}
+                  onChange={e => setNewAuthorRole(e.target.value)}
+                  placeholder="e.g. Senior Soil Microbiologist"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Institution or District
+                </label>
+                <input
+                  type="text"
+                  value={newAuthorInst}
+                  onChange={e => setNewAuthorInst(e.target.value)}
+                  placeholder="e.g. Champhai District Organic Cluster"
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+
+              {/* Author Avatar Upload vs Embed */}
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Profile Avatar Picture
+                </label>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={newAuthorAvatar}
+                    alt="Preview"
+                    className="w-12 h-12 rounded-full object-cover border border-[#DDD4BC]"
+                  />
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      ref={newAuthorAvatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleNewAuthorAvatarFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => newAuthorAvatarInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-lg bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] text-xs font-bold border border-[#DDD4BC] flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
+                      <span>{isNewAuthorAvatarUploading ? 'Uploading...' : 'Upload Avatar'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#6F5B3C] mb-1">
+                  Author Biography
+                </label>
+                <textarea
+                  value={newAuthorBio}
+                  onChange={e => setNewAuthorBio(e.target.value)}
+                  placeholder="Brief background and scientific expertise..."
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#EBE6D6]">
+              <button
+                type="button"
+                onClick={() => setShowNewAuthorModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-[#6F5B3C] hover:bg-[#F6F4EB] rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateAuthor}
+                className="px-5 py-2 text-xs font-bold bg-[#143520] hover:bg-[#1E542E] text-white rounded-xl shadow-xs cursor-pointer"
+              >
+                Create Author
               </button>
             </div>
           </div>

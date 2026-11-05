@@ -16,15 +16,16 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
   const [activeId, setActiveId] = useState<string>('');
 
   useEffect(() => {
-    // Parse markdown headings
+    // Parse markdown or HTML headings
     const lines = content.split('\n');
     const parsedHeadings: TOCItem[] = [];
 
+    // 1. Try markdown headings
     lines.forEach(line => {
       const match = line.match(/^(#{2,3})\s+(.+)$/);
       if (match) {
         const level = match[1].length;
-        const rawText = match[2].trim().replace(/\*\*/g, '').replace(/_/g, '');
+        const rawText = match[2].trim().replace(/<[^>]*>/g, '').replace(/\*\*/g, '').replace(/_/g, '');
         const id = rawText
           .toLowerCase()
           .replace(/[^\w\s-]/g, '')
@@ -37,6 +38,27 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
         });
       }
     });
+
+    // 2. Try HTML headings if no markdown headings found
+    if (parsedHeadings.length === 0) {
+      const headingRegex = /<h([23])[^>]*>(.*?)<\/h\1>/gi;
+      let htmlMatch: RegExpExecArray | null;
+      while ((htmlMatch = headingRegex.exec(content)) !== null) {
+        const level = parseInt(htmlMatch[1], 10);
+        const rawText = htmlMatch[2].replace(/<[^>]*>/g, '').trim();
+        if (rawText) {
+          const id = rawText
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-');
+          parsedHeadings.push({
+            id,
+            text: rawText,
+            level,
+          });
+        }
+      }
+    }
 
     setHeadings(parsedHeadings);
     if (parsedHeadings.length > 0) {
