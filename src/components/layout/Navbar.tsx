@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Menu } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, Info } from 'lucide-react';
 
 interface NavbarProps {
-  onOpenSearch: () => void;
+  onOpenSearch?: () => void;
   onOpenBookmarks?: () => void;
   onOpenSidebarMenu: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  onOpenSearch,
   onOpenSidebarMenu,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,18 +51,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Icons & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Search Trigger */}
-          <button
-            onClick={onOpenSearch}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-[#6F5B3C] bg-[#F6F4EB] hover:bg-[#EBE6D6] rounded-xl border border-[#DDD4BC] transition-colors cursor-pointer"
-            title="Search articles (Ctrl+K)"
+          {/* About Page Tab */}
+          <Link
+            to="/about"
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 shadow-2xs border ${
+              location.pathname === '/about'
+                ? 'bg-[#143520] text-white border-[#143520]'
+                : 'bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] border-[#DDD4BC]'
+            }`}
+            title="About Loneitu — Editorial Manifesto & Staff Directory"
+            aria-label="About Loneitu"
           >
-            <Search className="w-4 h-4 text-[#256B3A]" />
-            <span className="hidden sm:inline text-xs text-[#8F7855]">Search...</span>
-            <kbd className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 bg-white rounded border border-[#DDD4BC] text-[#8F7855]">
-              ⌘K
-            </kbd>
-          </button>
+            <Info className={`w-4 h-4 ${location.pathname === '/about' ? 'text-[#BFDC28]' : 'text-[#256B3A]'}`} />
+            <span className="font-bold tracking-wide">ABOUT</span>
+          </Link>
 
           {/* Universal Sidebar Menu Trigger (Desktop & Mobile) - Archive is inside MENU */}
           <button
