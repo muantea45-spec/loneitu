@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, Search, Menu } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -32,11 +32,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       {/* Main Navbar */}
       <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto h-20 flex items-center justify-between">
-        {/* Brand / Logo with perfectly aligned typography */}
-        <Link to="/" className="flex items-center gap-3.5 group">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1E542E] to-[#143520] text-[#F7FAF6] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200 shrink-0">
-            <Sprout className="w-6 h-6 text-[#BFDC28]" />
-          </div>
+        {/* Brand / Logo with uploaded artwork & typography */}
+        <Link to="/" className="flex items-center gap-3 sm:gap-3.5 group py-1" aria-label="Loneitu - MIZORAM TAN">
+          <img
+            src="/logo.png"
+            alt="Loneitu"
+            className="w-12 h-12 sm:w-14 sm:h-14 object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-200 shrink-0"
+          />
           <div className="flex flex-col items-start justify-center leading-none">
             <span className="font-serif font-bold text-2xl tracking-tight text-[#143520] leading-none block">
               Lone<span className="text-[#32864A]">itu</span>

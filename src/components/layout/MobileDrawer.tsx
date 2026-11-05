@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Bookmark, Search, ArrowRight, Tag as TagIcon } from 'lucide-react';
+import { X, Bookmark, Search, ArrowRight, Tag as TagIcon } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 interface MobileDrawerProps {
@@ -29,12 +29,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           <div>
             <div className="p-4 border-b border-[#EBE6D6] flex items-center justify-between bg-white">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#143520] text-white flex items-center justify-center">
-                  <Sprout className="w-4 h-4 text-[#BFDC28]" />
-                </div>
+                <img src="/logo.png" alt="Loneitu" className="w-9 h-9 object-contain mix-blend-multiply shrink-0" />
                 <div>
                   <span className="font-serif font-bold text-lg text-[#143520] block leading-none">Loneitu</span>
-                  <span className="text-[8px] font-bold text-[#256B3A] tracking-widest uppercase">MIZORAM TAN</span>
+                  <span className="text-[8px] font-bold text-[#256B3A] tracking-widest uppercase mt-0.5 block">MIZORAM TAN</span>
                 </div>
               </div>
               <button
@@ -75,22 +73,20 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               <Link
                 to="/"
                 onClick={onClose}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-                  location.pathname === '/'
+                className={`block px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${location.pathname === '/'
                     ? 'bg-[#EBF1EA] text-[#143520]'
                     : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
-                }`}
+                  }`}
               >
                 Journal Front Page
               </Link>
               <Link
                 to="/about"
                 onClick={onClose}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-                  location.pathname === '/about'
+                className={`block px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${location.pathname === '/about'
                     ? 'bg-[#EBF1EA] text-[#143520]'
                     : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
-                }`}
+                  }`}
               >
                 About & Editorial Mission
               </Link>

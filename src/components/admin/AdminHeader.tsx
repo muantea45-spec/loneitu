@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, ExternalLink, LogOut, Mail, Crown } from 'lucide-react';
+import { ExternalLink, LogOut, Mail, Crown } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 
 export const AdminHeader: React.FC = () => {
@@ -14,12 +14,12 @@ export const AdminHeader: React.FC = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-[#BFDC28] text-[#143520] flex items-center justify-center font-bold">
-              <Sprout className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+              <img src="/logo.png" alt="Loneitu" className="w-full h-full object-contain" />
             </div>
             <div>
               <span className="font-serif font-bold text-lg text-white">Loneitu</span>
-              <span className="text-[9px] font-bold text-[#BFDC28] tracking-widest uppercase block -mt-1">MIZORAM</span>
+              <span className="text-[9px] font-bold text-[#BFDC28] tracking-widest uppercase block -mt-1">MIZORAM TAN</span>
             </div>
           </Link>
           <span className="hidden sm:inline-block text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#1E542E] text-[#BFDC28] border border-[#256B3A]">

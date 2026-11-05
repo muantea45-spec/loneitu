@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Sprout, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
+import { X, Search, ArrowRight, Tag as TagIcon, Home, Info, FolderTree, Calendar } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -30,14 +30,12 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             {/* Header */}
             <div className="p-5 border-b border-[#EBE6D6] flex items-center justify-between bg-white sticky top-0 z-10">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#143520] text-white flex items-center justify-center shadow-xs">
-                  <Sprout className="w-5 h-5 text-[#BFDC28]" />
-                </div>
+                <img src="/logo.png" alt="Loneitu" className="w-10 h-10 object-contain mix-blend-multiply shrink-0" />
                 <div>
                   <span className="font-serif font-bold text-xl text-[#143520] block leading-tight">
                     Loneitu
                   </span>
-                  <span className="text-[9px] font-bold text-[#256B3A] tracking-wider uppercase block">
+                  <span className="text-[9px] font-bold text-[#256B3A] tracking-wider uppercase block mt-0.5">
                     MIZORAM TAN
                   </span>
                 </div>
