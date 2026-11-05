@@ -44,7 +44,7 @@ export const ArticleDetailPage: React.FC = () => {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
         <div className="text-center max-w-md bg-white p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
-          <BookOpen className="w-12 h-12 mx-auto text-[#8F7855]" />
+          <BookOpen className="w-12 h-12 mx-auto text-[#6F5B3C]" />
           <h2 className="font-serif font-bold text-2xl text-[#143520]">
             Field Article Not Found
           </h2>
@@ -77,7 +77,7 @@ export const ArticleDetailPage: React.FC = () => {
       <div className="w-full bg-[#F6F4EB] border-b border-[#EBE6D6] py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2 text-xs text-[#8F7855]">
+          <nav className="flex items-center gap-2 text-xs text-[#6F5B3C] font-medium">
             <Link to="/" className="hover:text-[#143520] transition-colors">
               Journal
             </Link>
@@ -113,7 +113,7 @@ export const ArticleDetailPage: React.FC = () => {
                 <div className="font-semibold text-sm text-[#143520]">
                   {article.author.name}
                 </div>
-                <div className="text-xs text-[#8F7855]">
+                <div className="text-xs text-[#6F5B3C] font-medium">
                   {article.author.role}
                 </div>
               </div>
@@ -163,7 +163,7 @@ export const ArticleDetailPage: React.FC = () => {
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="text-[11px] text-[#8F7855] text-right mt-2 italic">
+          <div className="text-[11px] text-[#6F5B3C] text-right mt-2 italic">
             Field photography: Verified agrarian site documentation
           </div>
         </div>
@@ -177,7 +177,7 @@ export const ArticleDetailPage: React.FC = () => {
 
               {/* Quick Author Snippet */}
               <div className="p-5 bg-white rounded-2xl border border-[#EBE6D6] space-y-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855]">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C]">
                   Lead Investigator
                 </div>
                 <div className="font-serif font-bold text-sm text-[#143520]">
@@ -190,7 +190,7 @@ export const ArticleDetailPage: React.FC = () => {
 
               {/* Tag Cloud in Sidebar */}
               <div className="p-5 bg-white rounded-2xl border border-[#EBE6D6] space-y-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855]">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C]">
                   Field Practice Tags
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
@@ -241,7 +241,7 @@ export const ArticleDetailPage: React.FC = () => {
                         />
                       </div>
                       {props.alt && (
-                        <figcaption className="text-center text-xs text-[#8F7855] mt-2.5 italic">
+                        <figcaption className="text-center text-xs text-[#6F5B3C] mt-2.5 italic">
                           {props.alt}
                         </figcaption>
                       )}

@@ -164,12 +164,12 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
             ) : (
               <>
                 <div
-                  className="w-4 h-4 text-[#8F7855] transition-transform duration-75"
+                  className="w-4 h-4 text-[#6F5B3C] transition-transform duration-75"
                   style={{ transform: `rotate(${rotation}deg)` }}
                 >
                   <ArrowDown className="w-4 h-4" />
                 </div>
-                <span className="text-[#8F7855]">Hnuk thla rawh...</span>
+                <span className="text-[#6F5B3C] font-medium">Hnuk thla rawh...</span>
               </>
             )}
           </div>

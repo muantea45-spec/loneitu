@@ -60,7 +60,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ articleId, com
               value={authorName}
               onChange={e => setAuthorName(e.target.value)}
               placeholder="e.g. Samuel Lalnunmawia, Loneitu"
-              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] placeholder:text-[#8F7855]/60 focus:outline-hidden focus:border-[#256B3A]"
+              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] placeholder:text-[#6F5B3C]/60 focus:outline-hidden focus:border-[#256B3A]"
               required
             />
           </div>
@@ -73,7 +73,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ articleId, com
               value={authorRole}
               onChange={e => setAuthorRole(e.target.value)}
               placeholder="e.g. Serchhip / Champhai Huan"
-              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] placeholder:text-[#8F7855]/60 focus:outline-hidden focus:border-[#256B3A]"
+              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] placeholder:text-[#6F5B3C]/60 focus:outline-hidden focus:border-[#256B3A]"
             />
           </div>
         </div>
@@ -87,7 +87,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ articleId, com
             value={content}
             onChange={e => setContent(e.target.value)}
             placeholder="I leilung leitha hmuh dan, tui pek dan, thei chin dan emaw zawhna i neihte han ziak ve le..."
-            className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] placeholder:text-[#8F7855]/60 focus:outline-hidden focus:border-[#256B3A]"
+            className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] placeholder:text-[#6F5B3C]/60 focus:outline-hidden focus:border-[#256B3A]"
             required
           />
         </div>
@@ -105,7 +105,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ articleId, com
 
       {/* Existing comments list */}
       {comments.length === 0 ? (
-        <p className="text-xs text-[#8F7855] italic">
+        <p className="text-xs text-[#6F5B3C] italic">
           Ngaihdan a la awm rih lo. I thil hmuhchhuah leh zirchianna ziak hmasa ber rawh le!
         </p>
       ) : (
@@ -131,7 +131,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ articleId, com
                     )}
                   </div>
                 </div>
-                <span className="text-[11px] text-[#8F7855]">
+                <span className="text-[11px] text-[#6F5B3C] font-mono">
                   {formatDate(c.createdAt)}
                 </span>
               </div>

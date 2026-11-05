@@ -20,8 +20,8 @@ export const AuthorBio: React.FC<AuthorBioProps> = ({ author }) => {
             Contributing Agronomist
           </span>
           {author.institution && (
-            <span className="text-xs text-[#6F5B3C] flex items-center gap-1">
-              <Building className="w-3.5 h-3.5 text-[#8F7855]" />
+            <span className="text-xs text-[#6F5B3C] font-medium flex items-center gap-1">
+              <Building className="w-3.5 h-3.5 text-[#6F5B3C]" />
               {author.institution}
             </span>
           )}

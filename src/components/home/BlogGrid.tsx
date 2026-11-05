@@ -65,7 +65,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
       {/* Top Controls Bar without "Thuziak thar" and without Archive button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-3 border-b border-[#EBE6D6]">
         <div>
-          <p className="text-xs sm:text-sm text-[#8F7855]">
+          <p className="text-xs sm:text-sm text-[#6F5B3C] font-medium">
             Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha
           </p>
         </div>
@@ -108,7 +108,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             type="button"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Previous page"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -126,7 +126,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
                   key={pageNumber}
                   type="button"
                   onClick={() => handlePageChange(pageNumber)}
-                  className={`min-w-9 h-9 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                  className={`min-w-[44px] min-h-[44px] px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
                     isActive
                       ? 'bg-[#143520] text-[#BFDC28] shadow-sm ring-2 ring-[#143520]/20'
                       : 'bg-white border border-[#DDD4BC] text-[#143520] hover:bg-[#F6F4EB]'
@@ -145,7 +145,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             type="button"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Next page"
           >
             <span className="hidden sm:inline">Dawt</span>

@@ -55,7 +55,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
         {/* WhatsApp Direct Option */}
         <button
           onClick={handleShareWhatsApp}
-          className="p-2 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer"
+          className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
           title="Share to WhatsApp"
         >
           <WhatsAppIcon className="w-4 h-4" />
@@ -64,7 +64,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
         {/* Facebook Direct Option */}
         <button
           onClick={handleShareFacebook}
-          className="p-2 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white transition-colors cursor-pointer"
+          className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
           title="Share to Facebook"
         >
           <FacebookIcon className="w-4 h-4" />
@@ -72,7 +72,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
 
         <button
           onClick={handleCopyLink}
-          className="p-2 rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-3.5 py-2 min-h-[40px] rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
           title="Copy link"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <LinkIcon className="w-3.5 h-3.5" />}
@@ -81,14 +81,14 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
 
         <button
           onClick={() => shareToTwitter(title)}
-          className="px-3 py-2 rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-medium transition-colors cursor-pointer"
+          className="px-3.5 py-2 min-h-[40px] rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
         >
           X
         </button>
 
         <button
           onClick={() => shareToLinkedIn()}
-          className="px-3 py-2 rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-medium transition-colors cursor-pointer"
+          className="px-3.5 py-2 min-h-[40px] rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
         >
           LinkedIn
         </button>
@@ -98,14 +98,14 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
       <div className="flex items-center gap-2.5">
         <button
           onClick={() => toggleLike(articleId)}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+          className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[40px] rounded-xl text-xs font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
             isLiked
               ? 'bg-rose-100 text-rose-800 border border-rose-300'
               : 'bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D]'
           }`}
           title="Applaud research"
         >
-          <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-[#8F7855]'}`} />
+          <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-[#6F5B3C]'}`} />
           <span>{likesCount} Likes</span>
         </button>
       </div>

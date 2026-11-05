@@ -72,26 +72,27 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
       <div className="bg-[#FBFBF8] w-full max-w-2xl rounded-2xl shadow-2xl border border-[#DDD4BC] overflow-hidden flex flex-col max-h-[80vh]">
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3.5 border-b border-[#EBE6D6] bg-white">
-          <Search className="w-5 h-5 text-[#8F7855] mr-3 shrink-0" />
+          <Search className="w-5 h-5 text-[#6F5B3C] mr-3 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search articles, soil practices, crops, authors, #tags..."
-            className="w-full bg-transparent text-[#13341D] text-base focus:outline-hidden placeholder:text-[#8F7855]/70"
-          />
+            className="w-full bg-transparent text-[#13341D] text-base focus:outline-hidden placeholder:text-[#6F5B3C]/70"
+          >
+          </input>
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="text-[#8F7855] hover:text-[#13341D] p-1 mr-1"
+              className="text-[#6F5B3C] hover:text-[#13341D] p-1.5 mr-1 rounded-lg cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={onClose}
-            className="text-xs px-2 py-1 bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#6F5B3C] rounded border border-[#DDD4BC]"
+            className="text-xs px-2.5 py-1.5 bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#6F5B3C] font-semibold rounded-lg border border-[#DDD4BC] cursor-pointer"
           >
             ESC
           </button>
@@ -102,7 +103,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
           {query.trim() === '' ? (
             <div className="space-y-6 py-2">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#8F7855] mb-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#6F5B3C] mb-2.5">
                   Categories
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -110,7 +111,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                     <button
                       key={cat.id}
                       onClick={() => handleSelectCategory(cat.slug)}
-                      className="text-left p-2.5 rounded-lg border border-[#EBE6D6] hover:border-[#32864A] hover:bg-[#F2F7F3] transition-colors flex items-center justify-between group"
+                      className="text-left p-3 rounded-xl border border-[#EBE6D6] hover:border-[#32864A] hover:bg-[#F2F7F3] transition-colors flex items-center justify-between group cursor-pointer"
                     >
                       <div>
                         <div className="text-sm font-semibold text-[#13341D] group-hover:text-[#256B3A]">
@@ -120,14 +121,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                           {cat.description}
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-[#8F7855] group-hover:text-[#256B3A] shrink-0 ml-2" />
+                      <ArrowRight className="w-4 h-4 text-[#6F5B3C] group-hover:text-[#256B3A] shrink-0 ml-2" />
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#8F7855] mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#6F5B3C] mb-2">
                   TAGS
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -135,7 +136,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                     <button
                       key={tag.id}
                       onClick={() => handleSelectTag(tag.slug)}
-                      className="text-xs px-3 py-1.5 rounded-full bg-[#EBE6D6] text-[#3B2E1D] hover:bg-[#256B3A] hover:text-white transition-colors"
+                      className="text-xs px-3.5 py-1.5 rounded-full bg-[#EBE6D6] text-[#3B2E1D] hover:bg-[#256B3A] hover:text-white transition-colors cursor-pointer"
                     >
                       #{tag.name}
                     </button>
@@ -145,7 +146,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             </div>
           ) : filteredArticles.length > 0 ? (
             <div className="space-y-3">
-              <p className="text-xs font-medium text-[#8F7855]">
+              <p className="text-xs font-medium text-[#6F5B3C]">
                 Found {filteredArticles.length} article{filteredArticles.length === 1 ? '' : 's'} matching "{query}"
               </p>
               {filteredArticles.map(art => (
@@ -166,7 +167,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                     <h4 className="text-sm font-semibold text-[#13341D] group-hover:text-[#256B3A] line-clamp-1 font-serif">
                       {art.title}
                     </h4>
-                    <div className="flex items-center gap-3 text-[11px] text-[#8F7855] mt-1.5">
+                    <div className="flex items-center gap-3 text-[11px] text-[#6F5B3C] mt-1.5">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" /> {formatDate(art.publishedAt)}
                       </span>
@@ -179,7 +180,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-[#8F7855]">
+            <div className="text-center py-12 text-[#6F5B3C]">
               <BookOpen className="w-8 h-8 mx-auto mb-2 text-[#DDD4BC]" />
               <p className="text-sm font-medium text-[#13341D]">No articles found for "{query}"</p>
               <p className="text-xs text-[#6F5B3C] mt-1">
@@ -190,7 +191,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Modal Footer */}
-        <div className="px-4 py-2.5 bg-[#F6F4EB] border-t border-[#EBE6D6] flex items-center justify-between text-xs text-[#8F7855]">
+        <div className="px-4 py-2.5 bg-[#F6F4EB] border-t border-[#EBE6D6] flex items-center justify-between text-xs text-[#6F5B3C]">
           <span>Use <strong>↑</strong> <strong>↓</strong> to navigate</span>
           <span>Press <strong>ESC</strong> to dismiss</span>
         </div>

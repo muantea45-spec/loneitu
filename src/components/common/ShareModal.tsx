@@ -81,7 +81,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               <h3 className="font-serif font-bold text-base text-[#143520] leading-none">
                 Share Article
               </h3>
-              <p className="text-[10px] text-[#8F7855] mt-1">
+              <p className="text-[10px] text-[#6F5B3C] font-medium mt-1">
                 Share this post across your network
               </p>
             </div>
@@ -89,7 +89,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-[#8F7855] hover:text-[#143520] hover:bg-[#F6F4EB] rounded-xl transition-colors cursor-pointer"
+            className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-[#6F5B3C] hover:text-[#143520] hover:bg-[#F6F4EB] rounded-xl transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Close"
           >
             <X className="w-4 h-4" />

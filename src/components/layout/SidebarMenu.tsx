@@ -42,7 +42,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               </div>
               <button
                 onClick={onClose}
-                className="p-2 text-[#8F7855] hover:text-[#13341D] rounded-xl hover:bg-[#F6F4EB] transition-colors cursor-pointer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6F5B3C] hover:text-[#13341D] rounded-xl hover:bg-[#F6F4EB] transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                 aria-label="Close sidebar menu"
               >
                 <X className="w-5 h-5" />
@@ -56,7 +56,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                   onClose();
                   onOpenSearch();
                 }}
-                className="w-full flex items-center justify-center gap-2 p-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-xs"
+                className="w-full min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-xs focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
               >
                 <Search className="w-4 h-4 text-[#256B3A]" />
                 <span>Zawnna (Search Articles)</span>
@@ -103,11 +103,11 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             {/* Category Archives / Categories */}
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between px-2 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] flex items-center gap-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] flex items-center gap-1.5">
                   <FolderTree className="w-3.5 h-3.5 text-[#256B3A]" />
                   <span>Categories</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#8F7855]">{categories.length} categories</span>
+                <span className="text-[10px] font-mono text-[#6F5B3C]">{categories.length} categories</span>
               </div>
 
               <div className="space-y-1.5">
@@ -135,7 +135,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EBF1EA] text-[#1E542E] font-medium">
                           {count}
                         </span>
-                        <ArrowRight className="w-3.5 h-3.5 text-[#8F7855] group-hover:text-[#256B3A] group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-3.5 h-3.5 text-[#6F5B3C] group-hover:text-[#256B3A] group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </Link>
                   );
@@ -145,7 +145,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
 
             {/* Popular TAGS */}
             <div className="p-4 pt-2 border-t border-[#EBE6D6]">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] mb-2 px-1 flex items-center gap-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] mb-2 px-1 flex items-center gap-1.5">
                 <TagIcon className="w-3.5 h-3.5 text-[#256B3A]" />
                 <span>TAGS</span>
               </p>
@@ -166,7 +166,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             {/* Social Media Links (Simple Brand Logos Only) */}
             {aboutData?.socialLinks && Object.values(aboutData.socialLinks).some(v => !!v && v.trim() !== '') && (
               <div className="p-4 border-t border-[#EBE6D6] bg-[#F6F4EB]/60">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] mb-2 px-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] mb-2 px-1">
                   Connect With Loneitu
                 </p>
                 <SocialIconsRow links={aboutData.socialLinks} variant="light" />

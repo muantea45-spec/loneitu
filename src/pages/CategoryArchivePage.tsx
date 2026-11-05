@@ -24,7 +24,7 @@ export const CategoryArchivePage: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="text-center max-w-md bg-white p-8 rounded-2xl border border-[#DDD4BC] space-y-4">
-          <FolderTree className="w-12 h-12 mx-auto text-[#8F7855]" />
+          <FolderTree className="w-12 h-12 mx-auto text-[#6F5B3C]" />
           <h2 className="font-serif font-bold text-2xl text-[#143520]">
             Agricultural Sector Not Found
           </h2>
@@ -103,7 +103,7 @@ export const CategoryArchivePage: React.FC = () => {
 
         {matchingArticles.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl border border-[#DDD4BC] p-8 max-w-md mx-auto space-y-4">
-            <BookOpen className="w-10 h-10 mx-auto text-[#8F7855]" />
+            <BookOpen className="w-10 h-10 mx-auto text-[#6F5B3C]" />
             <h3 className="font-serif font-bold text-lg text-[#143520]">
               No articles currently filed under this sector
             </h3>

@@ -56,16 +56,16 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
         </div>
 
         {/* Action icons floating top right: Share and Like */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2 opacity-90 group-hover:opacity-100 transition-opacity">
           {/* Universal Share button */}
           <button
             type="button"
             onClick={handleShareClick}
-            className="p-2 rounded-full backdrop-blur-md bg-black/45 text-white hover:bg-[#143520] shadow-xs transition-all hover:scale-105 cursor-pointer"
+            className="w-10 h-10 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-[#143520] shadow-xs transition-all hover:scale-105 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#BFDC28] outline-hidden"
             title="Share article (WhatsApp, Facebook, X, etc.)"
             aria-label="Share article"
           >
-            <Share2 className="w-3.5 h-3.5 text-white" />
+            <Share2 className="w-4 h-4 text-white" />
           </button>
 
           {/* Like button */}
@@ -76,14 +76,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
               e.stopPropagation();
               toggleLike(article.id);
             }}
-            className={`p-2 rounded-full backdrop-blur-md transition-colors cursor-pointer ${isLiked
+            className={`w-10 h-10 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center rounded-full backdrop-blur-md transition-all hover:scale-105 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#BFDC28] outline-hidden ${
+              isLiked
                 ? 'bg-rose-50 text-rose-600 shadow-sm'
-                : 'bg-black/45 text-white hover:bg-black/65'
-              }`}
+                : 'bg-black/50 text-white hover:bg-black/70'
+            }`}
             title="Applaud research"
             aria-label="Like article"
           >
-            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-500' : ''}`} />
+            <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-500' : ''}`} />
           </button>
         </div>
       </div>
@@ -92,7 +93,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
       <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
         <div className="space-y-3">
           {/* Metadata info: Min capitalized */}
-          <div className="flex items-center justify-between text-xs text-[#8F7855]">
+          <div className="flex items-center justify-between text-xs text-[#6F5B3C]">
             <span className="flex items-center gap-1.5 font-medium">
               <Calendar className="w-3.5 h-3.5" />
               {formatDate(article.publishedAt)}
@@ -118,23 +119,23 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
               <img
                 src={article.author.avatar}
                 alt={article.author.name}
-                className="w-7 h-7 rounded-full object-cover ring-1 ring-[#256B3A]/40 shrink-0"
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-[#256B3A]/40 shrink-0"
               />
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-[#13341D] truncate">
                   {article.author.name}
                 </div>
-                <div className="text-[10px] text-[#8F7855] truncate">
+                <div className="text-[11px] text-[#6F5B3C] font-medium truncate">
                   {article.author.role}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
               <button
                 type="button"
                 onClick={handleShareClick}
-                className="w-8 h-8 rounded-full bg-[#F6F4EB] hover:bg-[#143520] text-[#143520] hover:text-[#BFDC28] flex items-center justify-center transition-all cursor-pointer"
+                className="w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] rounded-full bg-[#F6F4EB] hover:bg-[#143520] text-[#143520] hover:text-[#BFDC28] flex items-center justify-center transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                 title="Share article"
                 aria-label="Share article"
               >
@@ -143,7 +144,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
 
               <Link
                 to={`/article/${article.slug}`}
-                className="w-8 h-8 rounded-full bg-[#F6F4EB] group-hover:bg-[#143520] text-[#143520] group-hover:text-[#BFDC28] flex items-center justify-center transition-all duration-200"
+                className="w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] rounded-full bg-[#F6F4EB] group-hover:bg-[#143520] text-[#143520] group-hover:text-[#BFDC28] flex items-center justify-center transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                 aria-label={`Read ${article.title}`}
               >
                 <ArrowUpRight className="w-4 h-4" />

@@ -34,7 +34,7 @@ export const TagArchivePage: React.FC = () => {
       <div className="w-full bg-[#F6F4EB] border-b border-[#EBE6D6] py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-4">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-xs text-[#8F7855]">
+          <nav className="flex items-center gap-2 text-xs text-[#6F5B3C] font-medium">
             <Link to="/" className="hover:text-[#143520] transition-colors">
               Journal
             </Link>
@@ -80,7 +80,7 @@ export const TagArchivePage: React.FC = () => {
 
         {matchingArticles.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl border border-[#DDD4BC] p-8 max-w-md mx-auto space-y-4">
-            <BookOpen className="w-10 h-10 mx-auto text-[#8F7855]" />
+            <BookOpen className="w-10 h-10 mx-auto text-[#6F5B3C]" />
             <h3 className="font-serif font-bold text-lg text-[#143520]">
               No publications currently found with #{tagName}
             </h3>

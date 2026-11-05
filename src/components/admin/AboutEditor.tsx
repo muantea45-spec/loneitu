@@ -1559,7 +1559,7 @@ ${rowsHtml}
                           <div className="pt-2 border-t border-[#EBE6D6] space-y-1.5 text-xs">
                             {details.designation && (
                               <div className="grid grid-cols-[105px_1fr] gap-2 py-1 border-b border-[#F2ECE1] items-baseline">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
                                   DESIGNATION:
                                 </span>
                                 <span className="font-semibold text-[#143520] text-left break-words">
@@ -1570,7 +1570,7 @@ ${rowsHtml}
 
                             {details.portfolio && (
                               <div className="grid grid-cols-[105px_1fr] gap-2 py-1 border-b border-[#F2ECE1] items-baseline">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
                                   PORTFOLIO:
                                 </span>
                                 <span className="font-semibold text-[#143520] text-left break-words">
@@ -1581,7 +1581,7 @@ ${rowsHtml}
 
                             {details.qualification && (
                               <div className="grid grid-cols-[105px_1fr] gap-2 py-1 border-b border-[#F2ECE1] items-baseline">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
                                   QUALIFICATION:
                                 </span>
                                 <span className="font-semibold text-[#143520] text-left break-words">
@@ -1594,7 +1594,7 @@ ${rowsHtml}
                           {/* PROFESSIONAL EXPERIENCE: New line, full width */}
                           {details.experience && (
                             <div className="pt-2 border-t border-[#EBE6D6]">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] block mb-1 text-left">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] block mb-1 text-left">
                                 PROFESSIONAL EXPERIENCE:
                               </span>
                               <p className="w-full text-justify [text-align:justify] text-[11px] text-[#54432C] leading-relaxed whitespace-pre-line line-clamp-3">

@@ -220,9 +220,9 @@ export const ArchivePage: React.FC = () => {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Thupui, ziaktu, sector..."
-                  className="w-full pl-8 pr-3 py-2 bg-[#FAF8F3] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] placeholder-[#8F7855] focus:bg-white focus:border-[#256B3A] transition-colors outline-hidden"
+                  className="w-full pl-8 pr-3 py-2 bg-[#FAF8F3] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] placeholder-[#6F5B3C]/70 focus:bg-white focus:border-[#256B3A] transition-colors outline-hidden"
                 />
-                <Search className="w-3.5 h-3.5 text-[#8F7855] absolute left-2.5 top-2.5" />
+                <Search className="w-3.5 h-3.5 text-[#6F5B3C] absolute left-2.5 top-2.5" />
               </div>
             </div>
 
@@ -256,7 +256,7 @@ export const ArchivePage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs overflow-hidden">
           {filteredArticles.length === 0 ? (
             <div className="text-center py-16 px-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#FAF8F3] text-[#8F7855] flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF8F3] text-[#6F5B3C] flex items-center justify-center mx-auto mb-3">
                 <BookOpen className="w-6 h-6" />
               </div>
               <h3 className="font-serif font-bold text-base text-[#143520]">
@@ -297,7 +297,7 @@ export const ArchivePage: React.FC = () => {
                         }`}
                       >
                         {/* Publication Date */}
-                        <td className="py-3.5 px-4 font-mono text-[11px] text-[#8F7855] whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-[#6F5B3C] whitespace-nowrap">
                           {formatDate(art.publishedAt)}
                         </td>
 
@@ -336,7 +336,7 @@ export const ArchivePage: React.FC = () => {
                         {/* Actions: Reading Time & Read Button & Share */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-2">
-                            <span className="text-[10px] text-[#8F7855] hidden sm:inline flex items-center gap-1">
+                            <span className="text-[10px] text-[#6F5B3C] font-medium hidden sm:inline flex items-center gap-1">
                               <Clock className="w-3 h-3 text-[#256B3A]" />
                               <span>{art.readingTimeMinutes}m</span>
                             </span>

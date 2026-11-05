@@ -23,7 +23,7 @@ const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage')
 const PageLoadingFallback: React.FC = () => (
   <div className="w-full min-h-[50vh] flex flex-col items-center justify-center p-8 text-[#143520]">
     <div className="w-8 h-8 border-3 border-[#256B3A]/20 border-t-[#256B3A] rounded-full animate-spin mb-3" />
-    <span className="text-xs font-semibold text-[#8F7855] tracking-wide">Chhiar zung zung rawh le...</span>
+    <span className="text-xs font-semibold text-[#6F5B3C] tracking-wide">Chhiar zung zung rawh le...</span>
   </div>
 );
 

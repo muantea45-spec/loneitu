@@ -165,7 +165,7 @@ export const AboutPage: React.FC = () => {
           <div className="space-y-4 pt-2">
             {/* Mobile Slide Hint (when multiple cards exist) */}
             {filteredCards.length > 1 && (
-              <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#8F7855] font-medium">
+              <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#6F5B3C] font-semibold">
                 <span>← Swipe cards to view staff →</span>
                 <span className="font-bold text-[#256B3A]">{filteredCards.length} Members</span>
               </div>
@@ -217,7 +217,7 @@ export const AboutPage: React.FC = () => {
                         <div className="pt-2.5 border-t border-[#EBE6D6] space-y-2 text-xs">
                           {details.designation && (
                             <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
                                 DESIGNATION:
                               </span>
                               <span className="font-semibold text-[#143520] text-left break-words">
@@ -228,7 +228,7 @@ export const AboutPage: React.FC = () => {
 
                           {details.portfolio && (
                             <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
                                 PORTFOLIO:
                               </span>
                               <span className="font-semibold text-[#143520] text-left break-words">
@@ -239,7 +239,7 @@ export const AboutPage: React.FC = () => {
 
                           {details.qualification && (
                             <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] shrink-0 text-left">
                                 QUALIFICATION:
                               </span>
                               <span className="font-semibold text-[#143520] text-left break-words">
@@ -252,7 +252,7 @@ export const AboutPage: React.FC = () => {
                         {/* PROFESSIONAL EXPERIENCE: All text in a new line, perfectly aligned in the whole width */}
                         {details.experience && (
                           <div className="pt-2.5 border-t border-[#EBE6D6]">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] block mb-1.5 text-left">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] block mb-1.5 text-left">
                               PROFESSIONAL EXPERIENCE:
                             </span>
                             <p className="w-full text-justify [text-align:justify] text-xs text-[#54432C] leading-relaxed whitespace-pre-line">
@@ -271,14 +271,14 @@ export const AboutPage: React.FC = () => {
                     <button
                       onClick={() => scrollToCard(Math.max(0, activeCardIndex - 1))}
                       disabled={activeCardIndex === 0}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                       aria-label="Previous staff member"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
 
                     {/* Interactive Dots Pagination */}
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-xs rounded-full border border-[#DDD4BC] shadow-2xs">
+                    <div className="flex items-center gap-1.5 px-3 py-2 bg-white/80 backdrop-blur-xs rounded-full border border-[#DDD4BC] shadow-2xs">
                       {filteredCards.map((card, i) => {
                         const isActive = activeCardIndex === i;
                         return (
@@ -286,15 +286,19 @@ export const AboutPage: React.FC = () => {
                             key={card.id || i}
                             onClick={() => scrollToCard(i)}
                             aria-label={`Go to staff card ${i + 1}`}
-                            className={`transition-all duration-300 rounded-full cursor-pointer ${
-                              isActive
-                                ? 'w-6 h-2.5 bg-[#256B3A] shadow-xs'
-                                : 'w-2.5 h-2.5 bg-[#DDD4BC] hover:bg-[#8F7855]'
-                            }`}
-                          />
+                            className="p-1.5 -m-0.5 rounded-full flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+                          >
+                            <span
+                              className={`transition-all duration-300 rounded-full block ${
+                                isActive
+                                  ? 'w-6 h-2.5 bg-[#256B3A] shadow-xs'
+                                  : 'w-2.5 h-2.5 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
+                              }`}
+                            />
+                          </button>
                         );
                       })}
-                      <span className="text-[10px] font-bold text-[#8F7855] ml-1 select-none">
+                      <span className="text-[10px] font-bold text-[#6F5B3C] ml-1 select-none">
                         {activeCardIndex + 1}/{filteredCards.length}
                       </span>
                     </div>
@@ -302,7 +306,7 @@ export const AboutPage: React.FC = () => {
                     <button
                       onClick={() => scrollToCard(Math.min(filteredCards.length - 1, activeCardIndex + 1))}
                       disabled={activeCardIndex === filteredCards.length - 1}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                       aria-label="Next staff member"
                     >
                       <ChevronRight className="w-5 h-5" />
@@ -366,8 +370,8 @@ export const AboutPage: React.FC = () => {
                   </div>
 
                   {author.institution && (
-                    <div className="text-xs font-semibold text-[#8F7855] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#8F7855]/60" />
+                    <div className="text-xs font-semibold text-[#6F5B3C] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#6F5B3C]/60" />
                       <span className="truncate">{author.institution}</span>
                     </div>
                   )}

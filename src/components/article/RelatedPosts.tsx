@@ -60,7 +60,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentArticle, allA
               </div>
 
               <div className="p-4 space-y-2">
-                <div className="flex items-center gap-3 text-[11px] text-[#8F7855]">
+                <div className="flex items-center gap-3 text-[11px] text-[#6F5B3C] font-medium">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" /> {formatDate(art.publishedAt)}
                   </span>

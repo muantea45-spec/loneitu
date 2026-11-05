@@ -47,18 +47,18 @@ export const FilterBar: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search Field */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8F7855]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6F5B3C]" />
             <input
               type="text"
               value={filterState.searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Thlai, leilung, ran vulh, thiamna thar zawnna..."
-              className="w-full pl-10 pr-9 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs sm:text-sm text-[#13341D] placeholder:text-[#8F7855]/70 focus:outline-hidden focus:border-[#256B3A] focus:ring-1 focus:ring-[#256B3A]"
+              className="w-full pl-10 pr-9 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs sm:text-sm text-[#13341D] placeholder:text-[#6F5B3C]/70 focus:outline-hidden focus:border-[#256B3A] focus:ring-1 focus:ring-[#256B3A]"
             />
             {filterState.searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8F7855] hover:text-[#13341D]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F5B3C] hover:text-[#13341D] p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -70,7 +70,7 @@ export const FilterBar: React.FC = () => {
             {/* Category Select Dropdown */}
             <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-[#DDD4BC] text-xs shadow-2xs">
               <FolderTree className="w-3.5 h-3.5 text-[#256B3A] shrink-0" />
-              <label htmlFor="cat-select" className="text-[#8F7855] font-medium hidden sm:inline">
+              <label htmlFor="cat-select" className="text-[#6F5B3C] font-semibold hidden sm:inline">
                 Category:
               </label>
               <select
@@ -93,7 +93,7 @@ export const FilterBar: React.FC = () => {
             {/* Sort Selector */}
             <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-[#DDD4BC] text-xs shadow-2xs">
               <ArrowUpDown className="w-3.5 h-3.5 text-[#256B3A] shrink-0" />
-              <label htmlFor="sort-select" className="text-[#8F7855] font-medium hidden sm:inline">
+              <label htmlFor="sort-select" className="text-[#6F5B3C] font-semibold hidden sm:inline">
                 Rem dan:
               </label>
               <select
@@ -127,7 +127,7 @@ export const FilterBar: React.FC = () => {
         {/* Active Category Filter Indicator (if selected) */}
         {activeCategoryObj && (
           <div className="flex items-center gap-2 pt-0.5">
-            <span className="text-xs text-[#8F7855]">Category thlan bik:</span>
+            <span className="text-xs text-[#6F5B3C] font-semibold">Category thlan bik:</span>
             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-[#143520] text-[#BFDC28]">
               {activeCategoryObj.name}
               <button

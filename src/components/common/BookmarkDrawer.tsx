@@ -40,7 +40,7 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({ isOpen, onClose 
             </div>
             <button
               onClick={onClose}
-              className="text-[#8F7855] hover:text-[#13341D] p-2 rounded-lg hover:bg-[#F6F4EB] transition-colors"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6F5B3C] hover:text-[#13341D] rounded-xl hover:bg-[#F6F4EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden cursor-pointer"
               aria-label="Close bookmarks drawer"
             >
               <X className="w-5 h-5" />
@@ -50,7 +50,7 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({ isOpen, onClose 
           {/* List */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {bookmarkedArticles.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#8F7855]">
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#6F5B3C]">
                 <BookOpen className="w-12 h-12 mb-3 text-[#DDD4BC]" />
                 <h4 className="font-serif font-semibold text-[#13341D] text-base">Your Reading List is Empty</h4>
                 <p className="text-xs text-[#6F5B3C] mt-1 max-w-xs">
@@ -81,13 +81,13 @@ export const BookmarkDrawer: React.FC<BookmarkDrawerProps> = ({ isOpen, onClose 
                         {art.title}
                       </h4>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#F6F4EB]">
-                        <span className="text-[11px] text-[#8F7855] flex items-center gap-1">
+                        <span className="text-[11px] text-[#6F5B3C] font-medium flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {art.readingTimeMinutes} min read
                         </span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleBookmark(art.id)}
-                            className="text-[#8F7855] hover:text-red-700 p-1 transition-colors"
+                            className="text-[#6F5B3C] hover:text-red-700 p-1.5 transition-colors cursor-pointer"
                             title="Remove from reading queue"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
