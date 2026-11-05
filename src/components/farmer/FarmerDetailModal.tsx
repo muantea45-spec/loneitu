@@ -5,12 +5,33 @@ import {
   BadgeCheck, 
   Share2, 
   Printer, 
-  Check 
+  Check,
+  MessageCircle
 } from 'lucide-react';
 
 interface FarmerDetailModalProps {
   farmer: FarmerRecord | null;
   onClose: () => void;
+}
+
+function getFarmerContactNo(data: Record<string, any> = {}): string {
+  for (const [key, val] of Object.entries(data)) {
+    if (/contact|phone|mobile|cell|whatsapp|ph/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return s;
+    }
+  }
+  return '';
+}
+
+function getWhatsAppLink(contact: string, name?: string): string | null {
+  const digits = (contact || '').replace(/\D/g, '');
+  if (!digits || digits.length < 10) return null;
+  const phone = digits.length === 10 ? `91${digits}` : digits;
+  const msg = encodeURIComponent(
+    name ? `Chibai ${name}! Loneitu (Mizoram Tan) atanga biak i ni e.` : 'Chibai! Loneitu (Mizoram Tan) atanga biak i ni e.'
+  );
+  return `https://wa.me/${phone}?text=${msg}`;
 }
 
 export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose }) => {
@@ -34,6 +55,8 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
   };
 
   const uploadedEntries = farmer.data ? Object.entries(farmer.data) : [];
+  const contactNo = getFarmerContactNo(farmer.data);
+  const primaryWaUrl = contactNo ? getWhatsAppLink(contactNo, farmer.fullName) : null;
 
   return (
     <div 
@@ -81,8 +104,24 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
             {farmer.fullName}
           </h2>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mt-2">
-            <span>{uploadedEntries.length} Uploaded Columns</span>
+          <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              {uploadedEntries.length} Uploaded Columns
+            </span>
+
+            {/* 1-Click WhatsApp Quick Action Button in Header */}
+            {primaryWaUrl && (
+              <a
+                href={primaryWaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold shadow-2xs hover:scale-105 transition-all cursor-pointer"
+                title={`Chat with ${farmer.fullName} on WhatsApp`}
+              >
+                <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                <span>WhatsApp ({contactNo})</span>
+              </a>
+            )}
           </div>
         </div>
 
@@ -94,19 +133,38 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
                 No uploaded column data available for this record.
               </p>
             ) : (
-              uploadedEntries.map(([key, val]) => (
-                <div 
-                  key={key} 
-                  className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800"
-                >
-                  <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 block mb-1">
-                    {key}
-                  </span>
-                  <p className="font-bold text-sm text-slate-900 dark:text-white break-words">
-                    {String(val)}
-                  </p>
-                </div>
-              ))
+              uploadedEntries.map(([key, val]) => {
+                const isContact = /contact|phone|mobile|cell|whatsapp|ph/i.test(key);
+                const fieldWaUrl = isContact && val ? getWhatsAppLink(String(val), farmer.fullName) : null;
+
+                return (
+                  <div 
+                    key={key} 
+                    className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800"
+                  >
+                    <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 block mb-1">
+                      {key}
+                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-sm text-slate-900 dark:text-white break-words">
+                        {String(val)}
+                      </p>
+                      {fieldWaUrl && (
+                        <a
+                          href={fieldWaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-[11px] font-bold shadow-2xs hover:scale-105 transition-all cursor-pointer shrink-0"
+                          title="Chat on WhatsApp"
+                        >
+                          <MessageCircle className="w-3 h-3 fill-current" />
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

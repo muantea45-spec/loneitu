@@ -21,7 +21,6 @@ import { ShareButtons } from '../components/article/ShareButtons';
 import { RelatedPosts } from '../components/article/RelatedPosts';
 import { CommentsSection } from '../components/article/CommentsSection';
 import { ShareModal } from '../components/common/ShareModal';
-import { AudioArticlePlayer } from '../components/article/AudioArticlePlayer';
 
 export const ArticleDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -167,15 +166,6 @@ export const ArticleDetailPage: React.FC = () => {
           <div className="text-[11px] text-[#8F7855] text-right mt-2 italic">
             Field photography: Verified agrarian site documentation
           </div>
-        </div>
-
-        {/* Mizo Audio Narration / Readout Player */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <AudioArticlePlayer
-            title={article.title}
-            content={article.content}
-            authorName={article.author.name}
-          />
         </div>
 
         {/* Content Layout: 12-Column Grid */}

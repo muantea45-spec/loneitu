@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Heart, Share2, Headphones } from 'lucide-react';
+import { ArrowRight, Sparkles, Heart, Share2 } from 'lucide-react';
 import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
@@ -104,23 +104,14 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ article }) => {
               {excerptText}
             </p>
 
-            {/* CTAs: A KIMCHANGIN CHHIAR RAWH & Aw Ngaithla Rawh */}
-            <div className="pt-1 flex items-center gap-2.5 flex-wrap">
+            {/* A KIMCHANGIN CHHIAR RAWH option */}
+            <div className="pt-1">
               <Link
                 to={`/article/${article.slug}`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#BFDC28] text-[#143520] font-bold text-xs sm:text-sm hover:bg-[#d5f33d] transition-all duration-200 shadow-md group cursor-pointer tracking-wider"
               >
                 <span>A KIMCHANGIN CHHIAR RAWH</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-
-              <Link
-                to={`/article/${article.slug}`}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 transition-all cursor-pointer shadow-2xs"
-                title="Aw-in ngaithla rawh"
-              >
-                <Headphones className="w-4 h-4 text-[#BFDC28]" />
-                <span>Aw Ngaithla Rawh</span>
               </Link>
             </div>
           </div>

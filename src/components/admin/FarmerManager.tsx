@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useBlog } from '../../context/BlogContext';
 import type { FarmerRecord } from '../../types/farmer';
 import { 
@@ -33,11 +33,82 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
-  Database
+  Database,
+  MessageCircle,
+  MapPin,
+  Building2,
+  Filter
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 
 const PAGE_SIZE = 8;
+
+const POPULAR_MIZORAM_DISTRICTS = [
+  'Champhai',
+  'Aizawl',
+  'Kolasib',
+  'Serchhip',
+  'Lunglei',
+  'Mamit',
+  'Saitual',
+  'Khawzawl',
+  'Hnahthial',
+  'Lawngtlai',
+  'Siaha'
+];
+
+// Helper to extract district from farmer record data
+function getFarmerDistrict(farmer: FarmerRecord): string {
+  if (!farmer || !farmer.data) return '';
+  for (const [key, val] of Object.entries(farmer.data)) {
+    if (/(^|\b)district(\b|$)/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return s;
+    }
+  }
+  for (const [key, val] of Object.entries(farmer.data)) {
+    if (/dist/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return s;
+    }
+  }
+  return '';
+}
+
+// Helper to extract block from farmer record data
+function getFarmerBlock(farmer: FarmerRecord): string {
+  if (!farmer || !farmer.data) return '';
+  for (const [key, val] of Object.entries(farmer.data)) {
+    if (/block/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return s;
+    }
+  }
+  return '';
+}
+
+// Helper to extract contact number
+function getFarmerContact(farmer: FarmerRecord): string {
+  if (!farmer || !farmer.data) return '';
+  for (const [key, val] of Object.entries(farmer.data)) {
+    if (/contact|phone|mobile|cell|whatsapp|ph/i.test(key)) {
+      const s = String(val || '').trim();
+      if (s) return s;
+    }
+  }
+  return '';
+}
+
+// Helper to format WhatsApp click-to-chat URL
+function getWhatsAppUrl(contact: string, name?: string): string | null {
+  const digits = (contact || '').replace(/\D/g, '');
+  if (!digits || digits.length < 10) return null;
+  const phone = digits.length === 10 ? `91${digits}` : digits;
+  const msg = encodeURIComponent(
+    name ? `Chibai ${name}! Loneitu (Mizoram Tan) atanga biak i ni e.` : 'Chibai! Loneitu (Mizoram Tan) atanga biak i ni e.'
+  );
+  return `https://wa.me/${phone}?text=${msg}`;
+}
 
 export const FarmerManager: React.FC = () => {
   const { 
@@ -135,21 +206,122 @@ export const FarmerManager: React.FC = () => {
     : allColumns.slice(0, Math.min(allColumns.length, 3));
   const extraColumnsCount = Math.max(0, allColumns.length - summaryColumns.length);
 
-  // Reset page to 1 when search query changes
+  // District and Block Filter States
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
+  const [selectedBlock, setSelectedBlock] = useState<string>('all');
+
+  // Compute farmer counts per district (including fuzzy search across all values if no explicit column)
+  const districtCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    farmers.forEach(f => {
+      const explicitDist = getFarmerDistrict(f);
+      if (explicitDist) {
+        const key = explicitDist.trim().toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      } else {
+        POPULAR_MIZORAM_DISTRICTS.forEach(dist => {
+          const match = Object.values(f.data || {}).some(v => 
+            String(v).toLowerCase().includes(dist.toLowerCase())
+          );
+          if (match) {
+            const key = dist.toLowerCase();
+            counts[key] = (counts[key] || 0) + 1;
+          }
+        });
+      }
+    });
+    return counts;
+  }, [farmers]);
+
+  // Determine available districts: all districts in uploaded records + standard popular Mizoram districts
+  const availableDistricts = useMemo(() => {
+    const set = new Set<string>();
+    // First, add all detected districts from farmer records
+    farmers.forEach(f => {
+      const d = getFarmerDistrict(f);
+      if (d) set.add(d);
+    });
+    // Add popular Mizoram districts
+    POPULAR_MIZORAM_DISTRICTS.forEach(d => set.add(d));
+
+    return Array.from(set).sort((a, b) => {
+      const countA = districtCounts[a.toLowerCase()] || 0;
+      const countB = districtCounts[b.toLowerCase()] || 0;
+      if (countA !== countB) return countB - countA;
+      return a.localeCompare(b);
+    });
+  }, [farmers, districtCounts]);
+
+  // Determine available blocks (dynamically filtered by selected district)
+  const availableBlocks = useMemo(() => {
+    const blocksMap = new Map<string, number>();
+    farmers.forEach(f => {
+      if (selectedDistrict !== 'all') {
+        const dist = getFarmerDistrict(f);
+        const matchesDist = dist 
+          ? dist.toLowerCase() === selectedDistrict.toLowerCase()
+          : Object.values(f.data || {}).some(v => String(v).toLowerCase().includes(selectedDistrict.toLowerCase()));
+        if (!matchesDist) return;
+      }
+
+      const b = getFarmerBlock(f);
+      if (b) {
+        blocksMap.set(b, (blocksMap.get(b) || 0) + 1);
+      }
+    });
+
+    return Array.from(blocksMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [farmers, selectedDistrict]);
+
+  // Reset page to 1 when search query, selected district or block changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, selectedDistrict, selectedBlock]);
 
-  // Filtered farmers based on search
-  const filteredFarmers = farmers.filter(farmer => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const matchName = farmer.fullName.toLowerCase().includes(q);
-    const matchData = Object.values(farmer.data || {}).some(val => 
-      String(val).toLowerCase().includes(q)
-    );
-    return matchName || matchData;
-  });
+  // Filtered farmers based on district, block, and search
+  const filteredFarmers = useMemo(() => {
+    return farmers.filter(farmer => {
+      // 1. District filter
+      if (selectedDistrict !== 'all') {
+        const dist = getFarmerDistrict(farmer);
+        if (dist) {
+          if (dist.toLowerCase() !== selectedDistrict.toLowerCase()) return false;
+        } else {
+          const match = Object.values(farmer.data || {}).some(v => 
+            String(v).toLowerCase().includes(selectedDistrict.toLowerCase())
+          );
+          if (!match) return false;
+        }
+      }
+
+      // 2. Block filter
+      if (selectedBlock !== 'all') {
+        const block = getFarmerBlock(farmer);
+        if (block) {
+          if (block.toLowerCase() !== selectedBlock.toLowerCase()) return false;
+        } else {
+          const match = Object.values(farmer.data || {}).some(v => 
+            String(v).toLowerCase().includes(selectedBlock.toLowerCase())
+          );
+          if (!match) return false;
+        }
+      }
+
+      // 3. Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = farmer.fullName.toLowerCase().includes(q);
+        const matchData = Object.values(farmer.data || {}).some(val => 
+          String(val).toLowerCase().includes(q)
+        );
+        if (!matchName && !matchData) return false;
+      }
+
+      return true;
+    });
+  }, [farmers, selectedDistrict, selectedBlock, searchQuery]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredFarmers.length / PAGE_SIZE));
@@ -651,6 +823,151 @@ export const FarmerManager: React.FC = () => {
         </div>
       </div>
 
+      {/* DISTRICT & BLOCK FILTER (District leh Block Thlanna) */}
+      <div className="bg-gradient-to-r from-emerald-50/90 via-white to-emerald-50/60 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#256B3A] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <MapPin className="w-3.5 h-3.5 text-[#BFDC28]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-[#143520] dark:text-emerald-300">
+                  District leh Block Thlanna (Filter)
+                </span>
+                {(selectedDistrict !== 'all' || selectedBlock !== 'all') && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
+                    Active: {selectedDistrict !== 'all' ? selectedDistrict : 'All Districts'}
+                    {selectedBlock !== 'all' ? ` • ${selectedBlock}` : ''}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[#1E542E] dark:text-emerald-400 font-medium">
+                Hmet la, district leh block hrang hranga farmer-te awlsam takin thlang chhuak rawh
+              </p>
+            </div>
+          </div>
+
+          {(selectedDistrict !== 'all' || selectedBlock !== 'all') && (
+            <button
+              onClick={() => {
+                setSelectedDistrict('all');
+                setSelectedBlock('all');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer self-start sm:self-auto shadow-2xs"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear Filter (Tibo Rawh)</span>
+            </button>
+          )}
+        </div>
+
+        {/* District Filter Quick Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-thin">
+          <span className="text-[11px] font-bold text-[#143520] dark:text-emerald-400 shrink-0 mr-1 flex items-center gap-1">
+            <Filter className="w-3 h-3 text-[#256B3A]" />
+            <span>District:</span>
+          </span>
+
+          {/* All Districts Pill */}
+          <button
+            onClick={() => {
+              setSelectedDistrict('all');
+              setSelectedBlock('all');
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              selectedDistrict === 'all'
+                ? 'bg-[#256B3A] text-white shadow-xs'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100/70 hover:text-[#143520] border border-emerald-200/80 dark:border-slate-700'
+            }`}
+          >
+            <span>All Districts</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+              selectedDistrict === 'all'
+                ? 'bg-white/20 text-white'
+                : 'bg-emerald-100 dark:bg-emerald-900 text-[#143520] dark:text-emerald-200'
+            }`}>
+              {farmers.length}
+            </span>
+          </button>
+
+          {/* District specific pills */}
+          {availableDistricts.map(dist => {
+            const count = districtCounts[dist.toLowerCase()] || 0;
+            const isSelected = selectedDistrict.toLowerCase() === dist.toLowerCase();
+            return (
+              <button
+                key={dist}
+                onClick={() => {
+                  setSelectedDistrict(isSelected ? 'all' : dist);
+                  setSelectedBlock('all');
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#256B3A] text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100/70 hover:text-[#143520] border border-emerald-200/80 dark:border-slate-700'
+                }`}
+              >
+                <MapPin className={`w-3 h-3 ${isSelected ? 'text-[#BFDC28]' : 'text-[#256B3A]'}`} />
+                <span>{dist}</span>
+                {count > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-emerald-100 dark:bg-emerald-900 text-[#143520] dark:text-emerald-200'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Block Filter Quick Pills (RD Block) */}
+        {availableBlocks.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/60 scrollbar-thin">
+            <span className="text-[11px] font-bold text-[#143520] dark:text-emerald-400 shrink-0 mr-1 flex items-center gap-1">
+              <Building2 className="w-3 h-3 text-[#256B3A]" />
+              <span>Block:</span>
+            </span>
+
+            <button
+              onClick={() => setSelectedBlock('all')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                selectedBlock === 'all'
+                  ? 'bg-emerald-700 text-white shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 border border-emerald-100 dark:border-slate-700'
+              }`}
+            >
+              <span>All Blocks</span>
+            </button>
+
+            {availableBlocks.map(block => {
+              const isSelected = selectedBlock.toLowerCase() === block.name.toLowerCase();
+              return (
+                <button
+                  key={block.name}
+                  onClick={() => setSelectedBlock(isSelected ? 'all' : block.name)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                    isSelected
+                      ? 'bg-emerald-700 text-white shadow-2xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 border border-emerald-100 dark:border-slate-700'
+                  }`}
+                >
+                  <span>{block.name}</span>
+                  <span className={`text-[10px] px-1 rounded-full ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {block.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* ACTIVE REGISTRY COLUMNS BOX: Well Arranged & Beautifully Readable */}
       {allColumns.length > 0 && (
         <div className="bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 dark:from-[#0d2616] dark:via-slate-900 dark:to-[#0a1f12] rounded-3xl p-5 border-2 border-emerald-300 dark:border-emerald-800 shadow-sm space-y-4">
@@ -760,7 +1077,11 @@ export const FarmerManager: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-              {paginatedFarmers.map(farmer => (
+              {paginatedFarmers.map(farmer => {
+                const farmerContact = getFarmerContact(farmer);
+                const farmerWaUrl = farmerContact ? getWhatsAppUrl(farmerContact, farmer.fullName) : null;
+
+                return (
                 <div
                   key={farmer.id}
                   onClick={() => setSelectedFarmerForDetail(farmer)}
@@ -811,20 +1132,38 @@ export const FarmerManager: React.FC = () => {
                         ) : (
                           summaryColumns.map(col => {
                             const val = farmer.data?.[col];
+                            const isContact = /contact|phone|mobile|call|cell|whatsapp|ph/i.test(col);
+                            const rowWaUrl = isContact && val ? getWhatsAppUrl(String(val), farmer.fullName) : null;
+
                             return (
                               <div 
                                 key={col}
                                 className="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-white/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60"
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#256B3A] dark:text-emerald-400 truncate max-w-[42%]">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#256B3A] dark:text-emerald-400 truncate max-w-[40%]">
                                   {col}:
                                 </span>
-                                <span 
-                                  className="font-bold text-slate-800 dark:text-slate-100 truncate text-[11px] max-w-[58%] text-right" 
-                                  title={String(val ?? '')}
-                                >
-                                  {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
-                                </span>
+                                <div className="flex items-center gap-1.5 truncate max-w-[60%] justify-end">
+                                  <span 
+                                    className="font-bold text-slate-800 dark:text-slate-100 truncate text-[11px] text-right" 
+                                    title={String(val ?? '')}
+                                  >
+                                    {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
+                                  </span>
+                                  {rowWaUrl && (
+                                    <a
+                                      href={rowWaUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#25D366] hover:bg-[#20ba5a] text-white text-[9px] font-black shadow-2xs hover:scale-105 transition-transform shrink-0"
+                                      title={`Direct WhatsApp to ${farmer.fullName} (${val})`}
+                                    >
+                                      <MessageCircle className="w-2.5 h-2.5 fill-current" />
+                                      <span>WA</span>
+                                    </a>
+                                  )}
+                                </div>
                               </div>
                             );
                           })
@@ -832,14 +1171,25 @@ export const FarmerManager: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Card Footer: Summary Tag & Relocated Action Buttons (View, Edit, Delete) */}
+                    {/* Card Footer: Summary Tag & Action Buttons */}
                     <div className="pt-2.5 mt-2 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between gap-2">
                       <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 truncate">
                         {extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}
                       </div>
 
-                      {/* Action buttons relocated here to prevent crowding the name */}
+                      {/* Action buttons with 1-Click WhatsApp Quick Action */}
                       <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {farmerWaUrl && (
+                          <a
+                            href={farmerWaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg text-white bg-[#25D366] hover:bg-[#20ba5a] transition-all shadow-2xs hover:scale-105"
+                            title={`1-Click WhatsApp: ${farmer.fullName} (${farmerContact})`}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                          </a>
+                        )}
                         <button
                           onClick={() => setSelectedFarmerForDetail(farmer)}
                           className="p-1.5 rounded-lg text-emerald-800 dark:text-emerald-300 hover:text-white hover:bg-[#256B3A] bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/80 transition-all shadow-2xs"
@@ -869,7 +1219,8 @@ export const FarmerManager: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           )}
         </div>
@@ -960,7 +1311,11 @@ export const FarmerManager: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedFarmers.map((farmer, idx) => (
+                  paginatedFarmers.map((farmer, idx) => {
+                    const farmerContact = getFarmerContact(farmer);
+                    const farmerWaUrl = farmerContact ? getWhatsAppUrl(farmerContact, farmer.fullName) : null;
+
+                    return (
                     <tr 
                       key={farmer.id}
                       className={`transition-colors cursor-pointer ${
@@ -1042,6 +1397,8 @@ export const FarmerManager: React.FC = () => {
                       {allColumns.map(col => {
                         const isEditing = editingCell?.farmerId === farmer.id && editingCell?.column === col;
                         const cellVal = farmer.data && farmer.data[col] !== undefined ? String(farmer.data[col]) : '';
+                        const isContact = /contact|phone|mobile|cell|whatsapp|ph/i.test(col);
+                        const cellWaUrl = isContact && cellVal ? getWhatsAppUrl(cellVal, farmer.fullName) : null;
 
                         return (
                           <td
@@ -1082,9 +1439,24 @@ export const FarmerManager: React.FC = () => {
                                 className="flex items-center justify-between gap-1.5 min-h-[22px]"
                                 onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
                               >
-                                <span className="truncate max-w-[160px]" title={cellVal || '-'}>
-                                  {cellVal || <span className="text-slate-400 font-normal italic">-</span>}
-                                </span>
+                                <div className="flex items-center gap-1.5 truncate max-w-[160px]">
+                                  <span className="truncate" title={cellVal || '-'}>
+                                    {cellVal || <span className="text-slate-400 font-normal italic">-</span>}
+                                  </span>
+                                  {cellWaUrl && (
+                                    <a
+                                      href={cellWaUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#25D366] hover:bg-[#20ba5a] text-white text-[9px] font-bold shadow-2xs shrink-0"
+                                      title={`WhatsApp ${farmer.fullName} (${cellVal})`}
+                                    >
+                                      <MessageCircle className="w-2.5 h-2.5 fill-current" />
+                                      <span>WA</span>
+                                    </a>
+                                  )}
+                                </div>
                                 <button
                                   onClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
                                   className="opacity-0 group-hover/cell:opacity-100 p-0.5 text-slate-400 hover:text-blue-600 rounded transition-opacity"
@@ -1100,6 +1472,17 @@ export const FarmerManager: React.FC = () => {
 
                       <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
+                          {farmerWaUrl && (
+                            <a
+                              href={farmerWaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-white bg-[#25D366] hover:bg-[#20ba5a] rounded-lg transition-all shadow-2xs hover:scale-105"
+                              title={`WhatsApp ${farmer.fullName} (${farmerContact})`}
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                            </a>
+                          )}
                           <button
                             onClick={() => setSelectedFarmerForDetail(farmer)}
                             className="p-1.5 text-slate-400 hover:text-[#256B3A] rounded-lg hover:bg-emerald-100/60 dark:hover:bg-slate-800"
@@ -1128,7 +1511,8 @@ export const FarmerManager: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
