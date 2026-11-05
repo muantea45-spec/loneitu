@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useBlog } from '../../context/BlogContext';
 import type { FarmerRecord } from '../../types/farmer';
 import { 
@@ -24,9 +24,15 @@ import {
   FileUp,
   Check,
   Columns,
-  Pencil
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
+
+const PAGE_SIZE = 10;
 
 export const FarmerManager: React.FC = () => {
   const { 
@@ -43,8 +49,14 @@ export const FarmerManager: React.FC = () => {
     uploadImage
   } = useBlog();
 
+  // View mode: Default is 'card' view as requested
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+
   // Search
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Pagination: 10 profiles per page
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,10 +68,10 @@ export const FarmerManager: React.FC = () => {
   // Global Add Column state
   const [newGlobalColumnName, setNewGlobalColumnName] = useState('');
 
-  // Header Column inline rename state
+  // Column rename state
   const [editingHeaderCol, setEditingHeaderCol] = useState<{ oldName: string; newName: string } | null>(null);
 
-  // Table cell inline edit state
+  // Table cell inline edit state (for table view)
   const [editingCell, setEditingCell] = useState<{ farmerId: string; column: string; value: string } | null>(null);
 
   // Excel Import state
@@ -89,6 +101,11 @@ export const FarmerManager: React.FC = () => {
     ])
   ).filter(c => Boolean(c) && !['name', 'farmer name', 'full name', 'hming', 'avatar', 'photo'].includes(c.toLowerCase().trim()));
 
+  // Reset page to 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   // Filtered farmers based on search
   const filteredFarmers = farmers.filter(farmer => {
     if (!searchQuery.trim()) return true;
@@ -100,10 +117,17 @@ export const FarmerManager: React.FC = () => {
     return matchName || matchData;
   });
 
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredFarmers.length / PAGE_SIZE));
+  const effectivePage = Math.min(currentPage, totalPages);
+  const paginatedFarmers = filteredFarmers.slice(
+    (effectivePage - 1) * PAGE_SIZE,
+    effectivePage * PAGE_SIZE
+  );
+
   // Handlers for Single Farmer Modal (Create / Edit)
   const handleOpenAddModal = () => {
     const initialData: Record<string, string | number | boolean> = {};
-    // Pre-populate any existing columns so user can fill them in
     allColumns.forEach(col => {
       initialData[col] = '';
     });
@@ -270,21 +294,36 @@ export const FarmerManager: React.FC = () => {
     }, 1800);
   };
 
+  // Pagination range generation
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, effectivePage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-[#143520] via-[#1d4c2e] to-[#256B3A] rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+      {/* Top Banner (Admin Only Header) */}
+      <div className="bg-gradient-to-r from-[#143520] via-[#1d4c2e] to-[#256B3A] rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold backdrop-blur-md mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold backdrop-blur-md mb-3 border border-white/20">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>Dynamic Column-Driven Registry</span>
+              <span>Admin Console Exclusive</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight">
               Registry of Farmers
             </h1>
             <p className="text-emerald-100 text-sm mt-1 max-w-xl">
-              Fully editable columns and fields: click column headers or cell values to rename or edit them anytime with real-time cloud sync.
+              Internal admin management system. Presenting profiles in Green Card View (10 profiles per page) with full column & field editing.
             </p>
           </div>
 
@@ -352,7 +391,7 @@ export const FarmerManager: React.FC = () => {
         </div>
 
         {/* Live Counters */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-white/15 text-white">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/15 text-white">
           <div>
             <span className="text-xs text-emerald-200 block">Total Records</span>
             <p className="text-2xl font-black mt-0.5">{farmers.length}</p>
@@ -362,22 +401,27 @@ export const FarmerManager: React.FC = () => {
             <p className="text-2xl font-black mt-0.5">{allColumns.length}</p>
           </div>
           <div>
-            <span className="text-xs text-emerald-200 block">Editing Controls</span>
-            <p className="text-2xl font-black mt-0.5">Editable Inline</p>
+            <span className="text-xs text-emerald-200 block">Current Page</span>
+            <p className="text-2xl font-black mt-0.5">{effectivePage} / {totalPages}</p>
+          </div>
+          <div>
+            <span className="text-xs text-emerald-200 block">Per Page View</span>
+            <p className="text-2xl font-black mt-0.5">10 Cards</p>
           </div>
         </div>
       </div>
 
-      {/* Search & Column Status Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-4 justify-between">
+      {/* Search, View Mode & Controls Toolbar */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-900/60 shadow-sm flex flex-col sm:flex-row items-center gap-4 justify-between">
+        {/* Search Input */}
         <div className="relative w-full sm:w-96">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#256B3A] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search across all columns and fields..."
-            className="w-full pl-10 pr-9 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#256B3A]"
+            className="w-full pl-10 pr-9 py-2 text-xs rounded-xl bg-emerald-50/50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#256B3A]"
           />
           {searchQuery && (
             <button
@@ -389,193 +433,375 @@ export const FarmerManager: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-          <span className="hidden sm:inline">
-            💡 <em>Tip: Double-click or click pencil on any column header or cell to edit directly.</em>
-          </span>
+        {/* View Switcher & Column Trigger */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-1 bg-emerald-50 dark:bg-slate-800 p-1 rounded-xl border border-emerald-200/70 dark:border-slate-700">
+            <button
+              onClick={() => setViewMode('card')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'card'
+                  ? 'bg-[#256B3A] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-[#256B3A]'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Green Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'table'
+                  ? 'bg-[#256B3A] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-[#256B3A]'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Table</span>
+            </button>
+          </div>
+
           <button
             onClick={() => {
               setNewGlobalColumnName('');
               setIsAddColumnModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-[#256B3A] dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#EBF1EA] dark:bg-emerald-950/60 text-[#143520] dark:text-emerald-300 hover:bg-emerald-100 transition-colors border border-emerald-200/60 dark:border-emerald-800/60"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 text-[#256B3A]" />
             <span>Add Column</span>
           </button>
         </div>
       </div>
 
-      {/* Dynamic Data Table: Editable Headers & Editable Cells */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-              <tr>
-                <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Farmer Profile</th>
-                {allColumns.map(col => (
-                  <th key={col} className="py-3 px-4 whitespace-nowrap group/header relative min-w-[140px]">
-                    {editingHeaderCol?.oldName === col ? (
-                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          autoFocus
-                          value={editingHeaderCol.newName}
-                          onChange={(e) => setEditingHeaderCol({ ...editingHeaderCol, newName: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveHeaderRename();
-                            if (e.key === 'Escape') setEditingHeaderCol(null);
-                          }}
-                          className="px-2 py-1 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-36 shadow-sm"
-                        />
-                        <button
-                          onClick={handleSaveHeaderRename}
-                          className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
-                          title="Save column name"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setEditingHeaderCol(null)}
-                          className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                          title="Cancel"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-2">
-                        <span 
-                          onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
-                          title="Double click or click edit icon to rename column"
-                          className="cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
-                        >
-                          {col}
-                        </span>
-                        <div className="opacity-0 group-hover/header:opacity-100 flex items-center gap-1 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingHeaderCol({ oldName: col, newName: col });
-                            }}
-                            className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
-                            title={`Rename column "${col}"`}
+      {/* Editable Column Headers Banner */}
+      {allColumns.length > 0 && (
+        <div className="bg-emerald-50/60 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200/60 dark:border-emerald-900/40">
+          <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#256B3A] dark:text-emerald-300 flex items-center gap-1.5">
+              <Columns className="w-3.5 h-3.5" />
+              <span>Active Registry Columns ({allColumns.length}):</span>
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Double-click or click pencil to rename column header globally
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {allColumns.map(col => (
+              <div 
+                key={col}
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 text-xs shadow-2xs"
+              >
+                {editingHeaderCol?.oldName === col ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={editingHeaderCol.newName}
+                      onChange={(e) => setEditingHeaderCol({ ...editingHeaderCol, newName: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveHeaderRename();
+                        if (e.key === 'Escape') setEditingHeaderCol(null);
+                      }}
+                      className="px-2 py-0.5 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none w-28"
+                    />
+                    <button
+                      onClick={handleSaveHeaderRename}
+                      className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
+                    >
+                      <Check className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => setEditingHeaderCol(null)}
+                      className="p-1 rounded bg-slate-200 text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span 
+                      onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                      className="font-bold text-[#143520] dark:text-emerald-200 cursor-pointer"
+                    >
+                      {col}
+                    </span>
+                    <button
+                      onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                      className="p-1 text-slate-400 hover:text-blue-600 rounded"
+                      title={`Rename column "${col}"`}
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete column "${col}" across all farmer records?`)) {
+                          deleteColumn(col);
+                        }
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                      title={`Delete column "${col}"`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MAIN VIEW CONTENT: GREEN CARDS (DEFAULT) */}
+      {viewMode === 'card' ? (
+        <div className="space-y-6">
+          {paginatedFarmers.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border-2 border-dashed border-emerald-200 dark:border-emerald-900 text-slate-400">
+              <p className="text-base font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {farmers.length === 0 ? 'No farmer profiles yet' : 'No records match your search'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {farmers.length === 0 ? 'Use "Excel Batch Import" or "+ Add Record" to add your first farmer.' : 'Try adjusting your search query.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {paginatedFarmers.map(farmer => (
+                <div
+                  key={farmer.id}
+                  className="group relative flex flex-col justify-between bg-gradient-to-b from-[#F3F8F4] to-white dark:from-[#0d2616] dark:to-[#0a1a0f] rounded-3xl border-2 border-emerald-200/90 dark:border-emerald-800/80 hover:border-[#256B3A] dark:hover:border-emerald-400 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                >
+                  {/* Decorative Forest Green Accent Top Strip */}
+                  <div className="h-2.5 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
+
+                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+                    {/* Card Top: Circular Avatar, Name & Actions */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3 pb-4 border-b border-emerald-100 dark:border-emerald-900/60">
+                        <div className="flex items-center gap-3.5">
+                          <div 
+                            className="relative cursor-pointer shrink-0"
+                            onClick={() => setSelectedFarmerForDetail(farmer)}
                           >
-                            <Pencil className="w-3 h-3" />
+                            <img
+                              src={farmer.avatar}
+                              alt={farmer.fullName}
+                              className="w-14 h-14 rounded-full object-cover ring-3 ring-[#256B3A]/30 dark:ring-emerald-400/30 shadow-md group-hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
+                              }}
+                            />
+                            <div 
+                              className="absolute -bottom-1 -right-1 bg-[#256B3A] text-white p-1 rounded-full shadow-xs ring-2 ring-white dark:ring-slate-900"
+                              title="Verified Record"
+                            >
+                              <ShieldCheck className="w-3 h-3 text-[#BFDC28]" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 
+                              onClick={() => setSelectedFarmerForDetail(farmer)}
+                              className="text-base font-black text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors line-clamp-1 cursor-pointer"
+                              title={farmer.fullName}
+                            >
+                              {farmer.fullName}
+                            </h3>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF1EA] dark:bg-emerald-950/80 text-[#143520] dark:text-emerald-300 border border-[#B7CEB4] dark:border-emerald-800/60 mt-1">
+                              Farmer Record
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Top Action Pills */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => setSelectedFarmerForDetail(farmer)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-[#256B3A] dark:text-slate-400 dark:hover:text-emerald-300 hover:bg-emerald-100/70 dark:hover:bg-emerald-950 transition-colors"
+                            title="View Full Details"
+                          >
+                            <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm(`Are you sure you want to delete the column "${col}" from all farmer records?`)) {
-                                deleteColumn(col);
+                            onClick={() => handleOpenEditModal(farmer)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                            title="Edit Fields & Values"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete record for ${farmer.fullName}?`)) {
+                                deleteFarmer(farmer.id);
                               }
                             }}
-                            className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
-                            title={`Delete column "${col}"`}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
+                            title="Delete Record"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                    )}
-                  </th>
-                ))}
-                <th className="py-3.5 px-4 text-right whitespace-nowrap">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredFarmers.length === 0 ? (
-                <tr>
-                  <td colSpan={Math.max(allColumns.length + 2, 3)} className="py-12 text-center text-slate-400">
-                    {farmers.length === 0 
-                      ? 'The Farmer Registry is currently empty. Use "Excel Batch Import" or "+ Add Column" to begin.'
-                      : 'No records match your search query.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredFarmers.map(farmer => (
-                  <tr 
-                    key={farmer.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedFarmerForDetail(farmer)}
-                  >
-                    {/* Centered Circular Avatar + Editable Name */}
-                    <td className="py-3.5 px-4 whitespace-nowrap group/cell" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={farmer.avatar}
-                          alt={farmer.fullName}
-                          onClick={() => setSelectedFarmerForDetail(farmer)}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-700 cursor-pointer hover:ring-[#256B3A]/40 transition-all shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
-                          }}
-                        />
 
-                        {editingCell?.farmerId === farmer.id && editingCell?.column === '__fullName__' ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="text"
-                              autoFocus
-                              value={editingCell.value}
-                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveCellEdit();
-                                if (e.key === 'Escape') setEditingCell(null);
-                              }}
-                              className="px-2 py-1 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-40 shadow-sm"
-                            />
-                            <button
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={handleSaveCellEdit}
-                              className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => setEditingCell(null)}
-                              className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                      {/* Card Body: Dynamic Columns Key-Value Grid in Green Aesthetic */}
+                      <div className="py-4">
+                        {allColumns.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic text-center py-4">No additional columns uploaded</p>
                         ) : (
-                          <div 
-                            className="flex items-center gap-2"
-                            onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: '__fullName__', value: farmer.fullName })}
-                          >
-                            <span 
-                              onClick={() => setSelectedFarmerForDetail(farmer)}
-                              className="font-bold text-slate-900 dark:text-white hover:text-[#256B3A] dark:hover:text-emerald-400 transition-colors"
-                            >
-                              {farmer.fullName}
-                            </span>
-                            <button
-                              onClick={() => setEditingCell({ farmerId: farmer.id, column: '__fullName__', value: farmer.fullName })}
-                              className="opacity-0 group-hover/cell:opacity-100 p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-opacity"
-                              title="Edit farmer name"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {allColumns.map(col => {
+                              const val = farmer.data?.[col];
+                              return (
+                                <div
+                                  key={col}
+                                  className="p-2.5 rounded-2xl bg-white/90 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs flex flex-col justify-between"
+                                >
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#256B3A] dark:text-emerald-400 truncate mb-0.5">
+                                    {col}
+                                  </span>
+                                  <span 
+                                    className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs" 
+                                    title={String(val ?? '')}
+                                  >
+                                    {val !== undefined && val !== '' ? (
+                                      String(val)
+                                    ) : (
+                                      <span className="text-slate-400 font-normal italic">-</span>
+                                    )}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        {Object.keys(farmer.data || {}).length} Fields Uploaded
+                      </span>
+
+                      <button
+                        onClick={() => handleOpenEditModal(farmer)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-[#256B3A] text-white hover:bg-[#1b4d2a] transition-all shadow-xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit Profile</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* TABLE VIEW (ALTERNATIVE SPREADSHEET VIEW) */
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#EBF1EA] dark:bg-slate-800 text-[#143520] dark:text-slate-400 font-bold uppercase tracking-wider border-b border-emerald-200 dark:border-slate-800">
+                <tr>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Farmer Profile</th>
+                  {allColumns.map(col => (
+                    <th key={col} className="py-3 px-4 whitespace-nowrap group/header relative min-w-[140px]">
+                      {editingHeaderCol?.oldName === col ? (
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editingHeaderCol.newName}
+                            onChange={(e) => setEditingHeaderCol({ ...editingHeaderCol, newName: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveHeaderRename();
+                              if (e.key === 'Escape') setEditingHeaderCol(null);
+                            }}
+                            className="px-2 py-1 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-36 shadow-sm"
+                          />
+                          <button
+                            onClick={handleSaveHeaderRename}
+                            className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
+                            title="Save column name"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setEditingHeaderCol(null)}
+                            className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                            title="Cancel"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <span 
+                            onDoubleClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                            title="Double click to rename column"
+                            className="cursor-pointer hover:text-[#256B3A] transition-colors"
+                          >
+                            {col}
+                          </span>
+                          <div className="opacity-0 group-hover/header:opacity-100 flex items-center gap-1 transition-opacity">
+                            <button
+                              onClick={() => setEditingHeaderCol({ oldName: col, newName: col })}
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded"
+                              title={`Rename column "${col}"`}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Delete column "${col}" from all farmer records?`)) {
+                                  deleteColumn(col);
+                                }
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                              title={`Delete column "${col}"`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </th>
+                  ))}
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {paginatedFarmers.length === 0 ? (
+                  <tr>
+                    <td colSpan={Math.max(allColumns.length + 2, 3)} className="py-12 text-center text-slate-400">
+                      {farmers.length === 0 
+                        ? 'The Farmer Registry is empty. Use "Excel Batch Import" to begin.'
+                        : 'No records match your search query.'}
                     </td>
+                  </tr>
+                ) : (
+                  paginatedFarmers.map(farmer => (
+                    <tr 
+                      key={farmer.id}
+                      className="hover:bg-emerald-50/40 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedFarmerForDetail(farmer)}
+                    >
+                      <td className="py-3.5 px-4 whitespace-nowrap group/cell" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={farmer.avatar}
+                            alt={farmer.fullName}
+                            onClick={() => setSelectedFarmerForDetail(farmer)}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/20 cursor-pointer hover:ring-[#256B3A] transition-all shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
+                            }}
+                          />
 
-                    {/* Dynamic Editable Cells */}
-                    {allColumns.map(col => {
-                      const isEditing = editingCell?.farmerId === farmer.id && editingCell?.column === col;
-                      const cellVal = farmer.data && farmer.data[col] !== undefined ? String(farmer.data[col]) : '';
-
-                      return (
-                        <td
-                          key={col}
-                          className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300 group/cell relative"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isEditing ? (
+                          {editingCell?.farmerId === farmer.id && editingCell?.column === '__fullName__' ? (
                             <div className="flex items-center gap-1">
                               <input
                                 type="text"
@@ -586,13 +812,12 @@ export const FarmerManager: React.FC = () => {
                                   if (e.key === 'Enter') handleSaveCellEdit();
                                   if (e.key === 'Escape') setEditingCell(null);
                                 }}
-                                className="px-2 py-1 text-xs rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-36 shadow-sm"
+                                className="px-2 py-1 text-xs font-bold rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-40 shadow-sm"
                               />
                               <button
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={handleSaveCellEdit}
                                 className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
-                                title="Save"
                               >
                                 <Check className="w-3.5 h-3.5" />
                               </button>
@@ -600,69 +825,172 @@ export const FarmerManager: React.FC = () => {
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => setEditingCell(null)}
                                 className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                                title="Cancel"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ) : (
                             <div 
-                              className="flex items-center justify-between gap-2 min-h-[24px]"
-                              onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
+                              className="flex items-center gap-2"
+                              onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: '__fullName__', value: farmer.fullName })}
                             >
-                              <span className="truncate max-w-[180px]" title={cellVal || '-'}>
-                                {cellVal || <span className="text-slate-300 dark:text-slate-600 italic">Empty</span>}
+                              <span 
+                                onClick={() => setSelectedFarmerForDetail(farmer)}
+                                className="font-bold text-slate-900 dark:text-white hover:text-[#256B3A] dark:hover:text-emerald-400 transition-colors"
+                              >
+                                {farmer.fullName}
                               </span>
                               <button
-                                onClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
-                                className="opacity-0 group-hover/cell:opacity-100 p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-opacity"
-                                title="Edit cell value"
+                                onClick={() => setEditingCell({ farmerId: farmer.id, column: '__fullName__', value: farmer.fullName })}
+                                className="opacity-0 group-hover/cell:opacity-100 p-1 text-slate-400 hover:text-blue-600 rounded transition-opacity"
+                                title="Edit farmer name"
                               >
                                 <Pencil className="w-3 h-3" />
                               </button>
                             </div>
                           )}
-                        </td>
-                      );
-                    })}
+                        </div>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => setSelectedFarmerForDetail(farmer)}
-                          className="p-1.5 text-slate-400 hover:text-[#256B3A] rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                          title="View Profile"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEditModal(farmer)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                          title="Edit All Fields"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Delete record for ${farmer.fullName}?`)) {
-                              deleteFarmer(farmer.id);
-                            }
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                          title="Delete Record"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      {allColumns.map(col => {
+                        const isEditing = editingCell?.farmerId === farmer.id && editingCell?.column === col;
+                        const cellVal = farmer.data && farmer.data[col] !== undefined ? String(farmer.data[col]) : '';
+
+                        return (
+                          <td
+                            key={col}
+                            className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300 group/cell relative"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editingCell.value}
+                                  onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveCellEdit();
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                  className="px-2 py-1 text-xs rounded-lg border border-[#256B3A] bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none w-36 shadow-sm"
+                                />
+                                <button
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={handleSaveCellEdit}
+                                  className="p-1 rounded bg-[#256B3A] text-white hover:bg-[#1b4d2a]"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => setEditingCell(null)}
+                                  className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div 
+                                className="flex items-center justify-between gap-2 min-h-[24px]"
+                                onDoubleClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
+                              >
+                                <span className="truncate max-w-[180px]" title={cellVal || '-'}>
+                                  {cellVal || <span className="text-slate-300 dark:text-slate-600 italic">Empty</span>}
+                                </span>
+                                <button
+                                  onClick={() => setEditingCell({ farmerId: farmer.id, column: col, value: cellVal })}
+                                  className="opacity-0 group-hover/cell:opacity-100 p-1 text-slate-400 hover:text-blue-600 rounded transition-opacity"
+                                  title="Edit cell value"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setSelectedFarmerForDetail(farmer)}
+                            className="p-1.5 text-slate-400 hover:text-[#256B3A] rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            title="View Profile"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditModal(farmer)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            title="Edit All Fields"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete record for ${farmer.fullName}?`)) {
+                                deleteFarmer(farmer.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            title="Delete Record"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* PAGINATION CONTROLS: Display up to 10 profiles per page with Next / Previous & Numbers */}
+      {filteredFarmers.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60 shadow-sm">
+          <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+            Showing <strong>{(effectivePage - 1) * PAGE_SIZE + 1}</strong> to <strong>{Math.min(effectivePage * PAGE_SIZE, filteredFarmers.length)}</strong> of <strong>{filteredFarmers.length}</strong> farmers (10 per page)
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={effectivePage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-slate-800 text-[#143520] dark:text-emerald-300 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            {getPageNumbers().map(num => (
+              <button
+                key={num}
+                onClick={() => setCurrentPage(num)}
+                className={`w-8 h-8 text-xs font-bold rounded-xl transition-all ${
+                  effectivePage === num
+                    ? 'bg-[#256B3A] text-white shadow-md'
+                    : 'border border-emerald-200/80 dark:border-emerald-800/80 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+
+            <button
+              disabled={effectivePage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-slate-800 text-[#143520] dark:text-emerald-300 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* GLOBAL ADD COLUMN MODAL */}
       {isAddColumnModalOpen && (
@@ -752,7 +1080,6 @@ export const FarmerManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Template Download Prompt */}
             <div className="flex items-center justify-between p-3.5 mb-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs">
               <div>
                 <p className="font-bold text-slate-800 dark:text-slate-200">Sample Excel Template</p>
@@ -767,7 +1094,6 @@ export const FarmerManager: React.FC = () => {
               </button>
             </div>
 
-            {/* Drag and Drop Zone */}
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
@@ -795,14 +1121,12 @@ export const FarmerManager: React.FC = () => {
               <p className="text-xs text-slate-400 mt-1">Accepts any column structure without pre-defined restrictions</p>
             </div>
 
-            {/* Parsing State */}
             {isParsing && (
               <div className="mt-4 text-center text-xs text-[#256B3A] font-semibold animate-pulse">
                 Reading columns and parsing rows...
               </div>
             )}
 
-            {/* Parse Error */}
             {parseError && (
               <div className="mt-4 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -810,7 +1134,6 @@ export const FarmerManager: React.FC = () => {
               </div>
             )}
 
-            {/* Parse Success Preview */}
             {parseResult && (
               <div className="mt-4 space-y-3">
                 <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs">
@@ -842,7 +1165,6 @@ export const FarmerManager: React.FC = () => {
               </div>
             )}
 
-            {/* Actions */}
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -864,7 +1186,7 @@ export const FarmerManager: React.FC = () => {
         </div>
       )}
 
-      {/* CREATE / EDIT FARMER RECORD MODAL WITH EDITABLE FIELD NAMES & VALUES */}
+      {/* CREATE / EDIT FARMER RECORD MODAL */}
       {isEditModalOpen && editingFarmer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 md:p-8 text-slate-800 dark:text-slate-100">
@@ -884,9 +1206,9 @@ export const FarmerManager: React.FC = () => {
 
             <form onSubmit={handleSaveFarmer} className="space-y-6">
               {/* Profile Image & Avatar Upload */}
-              <div className="flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col items-center justify-center p-4 bg-emerald-50/50 dark:bg-slate-800/40 rounded-2xl border border-emerald-100 dark:border-slate-800">
                 <div className="relative group">
-                  <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/20 shadow-md">
+                  <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md">
                     <img
                       src={editingFarmer.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400'}
                       alt="Avatar preview"
@@ -933,7 +1255,7 @@ export const FarmerManager: React.FC = () => {
                 />
               </div>
 
-              {/* Dynamic Uploaded Fields (Editable Field Key & Editable Value) */}
+              {/* Dynamic Uploaded Fields */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -947,10 +1269,10 @@ export const FarmerManager: React.FC = () => {
                 {editingFarmer.data && Object.keys(editingFarmer.data).length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {Object.entries(editingFarmer.data).map(([col, val]) => (
-                      <div key={col} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70 space-y-2">
+                      <div key={col} className="p-3 rounded-xl bg-emerald-50/50 dark:bg-slate-800/60 border border-emerald-200/70 dark:border-slate-700/70 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1 w-full">
-                            <span className="text-[10px] font-bold text-slate-400 shrink-0">Field:</span>
+                            <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 shrink-0">Field:</span>
                             <input
                               type="text"
                               value={col}
@@ -988,8 +1310,8 @@ export const FarmerManager: React.FC = () => {
               </div>
 
               {/* Add New Dynamic Column */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700">
-                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-2">
+              <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-slate-800/60 border border-emerald-200/60 dark:border-slate-700">
+                <span className="text-[11px] font-bold text-[#143520] dark:text-emerald-300 block mb-2">
                   + Add Another Field to this Record
                 </span>
                 <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sprout, Search, Menu, Users } from 'lucide-react';
+import { Sprout, Search, Menu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -47,29 +47,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </Link>
 
-        {/* Center / Navigation Links */}
-        <nav className="hidden md:flex items-center gap-2">
-          <Link
-            to="/farmers"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs uppercase tracking-wider font-extrabold text-[#143520] hover:text-white bg-[#F2F7F3] hover:bg-[#143520] border border-[#B7CEB4] hover:border-[#143520] transition-all shadow-2xs group"
-          >
-            <Users className="w-4 h-4 text-[#256B3A] group-hover:text-[#BFDC28] transition-colors" />
-            <span>FARMER REGISTRY</span>
-          </Link>
-        </nav>
-
         {/* Right Action Icons & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mobile Quick Link for Farmer Registry */}
-          <Link
-            to="/farmers"
-            className="md:hidden flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider text-[#143520] bg-[#F2F7F3] border border-[#B7CEB4]"
-            title="Farmer Registry Directory"
-          >
-            <Users className="w-3.5 h-3.5 text-[#256B3A]" />
-            <span>FARMERS</span>
-          </Link>
-
           {/* Search Trigger */}
           <button
             onClick={onOpenSearch}
