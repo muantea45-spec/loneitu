@@ -4,6 +4,14 @@
  */
 const BACKEND_URL = 'https://loneitu.ddvktp.workers.dev/api/db';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Expose-Headers': 'X-Database-Updated-At, Content-Length, Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
+
 export const onRequestGet: PagesFunction = async (context) => {
   try {
     const env = context.env as any;
@@ -16,16 +24,19 @@ export const onRequestGet: PagesFunction = async (context) => {
         let meta = await env.LONEITU_KV.get('loneitu_global_db_meta', 'json');
         if (!meta) {
           const data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+          const featured = (data?.articles || []).find((a: any) => a.isFeatured);
           meta = {
             updatedAt: data?.updatedAt || new Date().toISOString(),
+            featuredId: featured?.id || null,
             cardCount: data?.aboutData?.customCardsSection?.cards?.length || 0,
+            articlesCount: data?.articles?.length || 0,
             timestamp: Date.now(),
           };
         }
         return new Response(JSON.stringify({ success: true, meta }), {
           headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            ...CORS_HEADERS,
             'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
             Pragma: 'no-cache',
             Expires: '0',
@@ -47,7 +58,7 @@ export const onRequestGet: PagesFunction = async (context) => {
             {
               headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
+                ...CORS_HEADERS,
                 'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
                 Pragma: 'no-cache',
                 Expires: '0',
@@ -60,7 +71,7 @@ export const onRequestGet: PagesFunction = async (context) => {
         return new Response(JSON.stringify({ success: true, data }), {
           headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            ...CORS_HEADERS,
             'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
             Pragma: 'no-cache',
             Expires: '0',
@@ -81,7 +92,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     const text = await res.text();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      ...CORS_HEADERS,
       'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
       Pragma: 'no-cache',
       Expires: '0',
@@ -98,7 +109,7 @@ export const onRequestGet: PagesFunction = async (context) => {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...CORS_HEADERS,
         'Cache-Control': 'no-store',
       },
     });
@@ -113,7 +124,6 @@ export const onRequestPost: PagesFunction = async (context) => {
     const authHeader = context.request.headers.get('authorization') || '';
 
     const env = context.env as any;
-    let kvSavedLocally = false;
     let savedUpdatedAt = new Date().toISOString();
 
     if (env?.LONEITU_KV) {
@@ -133,16 +143,17 @@ export const onRequestPost: PagesFunction = async (context) => {
         }
 
         await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(toSave));
+        const featured = (toSave.articles || []).find((a: any) => a.isFeatured);
         await env.LONEITU_KV.put(
           'loneitu_global_db_meta',
           JSON.stringify({
             updatedAt: savedUpdatedAt,
             timestamp: Date.now(),
+            featuredId: featured?.id || null,
             cardCount: toSave.aboutData?.customCardsSection?.cards?.length || 0,
             articlesCount: toSave.articles?.length || 0,
           })
         );
-        kvSavedLocally = true;
       } catch (kvErr) {
         console.warn('Direct KV put error, falling back to backend URL', kvErr);
       }
@@ -150,7 +161,6 @@ export const onRequestPost: PagesFunction = async (context) => {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
     };
     if (adminKey) headers['x-admin-key'] = adminKey;
     if (adminEmail) headers['x-admin-email'] = adminEmail;
@@ -166,7 +176,7 @@ export const onRequestPost: PagesFunction = async (context) => {
       status: res.status,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...CORS_HEADERS,
         'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
         Pragma: 'no-cache',
         'X-Database-Updated-At': savedUpdatedAt,
@@ -177,7 +187,7 @@ export const onRequestPost: PagesFunction = async (context) => {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...CORS_HEADERS,
         'Cache-Control': 'no-store',
       },
     });
@@ -186,10 +196,7 @@ export const onRequestPost: PagesFunction = async (context) => {
 
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Key, X-Admin-Email',
-    },
+    status: 204,
+    headers: CORS_HEADERS,
   });
 };

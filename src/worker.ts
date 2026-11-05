@@ -31,17 +31,19 @@ function stripMarkdown(text: string): string {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Key, X-Admin-Email',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Expose-Headers': 'X-Database-Updated-At, Content-Length, Content-Type',
+  'Access-Control-Max-Age': '86400',
 };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // 1. CORS Preflight
+    // 1. CORS Preflight: Allow any origins and headers
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
     // 2. Database API: /api/db & /api/db/version
@@ -184,11 +186,13 @@ export default {
           if (env.LONEITU_KV) {
             await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(fullDataToSave));
             // Ultra-lightweight metadata record for instant, low-bandwidth polling
+            const featuredArticle = (fullDataToSave.articles || []).find((a: any) => a.isFeatured);
             await env.LONEITU_KV.put(
               'loneitu_global_db_meta',
               JSON.stringify({
                 updatedAt: fullDataToSave.updatedAt,
                 timestamp: Date.now(),
+                featuredId: featuredArticle?.id || null,
                 cardCount: fullDataToSave.aboutData?.customCardsSection?.cards?.length || 0,
                 articlesCount: fullDataToSave.articles?.length || 0,
               })

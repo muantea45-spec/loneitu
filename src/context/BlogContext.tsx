@@ -134,17 +134,13 @@ function broadcastLocalChange(type: string, payload: any) {
   }
 }
 
-async function fetchDatabaseMeta(): Promise<{ updatedAt?: string; cardCount?: number; timestamp?: number } | null> {
+async function fetchDatabaseMeta(): Promise<{ updatedAt?: string; featuredId?: string | null; cardCount?: number; timestamp?: number } | null> {
   const t = Date.now();
   for (const endpoint of CLOUD_API_ENDPOINTS) {
     try {
       const url = `${endpoint}?meta=1&_cb=${t}`;
       const res = await fetch(url, {
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
-        },
       });
       if (res.ok) {
         const json = await res.json();
@@ -166,10 +162,6 @@ async function fetchRemoteDatabase(): Promise<any> {
       const url = `${endpoint}?_cb=${t}`;
       const res = await fetch(url, {
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        },
       });
       if (res.ok) {
         const json = await res.json();
@@ -193,8 +185,6 @@ async function saveRemoteDatabase(payload: any, authInfo?: { key?: string; email
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
   };
   if (key) headers['X-Admin-Key'] = key;
   if (email) headers['X-Admin-Email'] = email;
@@ -609,10 +599,15 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (Array.isArray(cloudData.articles) && cloudData.articles.length > 0) {
-        setArticles(cloudData.articles);
-        try {
-          localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(cloudData.articles));
-        } catch {}
+        const newArticlesStr = JSON.stringify(cloudData.articles);
+        const oldArticlesStr = JSON.stringify(latestDbStateRef.current.articles);
+        if (newArticlesStr !== oldArticlesStr) {
+          latestDbStateRef.current.articles = cloudData.articles;
+          setArticles(cloudData.articles);
+          try {
+            localStorage.setItem(STORAGE_KEYS.ARTICLES, newArticlesStr);
+          } catch {}
+        }
       }
 
       if (Array.isArray(cloudData.categories) && cloudData.categories.length > 0) {
@@ -1063,7 +1058,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       comments: [],
     };
 
-    const updatedArticles = [newArticle, ...articles];
+    let baseArticles = articles;
+    if (data.isFeatured) {
+      baseArticles = articles.map(a => (a.isFeatured ? { ...a, isFeatured: false } : a));
+    }
+    const updatedArticles = [newArticle, ...baseArticles];
     lastMutationTimeRef.current = Date.now();
     latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
@@ -1077,7 +1076,12 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateArticle = (id: string, updates: Partial<Article>) => {
     const updatedArticles = articles.map(art => {
-      if (art.id !== id) return art;
+      if (art.id !== id) {
+        if (updates.isFeatured && art.isFeatured) {
+          return { ...art, isFeatured: false };
+        }
+        return art;
+      }
       const updated = { ...art, ...updates, updatedAt: new Date().toISOString() };
       if (updates.content && !updates.readingTimeMinutes) {
         updated.readingTimeMinutes = calculateReadingTime(updates.content);
@@ -1107,9 +1111,18 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const toggleFeatured = (id: string) => {
-    const updatedArticles = articles.map(a =>
-      a.id === id ? { ...a, isFeatured: !a.isFeatured } : a
-    );
+    const target = articles.find(a => a.id === id);
+    const willBeFeatured = target ? !target.isFeatured : false;
+    const updatedArticles = articles.map(a => {
+      if (a.id === id) {
+        return { ...a, isFeatured: willBeFeatured };
+      }
+      // If marking this article as featured lead, un-feature any previous featured lead
+      if (willBeFeatured && a.isFeatured) {
+        return { ...a, isFeatured: false };
+      }
+      return a;
+    });
     lastMutationTimeRef.current = Date.now();
     latestDbStateRef.current.articles = updatedArticles;
     setArticles(updatedArticles);
