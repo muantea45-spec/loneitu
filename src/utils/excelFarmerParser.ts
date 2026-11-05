@@ -196,31 +196,51 @@ export function downloadSampleFarmerTemplate(): void {
  * Exports current farmer records dynamically using only the columns that exist.
  */
 export function exportFarmersToExcel(farmers: FarmerRecord[]): void {
-  if (farmers.length === 0) return;
+  if (farmers.length === 0) {
+    alert('No farmer records available to export.');
+    return;
+  }
 
   // Collect all unique column headers present across all records
-  const headerSet = new Set<string>();
+  const dynamicColsSet = new Set<string>();
   farmers.forEach(f => {
     if (f.columns) {
-      f.columns.forEach(c => headerSet.add(c));
+      f.columns.forEach(c => dynamicColsSet.add(c));
     }
     if (f.data) {
-      Object.keys(f.data).forEach(k => headerSet.add(k));
+      Object.keys(f.data).forEach(k => dynamicColsSet.add(k));
     }
   });
 
-  const headers = Array.from(headerSet);
+  // Filter out any duplicated name or avatar columns from dynamic set
+  const dynamicCols = Array.from(dynamicColsSet).filter(
+    c => !['name', 'farmer name', 'full name', 'hming', 'avatar', 'photo'].includes(c.toLowerCase().trim())
+  );
 
-  const rows = farmers.map(farmer => {
-    return headers.map(h => {
-      const val = farmer.data ? farmer.data[h] : '';
-      return val !== undefined && val !== null ? val : '';
+  // Clean structured headers: Sl No, Farmer Name, followed by all uploaded attributes
+  const headers = ['Sl No', 'Farmer Name', ...dynamicCols];
+
+  const rows = farmers.map((farmer, idx) => {
+    const row: (string | number | boolean)[] = [
+      idx + 1,
+      farmer.fullName || ''
+    ];
+
+    dynamicCols.forEach(col => {
+      const val = farmer.data ? farmer.data[col] : '';
+      row.push(val !== undefined && val !== null ? val : '');
     });
+
+    return row;
   });
 
   const wsData = [headers, ...rows];
   const worksheet = XLSX.utils.aoa_to_sheet(wsData);
-  worksheet['!cols'] = headers.map(h => ({ wch: Math.max(h.length + 3, 16) }));
+  worksheet['!cols'] = headers.map((h, i) => {
+    if (i === 0) return { wch: 8 };
+    if (i === 1) return { wch: 26 };
+    return { wch: Math.max(h.length + 4, 18) };
+  });
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Farmer Registry');

@@ -7,14 +7,18 @@ import {
   exportFarmersToExcel,
   type ParseResult 
 } from '../../utils/excelFarmerParser';
+import { exportFarmersToPdf } from '../../utils/pdfFarmerExporter';
+import { downloadFarmerBackup, parseFarmerBackupFile } from '../../utils/farmerBackupUtils';
 import { 
   UploadCloud, 
   FileSpreadsheet, 
+  FileText,
   Plus, 
   Search, 
   Trash2, 
   Edit3, 
   Download, 
+  Upload,
   CheckCircle2, 
   AlertCircle, 
   X, 
@@ -28,7 +32,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
-  List
+  List,
+  Database
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 
@@ -46,10 +51,11 @@ export const FarmerManager: React.FC = () => {
     renameColumn,
     deleteColumn,
     addColumn,
-    uploadImage
+    uploadImage,
+    pushToCloudDatabase
   } = useBlog();
 
-  // View mode: Default is 'card' view as requested
+  // View mode: Default is 'card' view
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
   // Search
@@ -62,8 +68,20 @@ export const FarmerManager: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [selectedFarmerForDetail, setSelectedFarmerForDetail] = useState<FarmerRecord | null>(null);
   const [editingFarmer, setEditingFarmer] = useState<Partial<FarmerRecord> | null>(null);
+
+  // Backup restore state
+  const [pendingRestore, setPendingRestore] = useState<{
+    farmers: FarmerRecord[];
+    farmerCustomFields: any[];
+    totalRecords: number;
+  } | null>(null);
+  const [restoreMode, setRestoreMode] = useState<'replace' | 'merge'>('replace');
+
+  // Status and feedback messages
+  const [statusFeedback, setStatusFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Global Add Column state
   const [newGlobalColumnName, setNewGlobalColumnName] = useState('');
@@ -85,9 +103,18 @@ export const FarmerManager: React.FC = () => {
   const [newColumnName, setNewColumnName] = useState('');
   const [newColumnVal, setNewColumnVal] = useState('');
 
-  // Image upload handling
+  // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto clear feedback banner after 4 seconds
+  useEffect(() => {
+    if (statusFeedback) {
+      const timer = setTimeout(() => setStatusFeedback(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusFeedback]);
 
   // Determine all distinct uploaded columns across all records + custom fields
   const allColumns = Array.from(
@@ -160,8 +187,10 @@ export const FarmerManager: React.FC = () => {
 
     if (editingFarmer.id) {
       updateFarmer(editingFarmer.id, editingFarmer);
+      setStatusFeedback({ type: 'success', message: `Updated profile for "${editingFarmer.fullName}"` });
     } else {
       addFarmer(editingFarmer as any);
+      setStatusFeedback({ type: 'success', message: `Added new farmer "${editingFarmer.fullName}"` });
     }
     setIsEditModalOpen(false);
     setEditingFarmer(null);
@@ -236,6 +265,7 @@ export const FarmerManager: React.FC = () => {
     const trimmed = editingHeaderCol.newName.trim();
     if (trimmed && trimmed !== editingHeaderCol.oldName) {
       renameColumn(editingHeaderCol.oldName, trimmed);
+      setStatusFeedback({ type: 'success', message: `Renamed column "${editingHeaderCol.oldName}" to "${trimmed}"` });
     }
     setEditingHeaderCol(null);
   };
@@ -286,12 +316,84 @@ export const FarmerManager: React.FC = () => {
     if (!parseResult || parseResult.records.length === 0) return;
     batchImportFarmers(parseResult.records);
     setImportSuccessMsg(`Successfully imported ${parseResult.records.length} records with columns: ${parseResult.detectedHeaders.join(', ')}`);
+    setStatusFeedback({ type: 'success', message: `Imported ${parseResult.records.length} records from Excel.` });
     setTimeout(() => {
       setImportSuccessMsg(null);
       setIsImportModalOpen(false);
       setImportFile(null);
       setParseResult(null);
     }, 1800);
+  };
+
+  // Export handlers
+  const handleExportExcel = () => {
+    if (farmers.length === 0) {
+      setStatusFeedback({ type: 'error', message: 'No farmer records to export.' });
+      return;
+    }
+    exportFarmersToExcel(farmers);
+    setStatusFeedback({ type: 'success', message: `Exported ${farmers.length} records to Excel (.xlsx)` });
+  };
+
+  const handleExportPdf = () => {
+    if (farmers.length === 0) {
+      setStatusFeedback({ type: 'error', message: 'No farmer records to export.' });
+      return;
+    }
+    exportFarmersToPdf(farmers, allColumns);
+    setStatusFeedback({ type: 'success', message: `Exported ${farmers.length} records to PDF document (.pdf)` });
+  };
+
+  const handleDownloadBackup = () => {
+    if (farmers.length === 0) {
+      setStatusFeedback({ type: 'error', message: 'No farmer records available to backup.' });
+      return;
+    }
+    downloadFarmerBackup(farmers, farmerCustomFields, allColumns);
+    setStatusFeedback({ type: 'success', message: `Farmer Registry snapshot backup downloaded (.json)` });
+  };
+
+  // Backup restore file upload handling
+  const handleBackupFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const parsed = await parseFarmerBackupFile(file);
+      setPendingRestore(parsed);
+      setIsRestoreModalOpen(true);
+    } catch (err: any) {
+      setStatusFeedback({ type: 'error', message: err?.message || 'Failed to read backup file.' });
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleConfirmRestore = () => {
+    if (!pendingRestore) return;
+
+    if (restoreMode === 'replace') {
+      // Overwrite all farmers with backup
+      try {
+        localStorage.setItem('loneitu_mizo_farmers_v2', JSON.stringify(pendingRestore.farmers));
+        if (pendingRestore.farmerCustomFields) {
+          localStorage.setItem('loneitu_farmer_custom_fields_v1', JSON.stringify(pendingRestore.farmerCustomFields));
+        }
+      } catch {}
+      pushToCloudDatabase({
+        farmers: pendingRestore.farmers,
+        farmerCustomFields: pendingRestore.farmerCustomFields || []
+      });
+      // Also update local state by wiping and re-adding or triggering reload
+      window.location.reload();
+    } else {
+      // Merge with existing
+      batchImportFarmers(pendingRestore.farmers);
+      setStatusFeedback({ type: 'success', message: `Merged ${pendingRestore.farmers.length} backup records into registry.` });
+    }
+
+    setIsRestoreModalOpen(false);
+    setPendingRestore(null);
   };
 
   // Pagination range generation
@@ -323,12 +425,13 @@ export const FarmerManager: React.FC = () => {
               Registry of Farmers
             </h1>
             <p className="text-emerald-100 text-sm mt-1 max-w-xl">
-              Internal admin management system. Presenting profiles in Green Card View (10 profiles per page) with full column & field editing.
+              Internal admin management system. Presenting profiles in Green Card View (10 profiles per page) with full column editing, PDF/Excel export, and backup/restore.
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Quick Action Buttons Toolbar */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Import Group */}
             <button
               onClick={() => {
                 setImportFile(null);
@@ -336,51 +439,99 @@ export const FarmerManager: React.FC = () => {
                 setParseError(null);
                 setIsImportModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white text-[#143520] hover:bg-emerald-50 transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-[#143520] hover:bg-emerald-50 transition-all shadow-md active:scale-95"
+              title="Import spreadsheet (.xlsx / .xls)"
             >
               <FileUp className="w-4 h-4 text-[#256B3A]" />
-              <span>Excel Batch Import</span>
+              <span>Excel Import</span>
             </button>
 
+            {/* Add Column */}
             <button
               onClick={() => {
                 setNewGlobalColumnName('');
                 setIsAddColumnModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md active:scale-95"
               title="Add a new column header across all farmer records"
             >
               <Columns className="w-4 h-4" />
               <span>+ Add Column</span>
             </button>
 
+            {/* Add Record */}
             <button
               onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#C9A84C] hover:bg-[#b8953c] text-white transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[#C9A84C] hover:bg-[#b8953c] text-white transition-all shadow-md active:scale-95"
+              title="Manually add a farmer record"
             >
               <Plus className="w-4 h-4" />
               <span>Add Record</span>
             </button>
 
+            {/* Export & Backup Section */}
             {farmers.length > 0 && (
-              <button
-                onClick={() => exportFarmersToExcel(farmers)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20"
-                title="Export all current farmer records to Excel"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export (.xlsx)</span>
-              </button>
+              <>
+                {/* Export PDF Button */}
+                <button
+                  onClick={handleExportPdf}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/25 hover:bg-rose-500/35 text-white transition-all border border-rose-300/30 shadow-xs active:scale-95"
+                  title="Export official printable PDF of all farmer records"
+                >
+                  <FileText className="w-4 h-4 text-rose-300" />
+                  <span>Export PDF</span>
+                </button>
+
+                {/* Export Excel Button */}
+                <button
+                  onClick={handleExportExcel}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/25 hover:bg-emerald-500/35 text-white transition-all border border-emerald-300/30 shadow-xs active:scale-95"
+                  title="Export all current farmer records to Excel (.xlsx)"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
+                  <span>Export Excel</span>
+                </button>
+
+                {/* Backup JSON Button */}
+                <button
+                  onClick={handleDownloadBackup}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-blue-500/25 hover:bg-blue-500/35 text-white transition-all border border-blue-300/30 shadow-xs active:scale-95"
+                  title="Download complete registry snapshot backup (.json)"
+                >
+                  <Database className="w-4 h-4 text-blue-300" />
+                  <span>Backup (.json)</span>
+                </button>
+              </>
             )}
 
+            {/* Restore Backup Button */}
+            <button
+              onClick={() => backupFileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 active:scale-95"
+              title="Restore registry from backup JSON file"
+            >
+              <Upload className="w-4 h-4 text-emerald-300" />
+              <span>Restore Backup</span>
+            </button>
+
+            <input
+              ref={backupFileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleBackupFileSelect}
+            />
+
+            {/* Wipe All Button */}
             {farmers.length > 0 && (
               <button
                 onClick={() => {
                   if (window.confirm(`Are you sure you want to completely wipe all ${farmers.length} farmer registry records? This will delete all records immediately.`)) {
                     wipeAllFarmers();
+                    setStatusFeedback({ type: 'success', message: 'Wiped all farmer records from registry.' });
                   }
                 }}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-all cursor-pointer"
                 title="Wipe all farmer registry records completely"
               >
                 <Trash2 className="w-4 h-4 text-rose-300" />
@@ -410,6 +561,27 @@ export const FarmerManager: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Status Feedback Toast / Banner */}
+      {statusFeedback && (
+        <div className={`p-4 rounded-2xl flex items-center justify-between text-xs font-bold transition-all shadow-md animate-fadeIn ${
+          statusFeedback.type === 'success' 
+            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800' 
+            : 'bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950 dark:text-rose-200 dark:border-rose-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {statusFeedback.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-700 dark:text-rose-300" />
+            )}
+            <span>{statusFeedback.message}</span>
+          </div>
+          <button onClick={() => setStatusFeedback(null)} className="p-1 text-slate-400 hover:text-slate-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Search, View Mode & Controls Toolbar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-900/60 shadow-sm flex flex-col sm:flex-row items-center gap-4 justify-between">
@@ -561,7 +733,7 @@ export const FarmerManager: React.FC = () => {
                 {farmers.length === 0 ? 'No farmer profiles yet' : 'No records match your search'}
               </p>
               <p className="text-xs text-slate-400">
-                {farmers.length === 0 ? 'Use "Excel Batch Import" or "+ Add Record" to add your first farmer.' : 'Try adjusting your search query.'}
+                {farmers.length === 0 ? 'Use "Excel Import" or "+ Add Record" to add your first farmer.' : 'Try adjusting your search query.'}
               </p>
             </div>
           ) : (
@@ -777,7 +949,7 @@ export const FarmerManager: React.FC = () => {
                   <tr>
                     <td colSpan={Math.max(allColumns.length + 2, 3)} className="py-12 text-center text-slate-400">
                       {farmers.length === 0 
-                        ? 'The Farmer Registry is empty. Use "Excel Batch Import" to begin.'
+                        ? 'The Farmer Registry is empty. Use "Excel Import" to begin.'
                         : 'No records match your search query.'}
                     </td>
                   </tr>
@@ -988,6 +1160,97 @@ export const FarmerManager: React.FC = () => {
               <span>Next</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* RESTORE BACKUP CONFIRMATION MODAL */}
+      {isRestoreModalOpen && pendingRestore && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 md:p-8 text-slate-900 dark:text-white">
+            <button
+              onClick={() => setIsRestoreModalOpen(false)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                <Database className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black">Restore Backup</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Found {pendingRestore.totalRecords} farmer records in file</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Choose how you want to restore the backup data into your registry:
+              </p>
+
+              <div className="space-y-2">
+                <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                  restoreMode === 'replace'
+                    ? 'border-[#256B3A] bg-emerald-50/60 dark:bg-emerald-950/40 text-[#143520] dark:text-emerald-200'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="restoreMode"
+                    value="replace"
+                    checked={restoreMode === 'replace'}
+                    onChange={() => setRestoreMode('replace')}
+                    className="mt-0.5 text-[#256B3A]"
+                  />
+                  <div>
+                    <span className="text-xs font-bold block">Replace Registry (Full Restore)</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                      Wipes current registry ({farmers.length} records) and restores the {pendingRestore.totalRecords} records from backup.
+                    </span>
+                  </div>
+                </label>
+
+                <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                  restoreMode === 'merge'
+                    ? 'border-[#256B3A] bg-emerald-50/60 dark:bg-emerald-950/40 text-[#143520] dark:text-emerald-200'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="restoreMode"
+                    value="merge"
+                    checked={restoreMode === 'merge'}
+                    onChange={() => setRestoreMode('merge')}
+                    className="mt-0.5 text-[#256B3A]"
+                  />
+                  <div>
+                    <span className="text-xs font-bold block">Merge with Current Registry</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                      Adds all {pendingRestore.totalRecords} records to your current {farmers.length} records without deleting existing data.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsRestoreModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmRestore}
+                  className="px-5 py-2 text-xs font-bold bg-[#256B3A] text-white rounded-xl hover:bg-[#1b4d2a] shadow-md transition-all active:scale-95"
+                >
+                  Confirm Restore
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
