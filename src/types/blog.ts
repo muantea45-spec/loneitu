@@ -80,12 +80,18 @@ export interface CustomCardColumn {
 
 export interface CustomCardItem {
   id: string;
-  title: string;
+  name?: string;
+  designation?: string;
+  portfolio?: string;
+  qualification?: string;
+  experience?: string;
+  avatar?: string;
+  title?: string;
   subtitle?: string;
   badge?: string;
   description?: string;
   image?: string;
-  columnValues: Record<string, string>;
+  columnValues?: Record<string, string>;
 }
 
 export interface CustomCardSectionData {

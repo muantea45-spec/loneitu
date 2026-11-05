@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { useBlog } from '../../context/BlogContext';
 import { useToast } from '../common/Toast';
-import type { AboutPageData, SocialLinks, CustomCardColumn, CustomCardItem, CustomCardSectionData } from '../../types/blog';
+import type { AboutPageData, SocialLinks, CustomCardItem, CustomCardSectionData } from '../../types/blog';
 import { INITIAL_ABOUT_DATA } from '../../data/initialData';
 import { compressImage } from '../../utils/imageCompressor';
 import {
@@ -40,7 +40,6 @@ import {
   AlignCenter,
   AlignRight,
   Users,
-  Columns,
   LayoutGrid,
   Trash2,
   Copy,
@@ -49,7 +48,7 @@ import {
   Search,
   Check,
   Layers,
-  Upload
+  Camera
 } from 'lucide-react';
 import {
   InstagramIcon,
@@ -60,28 +59,14 @@ import {
   SocialIconsRow
 } from '../common/SocialIcons';
 
-function getCardFieldValue(card: any, colId: string, colName: string): string {
-  if (card.columnValues && card.columnValues[colId] !== undefined && card.columnValues[colId] !== '') {
-    return card.columnValues[colId];
-  }
-  const lower = colName.toLowerCase();
-  if (lower.includes('subtitle') || lower.includes('division') || lower.includes('department')) {
-    if (card.subtitle) return card.subtitle;
-  }
-  if (lower.includes('desc') || lower.includes('bio') || lower.includes('narrative') || lower.includes('about')) {
-    if (card.description) return card.description;
-  }
-  if (lower.includes('badge') || lower.includes('status')) {
-    if (card.badge) return card.badge;
-  }
-  if (card.columnValues) {
-    for (const key of Object.keys(card.columnValues)) {
-      if (key.toLowerCase().includes(colId.toLowerCase()) || colId.toLowerCase().includes(key.toLowerCase())) {
-        if (card.columnValues[key]) return card.columnValues[key];
-      }
-    }
-  }
-  return '';
+function getStaffCardDetails(card: any) {
+  const name = card.name || card.title || '';
+  const designation = card.designation || card.columnValues?.['col-location'] || card.subtitle || '';
+  const portfolio = card.portfolio || card.columnValues?.['col-contact'] || '';
+  const qualification = card.qualification || card.columnValues?.['col-status'] || card.badge || '';
+  const experience = card.experience || card.columnValues?.['col-1793872810199'] || card.columnValues?.['col-desc'] || card.description || '';
+  const avatar = card.avatar || card.image || '';
+  return { name, designation, portfolio, qualification, experience, avatar };
 }
 
 export const AboutEditor: React.FC = () => {
@@ -163,16 +148,14 @@ export const AboutEditor: React.FC = () => {
   // Card modal state
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
-  const [cardTitle, setCardTitle] = useState('');
-  const [cardImage, setCardImage] = useState('');
-  const [cardColumnValues, setCardColumnValues] = useState<Record<string, string>>({});
+  const [cardName, setCardName] = useState('');
+  const [cardDesignation, setCardDesignation] = useState('');
+  const [cardPortfolio, setCardPortfolio] = useState('');
+  const [cardQualification, setCardQualification] = useState('');
+  const [cardExperience, setCardExperience] = useState('');
+  const [cardAvatar, setCardAvatar] = useState('');
   const [isCardImageUploading, setIsCardImageUploading] = useState(false);
   const cardFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Column modal state
-  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
-  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
-  const [columnNameInput, setColumnNameInput] = useState('');
 
   const updateCardsSection = (updates: Partial<CustomCardSectionData>) => {
     isDirtyRef.current = true;
@@ -185,97 +168,65 @@ export const AboutEditor: React.FC = () => {
 
   const handleOpenAddCard = () => {
     setEditingCardId(null);
-    setCardTitle('');
-    setCardImage('');
-    const initialValues: Record<string, string> = {};
-    (currentCardsSection.columns || []).forEach(col => {
-      initialValues[col.id] = '';
-    });
-    setCardColumnValues(initialValues);
+    setCardName('');
+    setCardDesignation('');
+    setCardPortfolio('');
+    setCardQualification('');
+    setCardExperience('');
+    setCardAvatar('');
     setIsCardModalOpen(true);
   };
 
   const handleOpenEditCard = (card: CustomCardItem) => {
     setEditingCardId(card.id);
-    setCardTitle(card.title);
-    setCardImage(card.image || '');
-    const populatedValues: Record<string, string> = {};
-    (currentCardsSection.columns || []).forEach(col => {
-      populatedValues[col.id] = getCardFieldValue(card, col.id, col.name);
-    });
-    setCardColumnValues(populatedValues);
+    const details = getStaffCardDetails(card);
+    setCardName(details.name);
+    setCardDesignation(details.designation);
+    setCardPortfolio(details.portfolio);
+    setCardQualification(details.qualification);
+    setCardExperience(details.experience);
+    setCardAvatar(details.avatar);
     setIsCardModalOpen(true);
-  };
-
-  const handleAddFieldFromModal = (name: string) => {
-    if (!name.trim()) return;
-    const newColId = `col-${Date.now()}`;
-    const newCol: CustomCardColumn = {
-      id: newColId,
-      name: name.trim(),
-      type: 'text',
-    };
-    const updatedColumns = [...(currentCardsSection.columns || []), newCol];
-    updateCardsSection({ columns: updatedColumns });
-    setCardColumnValues(prev => ({ ...prev, [newColId]: '' }));
-    showToast(`Added field "${name.trim()}" to cards!`, 'success');
-  };
-
-  const handleRenameFieldInline = (colId: string, currentName: string) => {
-    const nextName = window.prompt('Rename this field to:', currentName);
-    if (!nextName || !nextName.trim() || nextName.trim() === currentName) return;
-    const updatedColumns = (currentCardsSection.columns || []).map(c => 
-      c.id === colId ? { ...c, name: nextName.trim() } : c
-    );
-    updateCardsSection({ columns: updatedColumns });
-    showToast(`Field renamed to "${nextName.trim()}"`, 'success');
   };
 
   const handleSaveCard = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!cardTitle.trim()) {
-      showToast('Please provide a name/title for the card.', 'error');
+    if (!cardName.trim()) {
+      showToast('Please provide a name for the staff member.', 'error');
       return;
     }
 
-    let sub = '';
-    let badge = '';
-    let desc = '';
-    (currentCardsSection.columns || []).forEach(col => {
-      const lower = col.name.toLowerCase();
-      const val = cardColumnValues[col.id] || '';
-      if (lower.includes('subtitle') || lower.includes('division') || lower.includes('department')) sub = val;
-      if (lower.includes('badge') || lower.includes('status')) badge = val;
-      if (lower.includes('desc') || lower.includes('bio') || lower.includes('narrative')) desc = val;
-    });
-
     const cards = [...(currentCardsSection.cards || [])];
+    const cardData: CustomCardItem = {
+      id: editingCardId || `card-${Date.now()}`,
+      name: cardName.trim(),
+      designation: cardDesignation.trim(),
+      portfolio: cardPortfolio.trim(),
+      qualification: cardQualification.trim(),
+      experience: cardExperience.trim(),
+      avatar: cardAvatar.trim(),
+      title: cardName.trim(),
+      subtitle: cardDesignation.trim(),
+      badge: cardQualification.trim(),
+      description: cardExperience.trim(),
+      image: cardAvatar.trim(),
+      columnValues: {
+        'col-location': cardDesignation.trim(),
+        'col-contact': cardPortfolio.trim(),
+        'col-status': cardQualification.trim(),
+        'col-1793872810199': cardExperience.trim(),
+      },
+    };
+
     if (editingCardId) {
       const idx = cards.findIndex(c => c.id === editingCardId);
       if (idx !== -1) {
-        cards[idx] = {
-          ...cards[idx],
-          title: cardTitle.trim(),
-          subtitle: sub.trim(),
-          badge: badge.trim(),
-          description: desc.trim(),
-          image: cardImage.trim(),
-          columnValues: { ...cardColumnValues },
-        };
+        cards[idx] = cardData;
       }
-      showToast(`Card "${cardTitle}" updated!`, 'success');
+      showToast(`Staff card "${cardName}" updated!`, 'success');
     } else {
-      const newCard: CustomCardItem = {
-        id: `card-${Date.now()}`,
-        title: cardTitle.trim(),
-        subtitle: sub.trim(),
-        badge: badge.trim(),
-        description: desc.trim(),
-        image: cardImage.trim(),
-        columnValues: { ...cardColumnValues },
-      };
-      cards.push(newCard);
-      showToast(`New card "${cardTitle}" added!`, 'success');
+      cards.push(cardData);
+      showToast(`New staff card "${cardName}" added!`, 'success');
     }
 
     updateCardsSection({ cards });
@@ -291,15 +242,21 @@ export const AboutEditor: React.FC = () => {
 
   const handleDuplicateCard = (card: CustomCardItem) => {
     const cards = [...(currentCardsSection.cards || [])];
+    const details = getStaffCardDetails(card);
     const newCard: CustomCardItem = {
       ...card,
       id: `card-${Date.now()}`,
-      title: `${card.title} (Copy)`,
-      columnValues: { ...(card.columnValues || {}) },
+      name: `${details.name} (Copy)`,
+      title: `${details.name} (Copy)`,
+      designation: details.designation,
+      portfolio: details.portfolio,
+      qualification: details.qualification,
+      experience: details.experience,
+      avatar: details.avatar,
     };
     cards.push(newCard);
     updateCardsSection({ cards });
-    showToast(`Duplicated "${card.title}"`, 'success');
+    showToast(`Duplicated "${details.name}"`, 'success');
   };
 
   const handleMoveCard = (index: number, direction: 'up' | 'down') => {
@@ -312,7 +269,7 @@ export const AboutEditor: React.FC = () => {
     updateCardsSection({ cards });
   };
 
-  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCardAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -323,63 +280,16 @@ export const AboutEditor: React.FC = () => {
 
     setIsCardImageUploading(true);
     try {
-      const result = await compressImage(file, 800, 0.85);
+      const result = await compressImage(file, 500, 0.85);
       const cdnUrl = await uploadImage(result.dataUrl, file.name);
-      setCardImage(cdnUrl);
-      showToast('Card image uploaded successfully!', 'success');
+      setCardAvatar(cdnUrl);
+      showToast('Circular avatar uploaded successfully!', 'success');
     } catch {
-      showToast('Failed to upload image. Please try again.', 'error');
+      showToast('Failed to upload avatar. Please try again.', 'error');
     } finally {
       setIsCardImageUploading(false);
       if (e.target) e.target.value = '';
     }
-  };
-
-  const handleOpenAddColumn = () => {
-    setEditingColumnId(null);
-    setColumnNameInput('');
-    setIsColumnModalOpen(true);
-  };
-
-  const handleOpenEditColumn = (col: CustomCardColumn) => {
-    setEditingColumnId(col.id);
-    setColumnNameInput(col.name);
-    setIsColumnModalOpen(true);
-  };
-
-  const handleSaveColumn = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!columnNameInput.trim()) {
-      showToast('Please enter a column name.', 'error');
-      return;
-    }
-
-    const columns = [...(currentCardsSection.columns || [])];
-    if (editingColumnId) {
-      const idx = columns.findIndex(c => c.id === editingColumnId);
-      if (idx !== -1) {
-        columns[idx] = { ...columns[idx], name: columnNameInput.trim() };
-      }
-      showToast(`Column renamed to "${columnNameInput.trim()}"`, 'success');
-    } else {
-      const newCol: CustomCardColumn = {
-        id: `col-${Date.now()}`,
-        name: columnNameInput.trim(),
-        type: 'text',
-      };
-      columns.push(newCol);
-      showToast(`New column "${columnNameInput.trim()}" added to all cards!`, 'success');
-    }
-
-    updateCardsSection({ columns });
-    setIsColumnModalOpen(false);
-  };
-
-  const handleDeleteColumn = (colId: string, colName: string) => {
-    if (!window.confirm(`Delete column "${colName}"? Values in existing cards for this column will no longer appear.`)) return;
-    const columns = (currentCardsSection.columns || []).filter(c => c.id !== colId);
-    updateCardsSection({ columns });
-    showToast(`Column "${colName}" removed.`, 'success');
   };
 
   // Toolbar and preview states
@@ -1524,73 +1434,12 @@ ${rowsHtml}
           </div>
         </div>
 
-        {/* Columns Management (Add custom columns that appear on cards) */}
-        <div className="p-4 bg-[#FBFBF8] rounded-2xl border border-[#DDD4BC] space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-[#256B3A] flex items-center gap-1.5">
-                <Columns className="w-4 h-4" />
-                <span>Card Columns (Custom Attributes)</span>
-              </div>
-              <p className="text-[11px] text-[#8F7855] mt-0.5">
-                Add columns here (e.g. Phone, District, Role, Working Hours). They will appear as labeled rows on each card.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleOpenAddColumn}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
-            >
-              <Plus className="w-3.5 h-3.5 text-[#BFDC28]" />
-              <span>Add Column</span>
-            </button>
-          </div>
-
-          {/* Columns Chips */}
-          <div className="flex items-center gap-2 flex-wrap pt-1">
-            {currentCardsSection.columns && currentCardsSection.columns.length > 0 ? (
-              currentCardsSection.columns.map(col => (
-                <div
-                  key={col.id}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#DDD4BC] shadow-2xs text-xs text-[#143520]"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#256B3A]" />
-                  <span className="font-semibold">{col.name}</span>
-                  <div className="flex items-center gap-1 ml-1 border-l border-[#DDD4BC] pl-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditColumn(col)}
-                      className="p-1 text-[#8F7855] hover:text-[#143520] rounded hover:bg-[#F6F4EB] cursor-pointer"
-                      title="Rename column"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteColumn(col.id, col.name)}
-                      className="p-1 text-red-500 hover:text-red-700 rounded hover:bg-red-50 cursor-pointer"
-                      title="Delete column"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-[#8F7855] italic">
-                No custom columns added yet. Click "+ Add Column" to add fields like Phone, District, or Role.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Cards Management & Data Entry */}
+        {/* Staff Cards Management & Data Entry */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#143520]">
-                Cards ({currentCardsSection.cards?.length || 0})
+                Staff Members ({currentCardsSection.cards?.length || 0})
               </span>
               <span className="text-[11px] text-[#8F7855]">
                 Card View Preview
@@ -1605,7 +1454,7 @@ ${rowsHtml}
                   type="text"
                   value={adminCardSearch}
                   onChange={e => setAdminCardSearch(e.target.value)}
-                  placeholder="Filter cards..."
+                  placeholder="Filter staff..."
                   className="pl-8 pr-2.5 py-1.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A] w-40"
                 />
               </div>
@@ -1616,130 +1465,185 @@ ${rowsHtml}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#256B3A] hover:bg-[#1E542E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 text-[#BFDC28]" />
-                <span>Add New Card</span>
+                <span>Add Staff Card</span>
               </button>
             </div>
           </div>
 
-          {/* Cards Grid */}
+          {/* Cards Grid / Mobile Slideable Track */}
           {(() => {
             const list = currentCardsSection.cards || [];
             const filtered = adminCardSearch.trim()
-              ? list.filter(c => 
-                  c.title.toLowerCase().includes(adminCardSearch.toLowerCase()) ||
-                  c.subtitle?.toLowerCase().includes(adminCardSearch.toLowerCase()) ||
-                  c.description?.toLowerCase().includes(adminCardSearch.toLowerCase())
-                )
+              ? list.filter(c => {
+                  const d = getStaffCardDetails(c);
+                  const q = adminCardSearch.toLowerCase();
+                  return (
+                    d.name.toLowerCase().includes(q) ||
+                    d.designation.toLowerCase().includes(q) ||
+                    d.portfolio.toLowerCase().includes(q) ||
+                    d.qualification.toLowerCase().includes(q) ||
+                    d.experience.toLowerCase().includes(q)
+                  );
+                })
               : list;
 
             if (filtered.length === 0) {
               return (
                 <div className="p-8 text-center bg-[#FBFBF8] rounded-2xl border-2 border-dashed border-[#DDD4BC] space-y-2">
                   <LayoutGrid className="w-8 h-8 text-[#8F7855] mx-auto opacity-60" />
-                  <div className="text-xs font-bold text-[#143520]">No cards found</div>
+                  <div className="text-xs font-bold text-[#143520]">No staff cards found</div>
                   <p className="text-[11px] text-[#8F7855]">
-                    Click "+ Add New Card" to add your first card entry.
+                    Click "+ Add Staff Card" to add your first card entry.
                   </p>
                 </div>
               );
             }
 
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map((card, idx) => (
-                  <div
-                    key={card.id}
-                    className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs flex flex-col justify-between overflow-hidden hover:border-[#256B3A]/40 transition-all"
-                  >
-                    <div>
-                      {/* Image Thumbnail */}
-                      {card.image && (
-                        <div className="w-full h-36 overflow-hidden bg-[#F6F4EB] relative">
-                          <img
-                            src={card.image}
-                            alt={card.title}
-                            className="w-full h-full object-cover object-top"
-                          />
-                        </div>
-                      )}
-
-                      <div className="p-4 space-y-3">
-                        <div>
-                          <h4 className="font-serif font-bold text-base text-[#143520] leading-snug">
-                            {card.title}
-                          </h4>
-                        </div>
-
-                        {/* All fields aligned with Field Name and Value */}
-                        {currentCardsSection.columns && currentCardsSection.columns.length > 0 && (
-                          <div className="pt-2 border-t border-[#EBE6D6] divide-y divide-[#F2ECE1]">
-                            {currentCardsSection.columns.map(col => {
-                              const v = getCardFieldValue(card, col.id, col.name);
-                              if (!v) return null;
-                              return (
-                                <div key={col.id} className="grid grid-cols-[115px_1fr] gap-2 py-1.5 text-[11px] items-start">
-                                  <span className="text-[#8F7855] font-bold uppercase tracking-wider shrink-0 text-left">{col.name}:</span>
-                                  <span className="text-[#143520] font-semibold text-left break-words">{v}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Bar */}
-                    <div className="p-3 bg-[#FBFBF8] border-t border-[#EBE6D6] flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleMoveCard(idx, 'up')}
-                          disabled={idx === 0}
-                          className="p-1.5 text-[#8F7855] hover:text-[#143520] rounded-lg hover:bg-white disabled:opacity-30 cursor-pointer"
-                          title="Move card left / up"
-                        >
-                          <MoveUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMoveCard(idx, 'down')}
-                          disabled={idx === filtered.length - 1}
-                          className="p-1.5 text-[#8F7855] hover:text-[#143520] rounded-lg hover:bg-white disabled:opacity-30 cursor-pointer"
-                          title="Move card right / down"
-                        >
-                          <MoveDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicateCard(card)}
-                          className="p-1.5 text-[#8F7855] hover:text-[#143520] rounded-lg hover:bg-white cursor-pointer"
-                          title="Duplicate card"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditCard(card)}
-                          className="p-1.5 text-[#256B3A] hover:bg-[#EBF1EA] rounded-lg cursor-pointer"
-                          title="Edit card"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCard(card.id, card.title)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
-                          title="Delete card"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                {filtered.length > 1 && (
+                  <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#8F7855] font-medium">
+                    <span>← Swipe cards to view staff →</span>
+                    <span className="font-bold text-[#256B3A]">{filtered.length} Cards</span>
                   </div>
-                ))}
+                )}
+
+                <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-3 -mx-2 px-2 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 sm:overflow-visible scrollbar-none">
+                  {filtered.map((card, idx) => {
+                    const details = getStaffCardDetails(card);
+                    return (
+                      <div
+                        key={card.id}
+                        className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink bg-white rounded-2xl border border-[#DDD4BC] shadow-xs flex flex-col justify-between overflow-hidden hover:border-[#256B3A]/40 transition-all"
+                      >
+                        <div className="p-4 space-y-3">
+                          {/* Top Row: Name on Left + Circular Avatar on Top-Right */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0 pr-1">
+                              <h4 className="font-serif font-bold text-base sm:text-lg text-[#143520] leading-snug tracking-tight break-words">
+                                {details.name}
+                              </h4>
+                            </div>
+
+                            {/* Small Circular Avatar */}
+                            <div className="shrink-0">
+                              {details.avatar ? (
+                                <img
+                                  src={details.avatar}
+                                  alt={details.name}
+                                  className="w-12 h-12 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-sm">
+                                  {details.name ? details.name.charAt(0).toUpperCase() : 'S'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Aligned middle rows: DESIGNATION, PORTFOLIO, QUALIFICATION */}
+                          <div className="pt-2 border-t border-[#EBE6D6] space-y-1.5 text-xs">
+                            {details.designation && (
+                              <div className="grid grid-cols-[105px_1fr] gap-2 py-1 border-b border-[#F2ECE1] items-baseline">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                  DESIGNATION:
+                                </span>
+                                <span className="font-semibold text-[#143520] text-left break-words">
+                                  {details.designation}
+                                </span>
+                              </div>
+                            )}
+
+                            {details.portfolio && (
+                              <div className="grid grid-cols-[105px_1fr] gap-2 py-1 border-b border-[#F2ECE1] items-baseline">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                  PORTFOLIO:
+                                </span>
+                                <span className="font-semibold text-[#143520] text-left break-words">
+                                  {details.portfolio}
+                                </span>
+                              </div>
+                            )}
+
+                            {details.qualification && (
+                              <div className="grid grid-cols-[105px_1fr] gap-2 py-1 border-b border-[#F2ECE1] items-baseline">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                                  QUALIFICATION:
+                                </span>
+                                <span className="font-semibold text-[#143520] text-left break-words">
+                                  {details.qualification}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* PROFESSIONAL EXPERIENCE: New line, full width */}
+                          {details.experience && (
+                            <div className="pt-2 border-t border-[#EBE6D6]">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F7855] block mb-1 text-left">
+                                PROFESSIONAL EXPERIENCE:
+                              </span>
+                              <p className="w-full text-justify [text-align:justify] text-[11px] text-[#54432C] leading-relaxed whitespace-pre-line line-clamp-3">
+                                {details.experience}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Bar */}
+                        <div className="p-2.5 bg-[#FBFBF8] border-t border-[#EBE6D6] flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveCard(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1.5 text-[#8F7855] hover:text-[#143520] rounded-lg hover:bg-white disabled:opacity-30 cursor-pointer"
+                              title="Move card left / up"
+                            >
+                              <MoveUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveCard(idx, 'down')}
+                              disabled={idx === filtered.length - 1}
+                              className="p-1.5 text-[#8F7855] hover:text-[#143520] rounded-lg hover:bg-white disabled:opacity-30 cursor-pointer"
+                              title="Move card right / down"
+                            >
+                              <MoveDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateCard(card)}
+                              className="p-1.5 text-[#8F7855] hover:text-[#143520] rounded-lg hover:bg-white cursor-pointer"
+                              title="Duplicate card"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditCard(card)}
+                              className="p-1.5 text-[#256B3A] hover:bg-[#EBF1EA] rounded-lg cursor-pointer"
+                              title="Edit card"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCard(card.id, details.name)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                              title="Delete card"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })()}
@@ -2256,78 +2160,15 @@ ${rowsHtml}
         </div>
       )}
 
-      {/* Column Builder Modal */}
-      {isColumnModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-[#DDD4BC] shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
-              <h3 className="font-serif font-bold text-lg text-[#143520] flex items-center gap-2">
-                <Columns className="w-4 h-4 text-[#256B3A]" />
-                <span>{editingColumnId ? 'Edit Column Name' : 'Add New Column to Cards'}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsColumnModalOpen(false)}
-                className="p-1 text-[#8F7855] hover:text-[#143520] rounded-lg"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1.5">
-                  Column Name *
-                </label>
-                <input
-                  type="text"
-                  value={columnNameInput}
-                  onChange={e => setColumnNameInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSaveColumn();
-                    }
-                  }}
-                  placeholder="e.g. Phone, District, Role, Working Hours..."
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                  autoFocus
-                  required
-                />
-                <p className="text-[11px] text-[#8F7855] mt-1">
-                  This column will appear as an input field on all cards and will be displayed on each card on the About page.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#EBE6D6]">
-                <button
-                  type="button"
-                  onClick={() => setIsColumnModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[#8F7855] hover:bg-[#F6F4EB] cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSaveColumn()}
-                  className="px-5 py-2 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold shadow-xs cursor-pointer"
-                >
-                  {editingColumnId ? 'Save Column' : 'Add Column'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Card Entry Modal */}
+      {/* Staff Card Entry Modal */}
       {isCardModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl border border-[#DDD4BC] shadow-2xl max-w-xl w-full p-6 sm:p-7 space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
               <h3 className="font-serif font-bold text-lg text-[#143520] flex items-center gap-2">
                 <LayoutGrid className="w-5 h-5 text-[#256B3A]" />
-                <span>{editingCardId ? 'Edit Card Entry' : 'Add New Card Entry'}</span>
+                <span>{editingCardId ? 'Edit Staff Member' : 'Add New Staff Member'}</span>
               </h3>
               <button
                 type="button"
@@ -2339,172 +2180,131 @@ ${rowsHtml}
             </div>
 
             <div className="space-y-4">
-              {/* Card Title (Staff Name) */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                  Card Title / Staff Name * (Main Heading on Card)
-                </label>
-                <input
-                  type="text"
-                  value={cardTitle}
-                  onChange={e => setCardTitle(e.target.value)}
-                  placeholder="e.g. Dr. C. Lalremruata"
-                  className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                  required
-                />
-                <p className="text-[10px] text-[#8F7855] mt-1">
-                  Note: Card Title is displayed as the primary heading at the top of the card without a field name label.
-                </p>
-              </div>
-
-              {/* Photo Upload or Embed */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
-                  Card Photo / Avatar (Optional)
-                </label>
-                <div className="flex gap-2">
+              {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right Corner */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#143520] mb-1.5">
+                    NAME * (Staff Full Name)
+                  </label>
                   <input
                     type="text"
-                    value={cardImage}
-                    onChange={e => setCardImage(e.target.value)}
-                    placeholder="Paste image URL (https://...) or upload below"
-                    className="flex-1 px-3.5 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                    value={cardName}
+                    onChange={e => setCardName(e.target.value)}
+                    placeholder="e.g. Dr. C. Lalhriatpuia"
+                    className="w-full px-3.5 py-2.5 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-sm font-bold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                    required
                   />
+                  <p className="text-[10px] text-[#8F7855] mt-1">
+                    Displayed prominently in bold as the main title on the card.
+                  </p>
+                </div>
+
+                {/* Small Circular Option for Avatar Upload at the right corner */}
+                <div className="flex flex-col items-center shrink-0">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8F7855] mb-1">
+                    AVATAR
+                  </label>
+                  <div
+                    onClick={() => cardFileInputRef.current?.click()}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-[#256B3A]/40 hover:border-[#256B3A] bg-[#F6F4EB] flex items-center justify-center cursor-pointer relative overflow-hidden group shadow-xs transition-all"
+                    title="Click to upload circular Avatar photo"
+                  >
+                    {cardAvatar ? (
+                      <>
+                        <img src={cardAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                          Change
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center text-[#8F7855] group-hover:text-[#256B3A]">
+                        <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span className="text-[9px] font-bold mt-0.5">Upload</span>
+                      </div>
+                    )}
+                    {isCardImageUploading && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#256B3A]" />
+                      </div>
+                    )}
+                  </div>
                   <input
                     ref={cardFileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleCardImageUpload}
+                    onChange={handleCardAvatarUpload}
                     className="hidden"
                   />
-                  <button
-                    type="button"
-                    onClick={() => cardFileInputRef.current?.click()}
-                    disabled={isCardImageUploading}
-                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F6F4EB] border border-[#DDD4BC] text-xs font-bold text-[#143520] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    {isCardImageUploading ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#256B3A]" />
-                    ) : (
-                      <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
-                    )}
-                    <span>Upload</span>
-                  </button>
-                </div>
-                {cardImage && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <img src={cardImage} alt="Preview" className="w-12 h-12 object-cover rounded-xl border border-[#DDD4BC]" />
+                  {cardAvatar && (
                     <button
                       type="button"
-                      onClick={() => setCardImage('')}
-                      className="text-xs text-red-600 hover:underline cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); setCardAvatar(''); }}
+                      className="text-[10px] text-red-500 hover:text-red-700 hover:underline mt-1 cursor-pointer"
                     >
-                      Remove photo
+                      Remove
                     </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic Card Fields (All with editable names, add field option, and aligned inputs) */}
-              <div className="p-4 bg-[#FBFBF8] rounded-2xl border border-[#DDD4BC] space-y-4">
-                <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-2">
-                  <div className="text-xs font-bold uppercase tracking-wider text-[#256B3A] flex items-center gap-1.5">
-                    <Columns className="w-3.5 h-3.5" />
-                    <span>Card Fields (Names displayed in Live Card)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const name = window.prompt('Enter new field name (e.g. Qualification, Email, Experience):');
-                      if (name) handleAddFieldFromModal(name);
-                    }}
-                    className="text-xs font-bold text-[#256B3A] hover:text-[#143520] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ Add Field</span>
-                  </button>
-                </div>
-
-                <div className="space-y-3.5">
-                  {currentCardsSection.columns && currentCardsSection.columns.length > 0 ? (
-                    currentCardsSection.columns.map(col => {
-                      const isLong = col.name.toLowerCase().includes('desc') || 
-                                     col.name.toLowerCase().includes('bio') || 
-                                     col.name.toLowerCase().includes('narrative') || 
-                                     col.name.toLowerCase().includes('about');
-                      return (
-                        <div key={col.id} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold uppercase tracking-wider text-[#6F5B3C] flex items-center gap-1.5">
-                              <span>{col.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRenameFieldInline(col.id, col.name)}
-                                className="text-[#8F7855] hover:text-[#143520] p-1 rounded hover:bg-[#F6F4EB] cursor-pointer"
-                                title="Rename this field label"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                              </button>
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteColumn(col.id, col.name)}
-                              className="text-[10px] text-red-500 hover:text-red-700 hover:underline cursor-pointer"
-                              title="Delete this field from all cards"
-                            >
-                              Remove field
-                            </button>
-                          </div>
-
-                          {isLong ? (
-                            <textarea
-                              rows={3}
-                              value={cardColumnValues[col.id] || ''}
-                              onChange={e => {
-                                const val = e.target.value;
-                                setCardColumnValues(prev => ({ ...prev, [col.id]: val }));
-                              }}
-                              placeholder={`Enter ${col.name}...`}
-                              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={cardColumnValues[col.id] || ''}
-                              onChange={e => {
-                                const val = e.target.value;
-                                setCardColumnValues(prev => ({ ...prev, [col.id]: val }));
-                              }}
-                              placeholder={`Enter ${col.name}...`}
-                              className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
-                            />
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-xs text-[#8F7855] italic py-2">
-                      No fields configured yet. Click "+ Add Field" above to add fields like Role, Division, Description, or Phone.
-                    </div>
                   )}
                 </div>
+              </div>
 
-                <div className="pt-2 border-t border-[#EBE6D6] flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const name = window.prompt('Enter new field name (e.g. Qualification, Email, Experience):');
-                      if (name) handleAddFieldFromModal(name);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ Add Another Field to this Card</span>
-                  </button>
-                  <span className="text-[11px] text-[#8F7855]">
-                    Fields added here appear on all cards and the live page.
-                  </span>
-                </div>
+              {/* DESIGNATION */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
+                  DESIGNATION *
+                </label>
+                <input
+                  type="text"
+                  value={cardDesignation}
+                  onChange={e => setCardDesignation(e.target.value)}
+                  placeholder="e.g. Project Director"
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                  required
+                />
+              </div>
+
+              {/* PORTFOLIO */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
+                  PORTFOLIO
+                </label>
+                <input
+                  type="text"
+                  value={cardPortfolio}
+                  onChange={e => setCardPortfolio(e.target.value)}
+                  placeholder="e.g. Agriculture & Horticulture"
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+
+              {/* QUALIFICATION */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
+                  QUALIFICATION
+                </label>
+                <input
+                  type="text"
+                  value={cardQualification}
+                  onChange={e => setCardQualification(e.target.value)}
+                  placeholder="e.g. Ph.D. / M.Sc. Agronomy"
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A]"
+                />
+              </div>
+
+              {/* PROFESSIONAL EXPERIENCE */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6F5B3C] mb-1">
+                  PROFESSIONAL EXPERIENCE
+                </label>
+                <textarea
+                  rows={4}
+                  value={cardExperience}
+                  onChange={e => setCardExperience(e.target.value)}
+                  placeholder="Detail professional qualifications, honors, research papers, projects, and career milestones..."
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#143520] leading-relaxed focus:outline-hidden focus:border-[#256B3A]"
+                />
+                <p className="text-[10px] text-[#8F7855] mt-1">
+                  Displayed on a new line and justified across the whole width of the card.
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#EBE6D6]">
@@ -2521,7 +2321,7 @@ ${rowsHtml}
                   className="px-6 py-2 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4 text-[#BFDC28]" />
-                  <span>{editingCardId ? 'Save Changes' : 'Create Card'}</span>
+                  <span>{editingCardId ? 'Save Changes' : 'Create Staff Card'}</span>
                 </button>
               </div>
             </div>

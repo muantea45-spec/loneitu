@@ -7,28 +7,14 @@ import { useBlog } from '../context/BlogContext';
 import { SocialIconsRow } from '../components/common/SocialIcons';
 import { INITIAL_ABOUT_DATA } from '../data/initialData';
 
-function getCardFieldValue(card: any, colId: string, colName: string): string {
-  if (card.columnValues && card.columnValues[colId] !== undefined && card.columnValues[colId] !== '') {
-    return card.columnValues[colId];
-  }
-  const lower = colName.toLowerCase();
-  if (lower.includes('subtitle') || lower.includes('division') || lower.includes('department')) {
-    if (card.subtitle) return card.subtitle;
-  }
-  if (lower.includes('desc') || lower.includes('bio') || lower.includes('narrative') || lower.includes('about')) {
-    if (card.description) return card.description;
-  }
-  if (lower.includes('badge') || lower.includes('status')) {
-    if (card.badge) return card.badge;
-  }
-  if (card.columnValues) {
-    for (const key of Object.keys(card.columnValues)) {
-      if (key.toLowerCase().includes(colId.toLowerCase()) || colId.toLowerCase().includes(key.toLowerCase())) {
-        if (card.columnValues[key]) return card.columnValues[key];
-      }
-    }
-  }
-  return '';
+function getStaffCardDetails(card: any) {
+  const name = card.name || card.title || '';
+  const designation = card.designation || card.columnValues?.['col-location'] || card.subtitle || '';
+  const portfolio = card.portfolio || card.columnValues?.['col-contact'] || '';
+  const qualification = card.qualification || card.columnValues?.['col-status'] || card.badge || '';
+  const experience = card.experience || card.columnValues?.['col-1793872810199'] || card.columnValues?.['col-desc'] || card.description || '';
+  const avatar = card.avatar || card.image || '';
+  return { name, designation, portfolio, qualification, experience, avatar };
 }
 
 export const AboutPage: React.FC = () => {
@@ -49,13 +35,15 @@ export const AboutPage: React.FC = () => {
     if (!customCardsSection?.cards) return [];
     if (!cardSearchQuery.trim()) return customCardsSection.cards;
     const q = cardSearchQuery.toLowerCase();
-    const cols = customCardsSection.columns || [];
     return customCardsSection.cards.filter(c => {
-      if (c.title?.toLowerCase().includes(q)) return true;
-      if (c.subtitle?.toLowerCase().includes(q)) return true;
-      if (c.badge?.toLowerCase().includes(q)) return true;
-      if (c.description?.toLowerCase().includes(q)) return true;
-      return cols.some(col => getCardFieldValue(c, col.id, col.name).toLowerCase().includes(q));
+      const details = getStaffCardDetails(c);
+      return (
+        details.name.toLowerCase().includes(q) ||
+        details.designation.toLowerCase().includes(q) ||
+        details.portfolio.toLowerCase().includes(q) ||
+        details.qualification.toLowerCase().includes(q) ||
+        details.experience.toLowerCase().includes(q)
+      );
     });
   }, [customCardsSection, cardSearchQuery]);
 
@@ -197,60 +185,99 @@ export const AboutPage: React.FC = () => {
               )}
             </div>
 
-            {/* Cards Grid */}
+            {/* Mobile Slide Hint (when multiple cards exist) */}
+            {filteredCards.length > 1 && (
+              <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#8F7855] font-medium">
+                <span>← Swipe cards to view staff →</span>
+                <span className="font-bold text-[#256B3A]">{filteredCards.length} Members</span>
+              </div>
+            )}
+
+            {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
             {filteredCards.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCards.map(card => (
-                  <div
-                    key={card.id}
-                    className="group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
-                  >
-                    {/* Optional Card Image Banner */}
-                    {card.image && (
-                      <div className="w-full h-48 sm:h-52 overflow-hidden bg-[#F6F4EB] relative shrink-0">
-                        <img
-                          src={card.image}
-                          alt={card.title}
-                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
+              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none">
+                {filteredCards.map(card => {
+                  const details = getStaffCardDetails(card);
+                  return (
+                    <div
+                      key={card.id}
+                      className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-6 space-y-4"
+                    >
+                      {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0 pr-1">
+                          <h4 className="font-serif font-bold text-xl sm:text-2xl text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight tracking-tight break-words">
+                            {details.name}
+                          </h4>
+                        </div>
 
-                    {/* Card Content */}
-                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                      {/* Card Title (Staff Name) - strictly NO field name label */}
-                      <div>
-                        <h4 className="font-serif font-bold text-xl sm:text-2xl text-[#143520] group-hover:text-[#1E542E] transition-colors leading-tight">
-                          {card.title}
-                        </h4>
+                        {/* Small Circular Avatar at the right corner */}
+                        <div className="shrink-0 relative">
+                          {details.avatar ? (
+                            <img
+                              src={details.avatar}
+                              alt={details.name}
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-2 ring-[#256B3A]/30 shadow-xs"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#EBF1EA] ring-2 ring-[#256B3A]/20 flex items-center justify-center text-[#256B3A] font-bold text-base shadow-2xs">
+                              {details.name ? details.name.charAt(0).toUpperCase() : 'L'}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* All other fields with Field Name and perfectly aligned Values */}
-                      {customCardsSection.columns && customCardsSection.columns.length > 0 && (
-                        <div className="pt-3 border-t border-[#EBE6D6] divide-y divide-[#F2ECE1]">
-                          {customCardsSection.columns.map(col => {
-                            const val = getCardFieldValue(card, col.id, col.name);
-                            if (!val || !val.trim()) return null;
-                            return (
-                              <div
-                                key={col.id}
-                                className="grid grid-cols-[135px_1fr] sm:grid-cols-[150px_1fr] gap-3 items-start py-2.5 text-xs"
-                              >
-                                <span className="text-[11px] font-bold tracking-wider text-[#8F7855] uppercase shrink-0 pt-0.5 text-left">
-                                  {col.name}:
-                                </span>
-                                <span className="font-semibold text-[#143520] text-left break-words leading-relaxed whitespace-pre-line">
-                                  {val}
-                                </span>
-                              </div>
-                            );
-                          })}
+                      {/* Aligned Fields: DESIGNATION, PORTFOLIO, QUALIFICATION */}
+                      <div className="pt-2.5 border-t border-[#EBE6D6] space-y-2 text-xs">
+                        {details.designation && (
+                          <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                              DESIGNATION:
+                            </span>
+                            <span className="font-semibold text-[#143520] text-left break-words">
+                              {details.designation}
+                            </span>
+                          </div>
+                        )}
+
+                        {details.portfolio && (
+                          <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                              PORTFOLIO:
+                            </span>
+                            <span className="font-semibold text-[#143520] text-left break-words">
+                              {details.portfolio}
+                            </span>
+                          </div>
+                        )}
+
+                        {details.qualification && (
+                          <div className="grid grid-cols-[115px_1fr] sm:grid-cols-[130px_1fr] gap-2.5 items-baseline py-1.5 border-b border-[#F2ECE1]">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] shrink-0 text-left">
+                              QUALIFICATION:
+                            </span>
+                            <span className="font-semibold text-[#143520] text-left break-words">
+                              {details.qualification}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* PROFESSIONAL EXPERIENCE: All text in a new line, perfectly aligned in the whole width */}
+                      {details.experience && (
+                        <div className="pt-2.5 border-t border-[#EBE6D6]">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F7855] block mb-1.5 text-left">
+                            PROFESSIONAL EXPERIENCE:
+                          </span>
+                          <p className="w-full text-justify [text-align:justify] text-xs text-[#54432C] leading-relaxed whitespace-pre-line">
+                            {details.experience}
+                          </p>
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-8 text-center bg-white rounded-3xl border border-[#EBE6D6] text-xs text-[#8F7855]">
