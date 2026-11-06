@@ -25,8 +25,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header
       className={`sticky top-0 z-40 w-full transition-all duration-200 border-b ${
         isScrolled
-          ? 'bg-[#FBFBF8]/95 backdrop-blur-md border-[#EBE6D6] shadow-xs'
-          : 'bg-[#FBFBF8] border-[#EBE6D6]'
+          ? 'bg-[#F7F7F7]/95 backdrop-blur-md border-[#E5E5E5] shadow-xs'
+          : 'bg-[#F7F7F7] border-[#E5E5E5]'
       }`}
     >
       {/* Main Navbar */}
@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <img
             src="/logo.png"
             alt="Loneitu"
-            className="w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-200 shrink-0"
+            className="w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] object-contain group-hover:scale-105 transition-transform duration-200 shrink-0"
           />
           <div className="flex flex-col items-center justify-center leading-none text-center">
             <span className="font-serif font-bold text-[29px] sm:text-[31px] tracking-tight text-[#143520] leading-none block">
