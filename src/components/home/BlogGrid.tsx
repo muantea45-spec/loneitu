@@ -8,14 +8,27 @@ interface BlogGridProps {
   articles: Article[];
 }
 
-const POSTS_PER_PAGE = 5;
+const POSTS_PER_PAGE_MOBILE = 5;
+const POSTS_PER_PAGE_DESKTOP = 6;
 
 export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
   const { clearFilters } = useBlog();
   const [currentPage, setCurrentPage] = useState(1);
   const gridTopRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
 
-  const totalPages = Math.ceil(articles.length / POSTS_PER_PAGE);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const postsPerPage = isDesktop ? POSTS_PER_PAGE_DESKTOP : POSTS_PER_PAGE_MOBILE;
+  const totalPages = Math.ceil(articles.length / postsPerPage);
 
   // If filtered articles count drops and currentPage is out of range, reset to 1
   useEffect(() => {
@@ -56,9 +69,9 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
     );
   }
 
-  // Slice exactly 5 posts per page
-  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
-  const currentArticles = articles.slice(startIndex, startIndex + POSTS_PER_PAGE);
+  // Slice posts according to viewport (up to 6 for desktop, 5 for mobile)
+  const startIndex = (currentPage - 1) * postsPerPage;
+  const currentArticles = articles.slice(startIndex, startIndex + postsPerPage);
 
   return (
     <div ref={gridTopRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

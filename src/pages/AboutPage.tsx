@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Sprout, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sprout, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -36,30 +36,61 @@ export const AboutPage: React.FC = () => {
     return customCardsSection?.cards || [];
   }, [customCardsSection]);
 
-  const handleCarouselScroll = useCallback(() => {
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateScrollButtons = useCallback(() => {
     const container = carouselRef.current;
     if (!container) return;
-    const scrollLeft = container.scrollLeft;
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+
     const firstChild = container.firstElementChild as HTMLElement;
-    if (!firstChild) return;
-    const cardWidth = firstChild.offsetWidth + 16; // 16px is gap-4
-    const newIndex = Math.round(scrollLeft / cardWidth);
-    setActiveCardIndex(Math.max(0, Math.min(newIndex, filteredCards.length - 1)));
+    if (firstChild) {
+      const cardGap = window.innerWidth >= 640 ? 24 : 16;
+      const cardWidth = firstChild.offsetWidth + cardGap;
+      const newIndex = Math.round(scrollLeft / cardWidth);
+      setActiveCardIndex(Math.max(0, Math.min(newIndex, filteredCards.length - 1)));
+    }
   }, [filteredCards.length]);
 
   useEffect(() => {
     const container = carouselRef.current;
     if (!container) return;
-    container.addEventListener('scroll', handleCarouselScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleCarouselScroll);
-  }, [handleCarouselScroll]);
+    updateScrollButtons();
+    container.addEventListener('scroll', updateScrollButtons, { passive: true });
+    window.addEventListener('resize', updateScrollButtons);
+    return () => {
+      container.removeEventListener('scroll', updateScrollButtons);
+      window.removeEventListener('resize', updateScrollButtons);
+    };
+  }, [updateScrollButtons]);
+
+  const handleSlidePrev = () => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const firstChild = container.firstElementChild as HTMLElement;
+    const gap = window.innerWidth >= 640 ? 24 : 16;
+    const cardWidth = firstChild ? firstChild.offsetWidth + gap : 320;
+    container.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+  };
+
+  const handleSlideNext = () => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const firstChild = container.firstElementChild as HTMLElement;
+    const gap = window.innerWidth >= 640 ? 24 : 16;
+    const cardWidth = firstChild ? firstChild.offsetWidth + gap : 320;
+    container.scrollBy({ left: cardWidth, behavior: 'smooth' });
+  };
 
   const scrollToCard = (index: number) => {
     const container = carouselRef.current;
     if (!container) return;
     const children = container.querySelectorAll<HTMLElement>('[data-staff-card]');
     if (children[index]) {
-      children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
       setActiveCardIndex(index);
     }
   };
@@ -160,9 +191,48 @@ export const AboutPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Custom Dynamic Card View Section */}
+        {/* 3. Custom Dynamic Card View Section (STAFF) */}
         {customCardsSection && customCardsSection.enabled !== false && customCardsSection.cards && customCardsSection.cards.length > 0 && (
           <div className="space-y-4 pt-2">
+            {/* Header: STAFF (Visible in both Desktop and Mobile) */}
+            <div className="flex items-center justify-between gap-4 pb-2 border-b border-[#DDD4BC]/70">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#256B3A]/10 text-[#256B3A] flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] tracking-tight uppercase">
+                  STAFF
+                </h2>
+                <span className="text-xs font-bold text-[#6F5B3C] bg-[#F6F4EB] px-2.5 py-0.5 rounded-full border border-[#DDD4BC]">
+                  {filteredCards.length}
+                </span>
+              </div>
+
+              {/* Desktop / Tablet Slide Navigation Buttons */}
+              {filteredCards.length > 1 && (
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    onClick={handleSlidePrev}
+                    disabled={!canScrollLeft}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] hover:border-[#256B3A] transition-all shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+                    aria-label="Previous staff cards"
+                    title="Slide left"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleSlideNext}
+                    disabled={!canScrollRight}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] hover:border-[#256B3A] transition-all shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+                    aria-label="Next staff cards"
+                    title="Slide right"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Mobile Slide Hint (when multiple cards exist) */}
             {filteredCards.length > 1 && (
               <div className="flex sm:hidden items-center justify-between px-1 text-[11px] text-[#6F5B3C] font-semibold">
@@ -171,13 +241,13 @@ export const AboutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
+            {/* Slideable on desktop (3 cards visible), tablet (2 cards), and mobile (1 card) */}
             <div className="space-y-4 w-full">
-              {/* Carousel wrapper with overflow hidden to safely clip -mx-4 mobile margins */}
-              <div className="w-full overflow-hidden sm:overflow-visible">
+              {/* Carousel wrapper with overflow hidden */}
+              <div className="w-full overflow-hidden">
                 <div
                   ref={carouselRef}
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none touch-pan-x overscroll-x-contain"
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pb-4 sm:pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none touch-pan-x overscroll-x-contain scroll-smooth"
                 >
                   {filteredCards.map(card => {
                     const details = getStaffCardDetails(card);
@@ -185,7 +255,7 @@ export const AboutPage: React.FC = () => {
                       <div
                         key={card.id}
                         data-staff-card="true"
-                        className="min-w-[82vw] max-w-[84vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-4 sm:p-6 space-y-4"
+                        className="w-[82vw] min-w-[82vw] max-w-[84vw] sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] lg:min-w-[calc((100%-3rem)/3)] lg:max-w-[calc((100%-3rem)/3)] snap-start shrink-0 group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-4 sm:p-6 space-y-4"
                       >
                         {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
                         <div className="flex items-center justify-between gap-3 min-w-0">
@@ -253,7 +323,7 @@ export const AboutPage: React.FC = () => {
 
                         {/* PROFESSIONAL EXPERIENCE: All text in a new line, perfectly aligned in the whole width */}
                         {details.experience && (
-                          <div className="pt-2.5 border-t border-[#EBE6D6]">
+                          <div className="pt-2.5 border-t border-[#EBE6D6] mt-auto">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] block mb-1.5 text-left">
                               PROFESSIONAL EXPERIENCE:
                             </span>
@@ -314,6 +384,27 @@ export const AboutPage: React.FC = () => {
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
+                </div>
+              )}
+              {/* Desktop Indicator Dots when > 3 cards */}
+              {filteredCards.length > 3 && (
+                <div className="hidden sm:flex items-center justify-center gap-1.5 pt-1">
+                  {filteredCards.map((card, i) => (
+                    <button
+                      key={card.id || i}
+                      onClick={() => scrollToCard(i)}
+                      aria-label={`Slide to staff member ${i + 1}`}
+                      className="p-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+                    >
+                      <span
+                        className={`transition-all duration-300 rounded-full block ${
+                          activeCardIndex === i
+                            ? 'w-6 h-2 bg-[#256B3A]'
+                            : 'w-2 h-2 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
+                        }`}
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
