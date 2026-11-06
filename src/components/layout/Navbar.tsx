@@ -38,11 +38,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             alt="Loneitu"
             className="w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-200 shrink-0"
           />
-          <div className="flex flex-col items-start justify-center leading-none">
+          <div className="flex flex-col items-center justify-center leading-none text-center">
             <span className="font-serif font-bold text-[29px] sm:text-[31px] tracking-tight text-[#143520] leading-none block">
               Lone<span className="text-[#32864A]">itu</span>
             </span>
-            <span className="text-[12px] uppercase font-bold tracking-[0.25em] text-[#256B3A] leading-none mt-2 block">
+            <span className="text-[11px] sm:text-[11.5px] uppercase font-bold tracking-[0.22em] mr-[-0.22em] text-[#256B3A] leading-none mt-2 block">
               MIZORAM TAN
             </span>
           </div>
