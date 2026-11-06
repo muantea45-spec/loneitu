@@ -62,18 +62,11 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
 
   return (
     <div ref={gridTopRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Controls Bar without sorting dropdown */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-3 border-b border-[#EBE6D6]">
-        <div>
-          <p className="text-xs sm:text-sm text-[#6F5B3C] font-medium">
-            Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          <span className="text-xs font-semibold px-3 py-1.5 bg-[#EBF1EA] text-[#1E542E] rounded-full border border-[#B7CEB4]">
-            {articles.length} posts
-          </span>
-        </div>
+      {/* Section Heading: CONTENT - Centered horizontally across all viewports */}
+      <div className="mb-8 pb-3 border-b border-[#EBE6D6] text-center">
+        <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] tracking-tight uppercase">
+          CONTENT
+        </h2>
       </div>
 
       {/* Grid container with up to 5 posts */}

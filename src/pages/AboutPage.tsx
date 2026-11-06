@@ -172,18 +172,20 @@ export const AboutPage: React.FC = () => {
             )}
 
             {/* Slideable on MOBILE view to spare space & responsive grid on tablet/desktop */}
-            <div className="space-y-4 w-full overflow-hidden sm:overflow-visible">
-              <div
-                ref={carouselRef}
-                className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none touch-pan-x overscroll-x-contain"
-              >
+            <div className="space-y-4 w-full">
+              {/* Carousel wrapper with overflow hidden to safely clip -mx-4 mobile margins */}
+              <div className="w-full overflow-hidden sm:overflow-visible">
+                <div
+                  ref={carouselRef}
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 scrollbar-none touch-pan-x overscroll-x-contain"
+                >
                   {filteredCards.map(card => {
                     const details = getStaffCardDetails(card);
                     return (
                       <div
                         key={card.id}
                         data-staff-card="true"
-                        className="min-w-[85vw] max-w-[88vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-5 sm:p-6 space-y-4"
+                        className="min-w-[82vw] max-w-[84vw] snap-center shrink-0 sm:min-w-0 sm:max-w-none sm:shrink group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-4 sm:p-6 space-y-4"
                       >
                         {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
                         <div className="flex items-center justify-between gap-3 min-w-0">
@@ -264,56 +266,57 @@ export const AboutPage: React.FC = () => {
                     );
                   })}
                 </div>
-
-                {/* Mobile Dot Indicators & Carousel Navigation Bar */}
-                {filteredCards.length > 1 && (
-                  <div className="flex sm:hidden items-center justify-between px-2 pt-1">
-                    <button
-                      onClick={() => scrollToCard(Math.max(0, activeCardIndex - 1))}
-                      disabled={activeCardIndex === 0}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
-                      aria-label="Previous staff member"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-
-                    {/* Interactive Dots Pagination */}
-                    <div className="flex items-center gap-1.5 px-3 py-2 bg-white/80 backdrop-blur-xs rounded-full border border-[#DDD4BC] shadow-2xs">
-                      {filteredCards.map((card, i) => {
-                        const isActive = activeCardIndex === i;
-                        return (
-                          <button
-                            key={card.id || i}
-                            onClick={() => scrollToCard(i)}
-                            aria-label={`Go to staff card ${i + 1}`}
-                            className="p-1.5 -m-0.5 rounded-full flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
-                          >
-                            <span
-                              className={`transition-all duration-300 rounded-full block ${
-                                isActive
-                                  ? 'w-6 h-2.5 bg-[#256B3A] shadow-xs'
-                                  : 'w-2.5 h-2.5 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
-                              }`}
-                            />
-                          </button>
-                        );
-                      })}
-                      <span className="text-[10px] font-bold text-[#6F5B3C] ml-1 select-none">
-                        {activeCardIndex + 1}/{filteredCards.length}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => scrollToCard(Math.min(filteredCards.length - 1, activeCardIndex + 1))}
-                      disabled={activeCardIndex === filteredCards.length - 1}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
-                      aria-label="Next staff member"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
               </div>
+
+              {/* Mobile Dot Indicators & Carousel Navigation Bar - Strictly Centered & Fully Contained */}
+              {filteredCards.length > 1 && (
+                <div className="flex sm:hidden items-center justify-center gap-2.5 pt-2 px-2 w-full max-w-full">
+                  <button
+                    onClick={() => scrollToCard(Math.max(0, activeCardIndex - 1))}
+                    disabled={activeCardIndex === 0}
+                    className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden shrink-0"
+                    aria-label="Previous staff member"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Interactive Dots Pagination */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-xs rounded-full border border-[#DDD4BC] shadow-2xs shrink-0 max-w-[200px] overflow-x-auto scrollbar-none">
+                    {filteredCards.map((card, i) => {
+                      const isActive = activeCardIndex === i;
+                      return (
+                        <button
+                          key={card.id || i}
+                          onClick={() => scrollToCard(i)}
+                          aria-label={`Go to staff card ${i + 1}`}
+                          className="p-1 -m-0.5 rounded-full flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+                        >
+                          <span
+                            className={`transition-all duration-300 rounded-full block ${
+                              isActive
+                                ? 'w-5 h-2 bg-[#256B3A] shadow-xs'
+                                : 'w-2 h-2 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
+                    <span className="text-[10px] font-bold text-[#6F5B3C] ml-1 select-none">
+                      {activeCardIndex + 1}/{filteredCards.length}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => scrollToCard(Math.min(filteredCards.length - 1, activeCardIndex + 1))}
+                    disabled={activeCardIndex === filteredCards.length - 1}
+                    className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl bg-white border border-[#DDD4BC] text-[#143520] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F6F4EB] transition-colors shadow-2xs cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden shrink-0"
+                    aria-label="Next staff member"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

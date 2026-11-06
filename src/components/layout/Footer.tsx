@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ArrowRight, Mail } from 'lucide-react';
+import { ArrowRight, Mail } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
@@ -108,14 +108,13 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Bar: Left-aligned on mobile */}
-      <div className="border-t border-[#1E542E] py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#88A682] gap-2.5 text-left">
+      {/* Bottom Bar: Strictly Horizontally Centered */}
+      <div className="border-t border-[#1E542E] py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center justify-center text-xs text-[#88A682] gap-1 text-center">
         <div>
-          © {new Date().getFullYear()} {data.copyrightText || 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.'}
+          © 2026 Loneitu - MIZORAM TAN
         </div>
-        <div className="flex items-center gap-1 text-[11px]">
-          <span>{data.dedicationText || 'Loneitute leh zirtirtute tana duhsakna nen'}</span>
-          <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400 inline ml-1" />
+        <div className="text-[11px]">
+          Nang malsawmna ni ang che
         </div>
       </div>
     </footer>
