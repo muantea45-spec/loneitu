@@ -19,7 +19,6 @@ import { TableOfContents } from '../components/article/TableOfContents';
 import { AuthorBio } from '../components/article/AuthorBio';
 import { ShareButtons } from '../components/article/ShareButtons';
 import { RelatedPosts } from '../components/article/RelatedPosts';
-import { CommentsSection } from '../components/article/CommentsSection';
 import { ShareModal } from '../components/common/ShareModal';
 import { resolveImageUrl } from '../utils/imageUrlResolver';
 
@@ -263,12 +262,6 @@ export const ArticleDetailPage: React.FC = () => {
 
             {/* Full Author Bio Card */}
             <AuthorBio author={article.author} />
-
-            {/* Community Field Observations / Comments */}
-            <CommentsSection
-              articleId={article.id}
-              comments={article.comments || []}
-            />
 
             {/* Related Research Articles */}
             <RelatedPosts currentArticle={article} allArticles={articles} />
