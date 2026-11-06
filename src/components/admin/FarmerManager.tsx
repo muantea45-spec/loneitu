@@ -1073,28 +1073,28 @@ export const FarmerManager: React.FC = () => {
                 <div
                   key={farmer.id}
                   onClick={() => setSelectedFarmerForDetail(farmer)}
-                  className="group relative flex flex-col justify-between bg-[#FAFAF8] dark:bg-[#FAFAF8] rounded-2xl border border-[#E5E0D0] dark:border-[#E5E0D0] hover:border-[#DDD4BC] shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer text-slate-800 dark:text-slate-800"
+                  className="group relative flex flex-col justify-between bg-gradient-to-b from-[#F7F8FA] via-[#EEF1F5] to-[#E3E7ED] dark:from-[#F7F8FA] dark:via-[#EEF1F5] dark:to-[#E3E7ED] rounded-2xl border border-[#D5D9E2] dark:border-[#D5D9E2] hover:border-[#94A3B8] shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer text-slate-900 dark:text-slate-900"
                 >
-                  {/* Decorative subtle accent top strip in matte tone */}
-                  <div className="h-1 w-full bg-[#EDE8DC] dark:bg-[#EDE8DC] opacity-90" />
+                  {/* Decorative subtle accent top strip in slate-grey gradient */}
+                  <div className="h-1 w-full bg-gradient-to-r from-[#94A3B8] via-[#CBD5E1] to-[#64748B] opacity-90" />
 
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     {/* Card Top: Monogram/Avatar & Full Unobstructed Farmer Name */}
                     <div>
-                      <div className="flex items-center gap-3 pb-3 border-b border-[#F0EBE0] dark:border-[#F0EBE0]">
+                      <div className="flex items-center gap-3 pb-3 border-b border-[#D5D9E2] dark:border-[#D5D9E2]">
                         <div className="relative shrink-0 group/cardavatar">
                           {farmer.avatar ? (
                             <img
                               src={resolveImageUrl(farmer.avatar)}
                               alt={farmer.fullName}
-                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#E5E0D0] dark:ring-[#E5E0D0] shadow-xs"
+                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#CBD5E1] dark:ring-[#CBD5E1] shadow-xs"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src =
                                   'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200';
                               }}
                             />
                           ) : (
-                            <div className="w-11 h-11 rounded-full bg-[#EDE8DC] dark:bg-[#EDE8DC] text-[#4A3D2C] dark:text-[#4A3D2C] font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-[#E5E0D0] dark:ring-[#E5E0D0] shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#E2E8F0] to-[#CBD5E1] dark:from-[#E2E8F0] dark:to-[#CBD5E1] text-[#334155] dark:text-[#334155] font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-[#CBD5E1] dark:ring-[#CBD5E1] shrink-0">
                               {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
                             </div>
                           )}
@@ -1123,7 +1123,7 @@ export const FarmerManager: React.FC = () => {
                         {/* Full width unobstructed name */}
                         <div className="flex-1 min-w-0">
                           <h3 
-                            className="text-sm sm:text-base font-bold text-[#1E293B] dark:text-[#1E293B] group-hover:text-[#143520] transition-colors leading-snug line-clamp-2"
+                            className="text-sm sm:text-base font-bold text-[#0F172A] dark:text-[#0F172A] group-hover:text-[#1E293B] transition-colors leading-snug line-clamp-2"
                             title={farmer.fullName}
                           >
                             {farmer.fullName}
@@ -1134,7 +1134,7 @@ export const FarmerManager: React.FC = () => {
                       {/* Card Body: Summary Attributes Displayed ONLY UP TO CONTACT NO */}
                       <div className="py-2.5 space-y-1.5">
                         {summaryColumns.length === 0 ? (
-                          <p className="text-[11px] text-slate-400 italic text-center py-1">No fields uploaded</p>
+                          <p className="text-[11px] text-slate-500 italic text-center py-1">No fields uploaded</p>
                         ) : (
                           summaryColumns.map(col => {
                             const val = farmer.data?.[col];
@@ -1145,14 +1145,14 @@ export const FarmerManager: React.FC = () => {
                             return (
                               <div 
                                 key={col}
-                                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white dark:bg-white border border-[#EDE8DC] dark:border-[#EDE8DC] shadow-2xs"
+                                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/95 dark:bg-white/95 border border-[#D5D9E2]/80 dark:border-[#D5D9E2]/80 shadow-2xs"
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] dark:text-[#6F5B3C] truncate max-w-[40%]">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] dark:text-[#64748B] truncate max-w-[40%]">
                                   {col}:
                                 </span>
                                 <div className="flex items-center gap-1.5 truncate max-w-[60%] justify-end">
                                   <span 
-                                    className="font-semibold text-[#1E293B] dark:text-[#1E293B] truncate text-[11px] text-right" 
+                                    className="font-bold text-[#0F172A] dark:text-[#0F172A] truncate text-[11px] text-right" 
                                     title={String(val ?? '')}
                                   >
                                     {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
@@ -1192,8 +1192,8 @@ export const FarmerManager: React.FC = () => {
                     </div>
 
                     {/* Card Footer: Summary Tag & Action Buttons */}
-                    <div className="pt-2.5 mt-2 border-t border-[#F0EBE0] dark:border-[#F0EBE0] flex items-center justify-between gap-2">
-                      <div className="text-[11px] font-medium text-[#7C6A53] dark:text-[#7C6A53] truncate">
+                    <div className="pt-2.5 mt-2 border-t border-[#D5D9E2] dark:border-[#D5D9E2] flex items-center justify-between gap-2">
+                      <div className="text-[11px] font-medium text-[#475569] dark:text-[#475569] truncate">
                         {extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}
                       </div>
 
