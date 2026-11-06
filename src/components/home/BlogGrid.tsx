@@ -52,10 +52,10 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             <BookOpen className="w-7 h-7" />
           </div>
           <h3 className="font-serif font-bold text-xl text-[#143520]">
-            Thuziak Hmuh A Awm Rih Lo
+            Thuziak thar hmuh tur a awm rih lo.
           </h3>
           <p className="text-xs sm:text-sm text-[#6F5B3C] leading-relaxed">
-            I thil zawn leh sector thlan chhungah hian thuziak a awm rih lo a ni. Thlan dang han thlang chhin teh.
+            I thil zawn chhungah hian thuziak a awm rih lo.
           </p>
           <button
             onClick={clearFilters}
