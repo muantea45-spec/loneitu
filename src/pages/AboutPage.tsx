@@ -48,10 +48,12 @@ export const AboutPage: React.FC = () => {
 
     const firstChild = container.firstElementChild as HTMLElement;
     if (firstChild) {
-      const cardGap = window.innerWidth >= 640 ? 24 : 16;
+      const cardGap = window.innerWidth >= 640 ? 24 : 0;
       const cardWidth = firstChild.offsetWidth + cardGap;
-      const newIndex = Math.round(scrollLeft / cardWidth);
-      setActiveCardIndex(Math.max(0, Math.min(newIndex, filteredCards.length - 1)));
+      if (cardWidth > 0) {
+        const newIndex = Math.round(scrollLeft / cardWidth);
+        setActiveCardIndex(Math.max(0, Math.min(newIndex, filteredCards.length - 1)));
+      }
     }
   }, [filteredCards.length]);
 
@@ -71,8 +73,8 @@ export const AboutPage: React.FC = () => {
     const container = carouselRef.current;
     if (!container) return;
     const firstChild = container.firstElementChild as HTMLElement;
-    const gap = window.innerWidth >= 640 ? 24 : 16;
-    const cardWidth = firstChild ? firstChild.offsetWidth + gap : 320;
+    const gap = window.innerWidth >= 640 ? 24 : 0;
+    const cardWidth = firstChild ? firstChild.offsetWidth + gap : container.clientWidth;
     container.scrollBy({ left: -cardWidth, behavior: 'smooth' });
   };
 
@@ -80,8 +82,8 @@ export const AboutPage: React.FC = () => {
     const container = carouselRef.current;
     if (!container) return;
     const firstChild = container.firstElementChild as HTMLElement;
-    const gap = window.innerWidth >= 640 ? 24 : 16;
-    const cardWidth = firstChild ? firstChild.offsetWidth + gap : 320;
+    const gap = window.innerWidth >= 640 ? 24 : 0;
+    const cardWidth = firstChild ? firstChild.offsetWidth + gap : container.clientWidth;
     container.scrollBy({ left: cardWidth, behavior: 'smooth' });
   };
 
@@ -89,8 +91,10 @@ export const AboutPage: React.FC = () => {
     const container = carouselRef.current;
     if (!container) return;
     const children = container.querySelectorAll<HTMLElement>('[data-staff-card]');
-    if (children[index]) {
-      children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    const target = children[index];
+    if (target) {
+      const targetLeft = target.getBoundingClientRect().left - container.getBoundingClientRect().left + container.scrollLeft;
+      container.scrollTo({ left: targetLeft, behavior: 'smooth' });
       setActiveCardIndex(index);
     }
   };
@@ -241,13 +245,13 @@ export const AboutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Slideable on desktop (3 cards visible), tablet (2 cards), and mobile (1 card) */}
+            {/* Slideable on desktop (3 cards visible), tablet (2 cards), and mobile (1 whole card centered) */}
             <div className="space-y-4 w-full">
               {/* Carousel wrapper with overflow hidden */}
               <div className="w-full overflow-hidden">
                 <div
                   ref={carouselRef}
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pb-4 sm:pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none touch-pan-x overscroll-x-contain scroll-smooth"
+                  className="flex overflow-x-auto snap-x snap-mandatory pb-4 sm:pb-2 scrollbar-none touch-pan-x overscroll-x-contain scroll-smooth w-full sm:gap-6"
                 >
                   {filteredCards.map(card => {
                     const details = getStaffCardDetails(card);
@@ -255,7 +259,7 @@ export const AboutPage: React.FC = () => {
                       <div
                         key={card.id}
                         data-staff-card="true"
-                        className="w-[82vw] min-w-[82vw] max-w-[84vw] sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] lg:min-w-[calc((100%-3rem)/3)] lg:max-w-[calc((100%-3rem)/3)] snap-start shrink-0 group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-4 sm:p-6 space-y-4"
+                        className="w-full min-w-full max-w-full sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] lg:min-w-[calc((100%-3rem)/3)] lg:max-w-[calc((100%-3rem)/3)] snap-center sm:snap-start shrink-0 group bg-white rounded-3xl border border-[#EBE6D6] hover:border-[#256B3A]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col p-5 sm:p-6 space-y-4"
                       >
                         {/* Top Row: NAME on Left + Small Circular Avatar at Top-Right */}
                         <div className="flex items-center justify-between gap-3 min-w-0">
