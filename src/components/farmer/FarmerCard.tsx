@@ -22,16 +22,16 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
   return (
     <div 
       onClick={() => onSelect?.(farmer)}
-      className="group relative flex flex-col justify-between bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-[#256B3A]/40 transition-all duration-300 cursor-pointer overflow-hidden"
+      className="group relative flex flex-col justify-between bg-white dark:bg-[#151D18] rounded-2xl border border-[#E5E0D0] dark:border-slate-800 p-6 shadow-xs hover:shadow-md hover:-translate-y-1 hover:border-[#256B3A]/70 transition-all duration-300 cursor-pointer overflow-hidden"
     >
       {/* Decorative top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#256B3A] via-[#3E8B54] to-[#C9A84C] opacity-80 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#8FA859] opacity-80 group-hover:opacity-100 transition-opacity" />
 
       <div>
         {/* Top: Centered Circular Avatar + Farmer Name */}
-        <div className="flex flex-col items-center text-center pb-5 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex flex-col items-center text-center pb-5 border-b border-[#F0EBE0] dark:border-slate-800">
           <div className="relative mb-3">
-            <div className="w-20 h-20 rounded-full p-1 ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-[#256B3A]/30 transition-all">
+            <div className="w-20 h-20 rounded-full p-1 ring-2 ring-[#E5E0D0] dark:ring-slate-800 group-hover:ring-[#256B3A]/30 transition-all">
               <img
                 src={farmer.avatar}
                 alt={farmer.fullName}
@@ -47,17 +47,17 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
               className="absolute bottom-0 right-0 bg-[#256B3A] text-white p-1 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-900"
               title="Verified Record"
             >
-              <BadgeCheck className="w-4 h-4" />
+              <BadgeCheck className="w-4 h-4 text-[#BFDC28]" />
             </div>
           </div>
 
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#256B3A] dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+          <h3 className="text-lg font-bold text-[#143520] dark:text-white group-hover:text-[#256B3A] dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
             {farmer.fullName}
           </h3>
         </div>
 
         {/* Body: Display ONLY the uploaded columns and their values */}
-        <div className="grid grid-cols-2 gap-2.5 py-4 text-left border-b border-slate-100 dark:border-slate-800/80 text-xs">
+        <div className="grid grid-cols-2 gap-2.5 py-4 text-left border-b border-[#F0EBE0] dark:border-slate-800 text-xs">
           {previewEntries.length === 0 ? (
             <div className="col-span-2 text-center text-slate-400 py-3 text-xs">
               No additional columns uploaded
@@ -66,12 +66,12 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
             previewEntries.map(([key, val]) => (
               <div 
                 key={key} 
-                className="bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-2.5 border border-slate-100/60 dark:border-slate-800/60"
+                className="bg-[#FBFBF8] dark:bg-slate-900/50 rounded-xl p-2.5 border border-[#EDE8DC] dark:border-slate-800/70"
               >
-                <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium block truncate mb-0.5">
+                <span className="text-[11px] text-[#7C6A53] dark:text-slate-400 font-medium block truncate mb-0.5">
                   {key}
                 </span>
-                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate" title={String(val)}>
+                <p className="font-semibold text-[#143520] dark:text-slate-100 truncate" title={String(val)}>
                   {String(val)}
                 </p>
               </div>
@@ -84,7 +84,7 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
       <div className="pt-4 flex items-center justify-between gap-2 mt-auto">
         <div>
           {extraCount > 0 && (
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+            <span className="text-[11px] font-semibold text-[#7C6A53] dark:text-slate-400 bg-[#F6F4EB] dark:bg-slate-800 px-2.5 py-0.5 rounded-md border border-[#EDE8DC] dark:border-slate-700">
               +{extraCount} more columns
             </span>
           )}
@@ -96,7 +96,7 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
             e.stopPropagation();
             onSelect?.(farmer);
           }}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-[#256B3A] dark:text-emerald-400 hover:text-[#184826] transition-colors shrink-0 group-hover:translate-x-0.5"
+          className="inline-flex items-center gap-1 text-xs font-bold text-[#256B3A] dark:text-emerald-400 hover:text-[#143520] transition-colors shrink-0 group-hover:translate-x-0.5"
         >
           <span>View Details</span>
           <ArrowRight className="w-3.5 h-3.5" />

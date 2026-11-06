@@ -1012,11 +1012,11 @@ export const FarmerManager: React.FC = () => {
         </div>
       )}
 
-      {/* MAIN VIEW CONTENT: COMPACT GREEN CARDS (DEFAULT) */}
+      {/* MAIN VIEW CONTENT: ELEGANT MATTE WHITE CARDS (DEFAULT) */}
       {viewMode === 'card' ? (
         <div className="space-y-6">
           {paginatedFarmers.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border-2 border-dashed border-emerald-200 dark:border-emerald-900 text-slate-400">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border-2 border-dashed border-[#DDD4BC] dark:border-slate-800 text-slate-400">
               <p className="text-base font-bold text-slate-700 dark:text-slate-300 mb-1">
                 {farmers.length === 0 ? 'No farmer profiles yet' : 'No records match your search'}
               </p>
@@ -1035,24 +1035,24 @@ export const FarmerManager: React.FC = () => {
                 <div
                   key={farmer.id}
                   onClick={() => setSelectedFarmerForDetail(farmer)}
-                  className="group relative flex flex-col justify-between bg-gradient-to-b from-[#F3F8F4] to-white dark:from-[#0d2616] dark:to-[#0a1a0f] rounded-2xl border-2 border-emerald-200/90 dark:border-emerald-800/80 hover:border-[#256B3A] dark:hover:border-emerald-400 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer"
+                  className="group relative flex flex-col justify-between bg-white dark:bg-[#151D18] rounded-2xl border border-[#E5E0D0] dark:border-slate-800 hover:border-[#256B3A]/80 dark:hover:border-emerald-500/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer"
                 >
-                  {/* Decorative Forest Green Accent Top Strip */}
-                  <div className="h-1.5 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
+                  {/* Decorative subtle accent top strip */}
+                  <div className="h-1 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#8FA859] opacity-80 group-hover:opacity-100 transition-opacity" />
 
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     {/* Card Top: Monogram/Avatar & Full Unobstructed Farmer Name */}
                     <div>
-                      <div className="flex items-center gap-3 pb-3 border-b border-emerald-100 dark:border-emerald-900/60">
+                      <div className="flex items-center gap-3 pb-3 border-b border-[#F0EBE0] dark:border-slate-800">
                         <div className="relative shrink-0">
                           {farmer.avatar ? (
                             <img
                               src={farmer.avatar}
                               alt={farmer.fullName}
-                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#256B3A]/30 dark:ring-emerald-400/30 shadow-xs"
+                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#E5E0D0] dark:ring-slate-700 shadow-xs"
                             />
                           ) : (
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-emerald-500/20 shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-[#E5E0D0] shrink-0">
                               {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
                             </div>
                           )}
@@ -1067,7 +1067,7 @@ export const FarmerManager: React.FC = () => {
                         {/* Full width unobstructed name */}
                         <div className="flex-1 min-w-0">
                           <h3 
-                            className="text-sm sm:text-base font-black text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors leading-snug line-clamp-2"
+                            className="text-sm sm:text-base font-bold text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors leading-snug line-clamp-2"
                             title={farmer.fullName}
                           >
                             {farmer.fullName}
@@ -1089,14 +1089,14 @@ export const FarmerManager: React.FC = () => {
                             return (
                               <div 
                                 key={col}
-                                className="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-white/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60"
+                                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-[#FBFBF8] dark:bg-slate-900/50 border border-[#EDE8DC] dark:border-slate-800/70"
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#256B3A] dark:text-emerald-400 truncate max-w-[40%]">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] dark:text-slate-400 truncate max-w-[40%]">
                                   {col}:
                                 </span>
                                 <div className="flex items-center gap-1.5 truncate max-w-[60%] justify-end">
                                   <span 
-                                    className="font-bold text-slate-800 dark:text-slate-100 truncate text-[11px] text-right" 
+                                    className="font-semibold text-[#143520] dark:text-slate-100 truncate text-[11px] text-right" 
                                     title={String(val ?? '')}
                                   >
                                     {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
@@ -1136,8 +1136,8 @@ export const FarmerManager: React.FC = () => {
                     </div>
 
                     {/* Card Footer: Summary Tag & Action Buttons */}
-                    <div className="pt-2.5 mt-2 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between gap-2">
-                      <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 truncate">
+                    <div className="pt-2.5 mt-2 border-t border-[#F0EBE0] dark:border-slate-800 flex items-center justify-between gap-2">
+                      <div className="text-[11px] font-medium text-[#7C6A53] dark:text-slate-400 truncate">
                         {extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}
                       </div>
 
@@ -1166,7 +1166,7 @@ export const FarmerManager: React.FC = () => {
                         )}
                         <button
                           onClick={() => setSelectedFarmerForDetail(farmer)}
-                          className="p-1.5 rounded-lg text-emerald-800 dark:text-emerald-300 hover:text-white hover:bg-[#256B3A] bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/80 transition-all shadow-2xs"
+                          className="p-1.5 rounded-lg text-[#143520] dark:text-emerald-300 hover:text-white hover:bg-[#143520] bg-[#F6F4EB] dark:bg-slate-800 border border-[#DDD4BC] dark:border-slate-700 transition-all shadow-2xs"
                           title="View Full Profile"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -1199,10 +1199,10 @@ export const FarmerManager: React.FC = () => {
           )}
         </div>
       ) : (
-        /* TABLE VIEW (MATCHING GREEN CARDS COLOR SCHEME) */
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-emerald-300 dark:border-emerald-800 shadow-md overflow-hidden">
-          {/* Top Green Accent Strip */}
-          <div className="h-2 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#409b5c]" />
+        /* TABLE VIEW */
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#E5E0D0] dark:border-slate-800 shadow-sm overflow-hidden">
+          {/* Top Subtle Accent Strip */}
+          <div className="h-1 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#8FA859]" />
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
