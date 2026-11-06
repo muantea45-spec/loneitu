@@ -13,7 +13,7 @@ export const DEFAULT_AUTHORIZED_EMAILS: string[] = [
   'hriata.cherput@gmail.com', // Authorized Administrator & Editor
 ];
 
-export const DEFAULT_ADMIN_KEY = 'agri2026';
+export const DEFAULT_ADMIN_KEY = '';
 
 export const isDefaultAuthorizedEmail = (email: string): boolean => {
   const normalized = email.trim().toLowerCase();

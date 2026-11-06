@@ -48,8 +48,8 @@ A complete, responsive, full-stack digital publication and editorial CMS web app
 ### 2. Admin Console & Content Management (`/admin`)
 
 * **Authentication & Access:**
-  * Dedicated route `/admin` with secure state persistence.
-  * **One-Click Demo Login button** for instant evaluator review, as well as password authentication (passwords: `admin` or `agri2026`).
+  * Dedicated route `/admin` with Google OAuth 2.0 Identity authentication.
+  * Restricted strictly to authorized administrator email addresses.
 * **Editorial Dashboard Overview:**
   * Key Performance Indicators (Total Articles, Published vs Drafts, Sectors, Tags, Total Field Readership, and Applauds).
   * Recent articles table with quick status and edit actions.
@@ -108,8 +108,8 @@ npm run preview
 ## 🔐 Admin Access Details
 
 * **URL Route:** `/admin`
-* **Demo Passwords:** `admin` or `agri2026` or `roots`
-* **One-Click Login:** A dedicated **"One-Click Demo Admin Login"** button is provided directly on the login screen for testing convenience.
+* **Authentication:** Google OAuth 2.0 Identity Services.
+* **Access Control:** Restricted strictly to whitelisted administrative email accounts.
 
 ---
 

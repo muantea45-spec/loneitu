@@ -181,8 +181,8 @@ async function saveRemoteDatabase(payload: any, authInfo?: { key?: string; email
   const t = Date.now();
   let saved = false;
 
-  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || 'agri2026';
-  const email = authInfo?.email || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) : null) || 'muantea45@gmail.com';
+  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || '';
+  const email = authInfo?.email || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) : null) || '';
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -1018,7 +1018,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const loginAdmin = (password: string) => {
-    if (password === 'admin' || password === 'agri2026' || password === 'roots' || password === 'admin123') {
+    if (adminSecurityKey && password.trim() && password.trim() === adminSecurityKey.trim()) {
       setIsAdminLoggedIn(true);
       setAdminEmail(primaryOwnerEmail);
       return true;
