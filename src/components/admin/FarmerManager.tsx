@@ -1073,28 +1073,28 @@ export const FarmerManager: React.FC = () => {
                 <div
                   key={farmer.id}
                   onClick={() => setSelectedFarmerForDetail(farmer)}
-                  className="group relative flex flex-col justify-between bg-white dark:bg-[#151D18] rounded-2xl border border-[#E5E0D0] dark:border-slate-800 hover:border-[#256B3A]/80 dark:hover:border-emerald-500/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer"
+                  className="group relative flex flex-col justify-between bg-[#FAFAF8] dark:bg-[#FAFAF8] rounded-2xl border border-[#E5E0D0] dark:border-[#E5E0D0] hover:border-[#DDD4BC] shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer text-slate-800 dark:text-slate-800"
                 >
-                  {/* Decorative subtle accent top strip */}
-                  <div className="h-1 w-full bg-gradient-to-r from-[#143520] via-[#256B3A] to-[#8FA859] opacity-80 group-hover:opacity-100 transition-opacity" />
+                  {/* Decorative subtle accent top strip in matte tone */}
+                  <div className="h-1 w-full bg-[#EDE8DC] dark:bg-[#EDE8DC] opacity-90" />
 
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     {/* Card Top: Monogram/Avatar & Full Unobstructed Farmer Name */}
                     <div>
-                      <div className="flex items-center gap-3 pb-3 border-b border-[#F0EBE0] dark:border-slate-800">
+                      <div className="flex items-center gap-3 pb-3 border-b border-[#F0EBE0] dark:border-[#F0EBE0]">
                         <div className="relative shrink-0 group/cardavatar">
                           {farmer.avatar ? (
                             <img
                               src={resolveImageUrl(farmer.avatar)}
                               alt={farmer.fullName}
-                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#E5E0D0] dark:ring-slate-700 shadow-xs"
+                              className="w-11 h-11 rounded-full object-cover ring-2 ring-[#E5E0D0] dark:ring-[#E5E0D0] shadow-xs"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src =
                                   'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200';
                               }}
                             />
                           ) : (
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-[#E5E0D0] shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-[#EDE8DC] dark:bg-[#EDE8DC] text-[#4A3D2C] dark:text-[#4A3D2C] font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-[#E5E0D0] dark:ring-[#E5E0D0] shrink-0">
                               {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
                             </div>
                           )}
@@ -1113,7 +1113,7 @@ export const FarmerManager: React.FC = () => {
                             />
                           </label>
                           <div 
-                            className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-slate-900 pointer-events-none"
+                            className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-white pointer-events-none"
                             title="Verified"
                           >
                             <ShieldCheck className="w-2.5 h-2.5 text-[#BFDC28]" />
@@ -1123,7 +1123,7 @@ export const FarmerManager: React.FC = () => {
                         {/* Full width unobstructed name */}
                         <div className="flex-1 min-w-0">
                           <h3 
-                            className="text-sm sm:text-base font-bold text-[#143520] dark:text-emerald-100 group-hover:text-[#256B3A] dark:group-hover:text-emerald-300 transition-colors leading-snug line-clamp-2"
+                            className="text-sm sm:text-base font-bold text-[#1E293B] dark:text-[#1E293B] group-hover:text-[#143520] transition-colors leading-snug line-clamp-2"
                             title={farmer.fullName}
                           >
                             {farmer.fullName}
@@ -1145,14 +1145,14 @@ export const FarmerManager: React.FC = () => {
                             return (
                               <div 
                                 key={col}
-                                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-[#FBFBF8] dark:bg-slate-900/50 border border-[#EDE8DC] dark:border-slate-800/70"
+                                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white dark:bg-white border border-[#EDE8DC] dark:border-[#EDE8DC] shadow-2xs"
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] dark:text-slate-400 truncate max-w-[40%]">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] dark:text-[#6F5B3C] truncate max-w-[40%]">
                                   {col}:
                                 </span>
                                 <div className="flex items-center gap-1.5 truncate max-w-[60%] justify-end">
                                   <span 
-                                    className="font-semibold text-[#143520] dark:text-slate-100 truncate text-[11px] text-right" 
+                                    className="font-semibold text-[#1E293B] dark:text-[#1E293B] truncate text-[11px] text-right" 
                                     title={String(val ?? '')}
                                   >
                                     {val !== undefined && val !== '' ? String(val) : <span className="text-slate-400 font-normal italic">-</span>}
@@ -1192,8 +1192,8 @@ export const FarmerManager: React.FC = () => {
                     </div>
 
                     {/* Card Footer: Summary Tag & Action Buttons */}
-                    <div className="pt-2.5 mt-2 border-t border-[#F0EBE0] dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="text-[11px] font-medium text-[#7C6A53] dark:text-slate-400 truncate">
+                    <div className="pt-2.5 mt-2 border-t border-[#F0EBE0] dark:border-[#F0EBE0] flex items-center justify-between gap-2">
+                      <div className="text-[11px] font-medium text-[#7C6A53] dark:text-[#7C6A53] truncate">
                         {extraColumnsCount > 0 ? `+${extraColumnsCount} more fields` : 'Full profile'}
                       </div>
 
@@ -1222,14 +1222,14 @@ export const FarmerManager: React.FC = () => {
                         )}
                         <button
                           onClick={() => setSelectedFarmerForDetail(farmer)}
-                          className="p-1.5 rounded-lg text-[#143520] dark:text-emerald-300 hover:text-white hover:bg-[#143520] bg-[#F6F4EB] dark:bg-slate-800 border border-[#DDD4BC] dark:border-slate-700 transition-all shadow-2xs"
+                          className="p-1.5 rounded-lg text-[#143520] dark:text-[#143520] hover:text-white hover:bg-[#143520] bg-[#F6F4EB] dark:bg-[#F6F4EB] border border-[#DDD4BC] dark:border-[#DDD4BC] transition-all shadow-2xs cursor-pointer"
                           title="View Full Profile"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(farmer)}
-                          className="p-1.5 rounded-lg text-blue-700 dark:text-blue-300 hover:text-white hover:bg-blue-600 bg-blue-50 dark:bg-blue-950/80 border border-blue-200/80 dark:border-blue-800/80 transition-all shadow-2xs"
+                          className="p-1.5 rounded-lg text-blue-700 hover:text-white hover:bg-blue-600 bg-blue-50 border border-blue-200 transition-all shadow-2xs cursor-pointer"
                           title="Edit Fields"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -1240,7 +1240,7 @@ export const FarmerManager: React.FC = () => {
                               deleteFarmer(farmer.id);
                             }
                           }}
-                          className="p-1.5 rounded-lg text-rose-700 dark:text-rose-300 hover:text-white hover:bg-rose-600 bg-rose-50 dark:bg-rose-950/80 border border-rose-200/80 dark:border-rose-800/80 transition-all shadow-2xs"
+                          className="p-1.5 rounded-lg text-rose-700 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 transition-all shadow-2xs cursor-pointer"
                           title="Delete Record"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

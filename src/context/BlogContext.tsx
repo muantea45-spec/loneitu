@@ -43,7 +43,7 @@ interface BlogContextType {
   addColumn: (newCol: string) => void;
   addFarmerCustomField: (field: FarmerFieldDefinition) => void;
   deleteFarmerCustomField: (key: string) => void;
-  
+
   // Auth actions
   loginAdminWithGmail: (email: string) => boolean;
   verifyAndLoginAdmin: (email: string, passkey: string) => { ok: boolean; error?: string };
@@ -55,7 +55,7 @@ interface BlogContextType {
   removeAuthorizedEmail: (email: string) => boolean;
   isAuthorizedEmail: (email: string) => boolean;
   checkAndRefreshAuthorization: (email: string) => Promise<boolean>;
-  
+
   // Article CRUD & Actions
   addArticle: (data: Partial<Article> & { title: string; content: string; category: string }) => Article;
   updateArticle: (id: string, updates: Partial<Article>) => void;
@@ -131,7 +131,7 @@ function broadcastLocalChange(type: string, payload: any) {
       const channel = new BroadcastChannel('loneitu_live_bus');
       channel.postMessage({ type, payload, timestamp: Date.now() });
       channel.close();
-    } catch {}
+    } catch { }
   }
 }
 
@@ -594,7 +594,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthorizedEmails(cleanList);
         try {
           localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(cleanList));
-        } catch {}
+        } catch { }
       }
 
       if (cloudData.primaryOwnerEmail) {
@@ -602,14 +602,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setPrimaryOwnerEmailState(owner);
         try {
           localStorage.setItem(STORAGE_KEYS.PRIMARY_OWNER, owner);
-        } catch {}
+        } catch { }
       }
 
       if (cloudData.adminSecurityKey) {
         setAdminSecurityKeyState(cloudData.adminSecurityKey);
         try {
           localStorage.setItem(STORAGE_KEYS.SECURITY_KEY, cloudData.adminSecurityKey);
-        } catch {}
+        } catch { }
       }
 
       if (Array.isArray(cloudData.articles) && cloudData.articles.length > 0) {
@@ -620,7 +620,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setArticles(cloudData.articles);
           try {
             localStorage.setItem(STORAGE_KEYS.ARTICLES, newArticlesStr);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -628,21 +628,21 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCategories(cloudData.categories);
         try {
           localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(cloudData.categories));
-        } catch {}
+        } catch { }
       }
 
       if (Array.isArray(cloudData.tags) && cloudData.tags.length > 0) {
         setTags(cloudData.tags);
         try {
           localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(cloudData.tags));
-        } catch {}
+        } catch { }
       }
 
       if (Array.isArray(cloudData.authors) && cloudData.authors.length > 0) {
         setAuthors(cloudData.authors);
         try {
           localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(cloudData.authors));
-        } catch {}
+        } catch { }
       }
 
       if (cloudData.aboutData && typeof cloudData.aboutData === 'object') {
@@ -659,7 +659,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setAboutData(mergedAbout);
           try {
             localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, newStr);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -670,7 +670,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setFooterData(cloudData.footerData);
           try {
             localStorage.setItem(STORAGE_KEYS.FOOTER, newFooterStr);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -679,14 +679,14 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setFarmers(cleaned);
         try {
           localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cleaned));
-        } catch {}
+        } catch { }
       }
 
       if (Array.isArray(cloudData.farmerCustomFields)) {
         setFarmerCustomFields(cloudData.farmerCustomFields);
         try {
           localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(cloudData.farmerCustomFields));
-        } catch {}
+        } catch { }
       }
 
       setCloudSyncStatus('synced');
@@ -748,17 +748,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { type, payload } = event.data;
       if (type === 'AUTH_EMAILS' && Array.isArray(payload)) {
         setAuthorizedEmails(payload);
-        try { localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(payload)); } catch {}
+        try { localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(payload)); } catch { }
       } else if (type === 'ARTICLES' && Array.isArray(payload)) {
         setArticles(payload);
-        try { localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(payload)); } catch {}
+        try { localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(payload)); } catch { }
       } else if (type === 'ABOUT_DATA' && payload && typeof payload === 'object') {
         setAboutData(payload);
-        try { localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(payload)); } catch {}
+        try { localStorage.setItem(STORAGE_KEYS.ABOUT_PAGE, JSON.stringify(payload)); } catch { }
       } else if (type === 'FARMERS' && Array.isArray(payload)) {
         const cleaned = cleanFarmerAvatars(payload);
         setFarmers(cleaned);
-        try { localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cleaned)); } catch {}
+        try { localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cleaned)); } catch { }
       }
     };
     return () => {
@@ -851,13 +851,13 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!authorizedEmails.includes(normalized)) {
       updatedEmails = [...authorizedEmails, normalized];
       setAuthorizedEmails(updatedEmails);
-      try { localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updatedEmails)); } catch {}
+      try { localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updatedEmails)); } catch { }
     }
     lastMutationTimeRef.current = Date.now();
     latestDbStateRef.current.primaryOwnerEmail = normalized;
     latestDbStateRef.current.authorizedEmails = updatedEmails;
     setPrimaryOwnerEmailState(normalized);
-    try { localStorage.setItem(STORAGE_KEYS.PRIMARY_OWNER, normalized); } catch {}
+    try { localStorage.setItem(STORAGE_KEYS.PRIMARY_OWNER, normalized); } catch { }
     pushToCloudDatabase({ primaryOwnerEmail: normalized, authorizedEmails: updatedEmails });
     broadcastLocalChange('AUTH_EMAILS', updatedEmails);
   };
@@ -902,7 +902,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setAuthorizedEmails(merged);
           try {
             localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(merged));
-          } catch {}
+          } catch { }
           return true;
         }
       }
@@ -924,7 +924,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthorizedEmails(updated);
     try {
       localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updated));
-    } catch {}
+    } catch { }
 
     pushToCloudDatabase({ authorizedEmails: updated });
     broadcastLocalChange('AUTH_EMAILS', updated);
@@ -942,7 +942,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthorizedEmails(updated);
     try {
       localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(updated));
-    } catch {}
+    } catch { }
 
     pushToCloudDatabase({ authorizedEmails: updated });
     broadcastLocalChange('AUTH_EMAILS', updated);
@@ -1039,7 +1039,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
         localStorage.setItem(STORAGE_KEYS.ADMIN_EMAIL, trimmed);
-      } catch {}
+      } catch { }
       return true;
     }
     return false;
@@ -1089,7 +1089,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
     return newArticle;
@@ -1114,7 +1114,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
   };
@@ -1126,7 +1126,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
   };
@@ -1149,7 +1149,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
   };
@@ -1165,7 +1165,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
   };
@@ -1218,7 +1218,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
   };
@@ -1237,7 +1237,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCategories(updatedCats);
     try {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updatedCats));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ categories: updatedCats });
     return newCat;
   };
@@ -1248,7 +1248,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCategories(updatedCats);
     try {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updatedCats));
-    } catch {}
+    } catch { }
 
     let updatedArticles = articles;
     if (oldCat && updates.name && updates.name.toLowerCase() !== oldCat.name.toLowerCase()) {
@@ -1262,7 +1262,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setArticles(updatedArticles);
       try {
         localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-      } catch {}
+      } catch { }
     }
     pushToCloudDatabase({ categories: updatedCats, articles: updatedArticles });
   };
@@ -1273,7 +1273,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCategories(remaining);
     try {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(remaining));
-    } catch {}
+    } catch { }
 
     let updatedArticles = articles;
     if (catToDelete) {
@@ -1286,7 +1286,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setArticles(updatedArticles);
       try {
         localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-      } catch {}
+      } catch { }
     }
     pushToCloudDatabase({ categories: remaining, articles: updatedArticles });
   };
@@ -1303,7 +1303,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTags(updatedTags);
     try {
       localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(updatedTags));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ tags: updatedTags });
     return newTag;
   };
@@ -1314,7 +1314,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTags(updatedTags);
     try {
       localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(updatedTags));
-    } catch {}
+    } catch { }
 
     let updatedArticles = articles;
     if (oldTag && updates.name && updates.name.toLowerCase() !== oldTag.name.toLowerCase()) {
@@ -1327,7 +1327,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setArticles(updatedArticles);
       try {
         localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-      } catch {}
+      } catch { }
     }
     pushToCloudDatabase({ tags: updatedTags, articles: updatedArticles });
   };
@@ -1339,7 +1339,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTags(remainingTags);
     try {
       localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(remainingTags));
-    } catch {}
+    } catch { }
 
     const updatedArticles = articles.map(a => ({
       ...a,
@@ -1352,7 +1352,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setArticles(updatedArticles);
     try {
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ tags: remainingTags, articles: updatedArticles });
   };
 
@@ -1370,7 +1370,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthors(updatedAuthors);
     try {
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(updatedAuthors));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ authors: updatedAuthors });
     return newAuthor;
   };
@@ -1380,7 +1380,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthors(updatedAuthors);
     try {
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(updatedAuthors));
-    } catch {}
+    } catch { }
 
     let updatedArticles = articles;
     if (updates.name || updates.role || updates.avatar) {
@@ -1396,7 +1396,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setArticles(updatedArticles);
       try {
         localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
-      } catch {}
+      } catch { }
     }
     pushToCloudDatabase({ authors: updatedAuthors, articles: updatedArticles });
   };
@@ -1406,7 +1406,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthors(remainingAuthors);
     try {
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(remainingAuthors));
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ authors: remainingAuthors });
   };
 
@@ -1428,7 +1428,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = [newRecord, ...prev];
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1443,7 +1443,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = prev.map(f => (f.id === id ? { ...f, ...updates } : f));
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1456,7 +1456,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = prev.filter(f => f.id !== id);
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1470,7 +1470,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify([]));
       localStorage.removeItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS);
-    } catch {}
+    } catch { }
     pushToCloudDatabase({ farmers: [], farmerCustomFields: [] });
     broadcastLocalChange('FARMERS', []);
   }, []);
@@ -1481,7 +1481,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = [...records, ...prev];
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1513,7 +1513,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1523,7 +1523,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = prev.map(f => f.key === oldCol ? { ...f, key: trimmedNew, label: trimmedNew } : f);
       try {
         localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmerCustomFields: updated });
       return updated;
     });
@@ -1544,7 +1544,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1554,7 +1554,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = prev.filter(f => f.key !== colName);
       try {
         localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmerCustomFields: updated });
       return updated;
     });
@@ -1580,7 +1580,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       try {
         localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmers: updated });
       broadcastLocalChange('FARMERS', updated);
       return updated;
@@ -1591,7 +1591,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = [...prev, { key: trimmed, label: trimmed }];
       try {
         localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmerCustomFields: updated });
       return updated;
     });
@@ -1603,7 +1603,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = [...prev, field];
       try {
         localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmerCustomFields: updated });
       return updated;
     });
@@ -1614,7 +1614,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updated = prev.filter(f => f.key !== key);
       try {
         localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(updated));
-      } catch {}
+      } catch { }
       pushToCloudDatabase({ farmerCustomFields: updated });
       return updated;
     });
@@ -1668,7 +1668,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS);
       localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
       localStorage.removeItem(STORAGE_KEYS.LIKES);
-    } catch {}
+    } catch { }
     pushToCloudDatabase({
       articles: INITIAL_ARTICLES,
       categories: INITIAL_CATEGORIES,

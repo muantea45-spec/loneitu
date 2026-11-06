@@ -10,3 +10,4 @@ export function resolveImageUrl(url?: string | null): string {
   }
   return trimmed;
 }
+

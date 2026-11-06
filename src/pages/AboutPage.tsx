@@ -366,11 +366,10 @@ export const AboutPage: React.FC = () => {
                           className="p-1 -m-0.5 rounded-full flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                         >
                           <span
-                            className={`transition-all duration-300 rounded-full block ${
-                              isActive
+                            className={`transition-all duration-300 rounded-full block ${isActive
                                 ? 'w-5 h-2 bg-[#256B3A] shadow-xs'
                                 : 'w-2 h-2 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
-                            }`}
+                              }`}
                           />
                         </button>
                       );
@@ -401,11 +400,10 @@ export const AboutPage: React.FC = () => {
                       className="p-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
                     >
                       <span
-                        className={`transition-all duration-300 rounded-full block ${
-                          activeCardIndex === i
+                        className={`transition-all duration-300 rounded-full block ${activeCardIndex === i
                             ? 'w-6 h-2 bg-[#256B3A]'
                             : 'w-2 h-2 bg-[#DDD4BC] hover:bg-[#6F5B3C]'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}

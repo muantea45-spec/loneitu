@@ -89,9 +89,9 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
         </button>
 
         {/* Top Header: Centered Circular Avatar & Farmer Name */}
-        <div className="flex flex-col items-center text-center pb-6 border-b border-emerald-100 dark:border-emerald-900/60">
+        <div className="flex flex-col items-center text-center pb-6 border-b border-[#F0EBE0] dark:border-[#F0EBE0]">
           <div className="relative mb-3">
-            <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md flex items-center justify-center bg-emerald-50 dark:bg-emerald-950">
+            <div className="w-24 h-24 rounded-full p-1 ring-2 ring-[#E5E0D0] dark:ring-[#E5E0D0] shadow-md flex items-center justify-center bg-[#F4F1EA] dark:bg-[#F4F1EA]">
               {farmer.avatar ? (
                 <img
                   src={resolveImageUrl(farmer.avatar)}
@@ -99,13 +99,13 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-3xl flex items-center justify-center shadow-inner">
+                <div className="w-full h-full rounded-full bg-[#EDE8DC] dark:bg-[#EDE8DC] text-[#4A3D2C] dark:text-[#4A3D2C] font-black text-3xl flex items-center justify-center shadow-inner">
                   {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
                 </div>
               )}
             </div>
             <div 
-              className="absolute bottom-1 right-1 bg-[#256B3A] text-white p-1.5 rounded-full shadow-md ring-2 ring-white dark:ring-slate-900"
+              className="absolute bottom-1 right-1 bg-[#256B3A] text-white p-1.5 rounded-full shadow-md ring-2 ring-white"
               title="Verified Record"
             >
               <BadgeCheck className="w-4 h-4 text-[#BFDC28]" />
