@@ -39,6 +39,8 @@ import {
   Phone
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
+import { compressImage } from '../../utils/imageCompressor';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 
 const PAGE_SIZE = 8;
 
@@ -352,7 +354,7 @@ export const FarmerManager: React.FC = () => {
   const handleOpenEditModal = (farmer: FarmerRecord) => {
     setEditingFarmer({
       ...farmer,
-      avatar: farmer.avatar && !farmer.avatar.includes('unsplash') ? farmer.avatar : '',
+      avatar: farmer.avatar || '',
       data: { ...(farmer.data || {}) },
       columns: [...(farmer.columns || allColumns)]
     });
@@ -380,18 +382,54 @@ export const FarmerManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      try {
-        const uploadedUrl = await uploadImage(dataUrl, `farmer-avatar-${Date.now()}`);
+    if (!file.type.startsWith('image/')) {
+      setStatusFeedback({ type: 'error', message: 'Please select an image file (JPG, PNG, WebP)' });
+      return;
+    }
+
+    try {
+      // Compress avatar to small size (240px, 0.82 quality, ~10-15KB)
+      const result = await compressImage(file, 240, 0.82);
+      setEditingFarmer(prev => (prev ? { ...prev, avatar: result.dataUrl } : null));
+      setStatusFeedback({ type: 'success', message: 'Profile photo processed' });
+
+      const uploadedUrl = await uploadImage(result.dataUrl, `farmer-avatar-${Date.now()}`);
+      if (uploadedUrl) {
         setEditingFarmer(prev => (prev ? { ...prev, avatar: uploadedUrl } : null));
-        setStatusFeedback({ type: 'success', message: 'Profile photo uploaded successfully' });
-      } catch {
-        setEditingFarmer(prev => (prev ? { ...prev, avatar: dataUrl } : null));
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setStatusFeedback({ type: 'error', message: 'Failed to upload photo' });
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleQuickAvatarUpload = async (farmerId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setStatusFeedback({ type: 'error', message: 'Please select an image file (JPG, PNG, WebP)' });
+      return;
+    }
+
+    try {
+      // Small size compressed avatar (240px, ~10-15KB)
+      const result = await compressImage(file, 240, 0.82);
+      // Immediately reflect on card
+      updateFarmer(farmerId, { avatar: result.dataUrl });
+      setStatusFeedback({ type: 'success', message: 'Avatar updated on card!' });
+
+      const uploadedUrl = await uploadImage(result.dataUrl, `farmer-avatar-${farmerId}-${Date.now()}`);
+      if (uploadedUrl) {
+        updateFarmer(farmerId, { avatar: uploadedUrl });
+      }
+    } catch {
+      setStatusFeedback({ type: 'error', message: 'Failed to upload avatar' });
+    } finally {
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleAddNewColumnInModal = () => {
@@ -1044,20 +1082,38 @@ export const FarmerManager: React.FC = () => {
                     {/* Card Top: Monogram/Avatar & Full Unobstructed Farmer Name */}
                     <div>
                       <div className="flex items-center gap-3 pb-3 border-b border-[#F0EBE0] dark:border-slate-800">
-                        <div className="relative shrink-0">
+                        <div className="relative shrink-0 group/cardavatar">
                           {farmer.avatar ? (
                             <img
-                              src={farmer.avatar}
+                              src={resolveImageUrl(farmer.avatar)}
                               alt={farmer.fullName}
                               className="w-11 h-11 rounded-full object-cover ring-2 ring-[#E5E0D0] dark:ring-slate-700 shadow-xs"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200';
+                              }}
                             />
                           ) : (
                             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-sm flex items-center justify-center shadow-xs ring-2 ring-[#E5E0D0] shrink-0">
                               {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
                             </div>
                           )}
+                          {/* Quick Upload on Avatar Hover */}
+                          <label
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover/cardavatar:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white"
+                            title="Upload small avatar photo for this farmer"
+                          >
+                            <Camera className="w-4 h-4 text-white" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleQuickAvatarUpload(farmer.id, e)}
+                            />
+                          </label>
                           <div 
-                            className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-slate-900"
+                            className="absolute -bottom-0.5 -right-0.5 bg-[#256B3A] text-white p-0.5 rounded-full shadow-xs ring-1 ring-white dark:ring-slate-900 pointer-events-none"
                             title="Verified"
                           >
                             <ShieldCheck className="w-2.5 h-2.5 text-[#BFDC28]" />
@@ -1304,10 +1360,14 @@ export const FarmerManager: React.FC = () => {
                         <div className="flex items-center gap-2.5">
                           {farmer.avatar ? (
                             <img
-                              src={farmer.avatar}
+                              src={resolveImageUrl(farmer.avatar)}
                               alt={farmer.fullName}
                               onClick={() => setSelectedFarmerForDetail(farmer)}
                               className="w-8 h-8 rounded-full object-cover ring-2 ring-[#256B3A]/30 shrink-0"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200';
+                              }}
                             />
                           ) : (
                             <div 
@@ -1867,15 +1927,19 @@ export const FarmerManager: React.FC = () => {
             </p>
 
             <form onSubmit={handleSaveFarmer} className="space-y-6">
-              {/* Profile Image & Avatar Upload (Manual Upload Only) */}
-              <div className="flex flex-col items-center justify-center p-5 bg-emerald-50/60 dark:bg-slate-800/40 rounded-2xl border border-emerald-100 dark:border-slate-800">
+              {/* Profile Image & Avatar Upload (Upload from Device or Embed Link) */}
+              <div className="flex flex-col items-center justify-center p-5 bg-[#FBFBF8] dark:bg-slate-800/40 rounded-2xl border border-[#E5E0D0] dark:border-slate-800 space-y-3">
                 <div className="relative group">
-                  <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center overflow-hidden">
+                  <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/20 shadow-md bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
                     {editingFarmer.avatar ? (
                       <img
-                        src={editingFarmer.avatar}
+                        src={resolveImageUrl(editingFarmer.avatar)}
                         alt="Avatar preview"
                         className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white flex flex-col items-center justify-center">
@@ -1887,7 +1951,7 @@ export const FarmerManager: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold"
+                    className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer"
                   >
                     <Camera className="w-5 h-5 mb-0.5" />
                     <span>Upload</span>
@@ -1901,23 +1965,38 @@ export const FarmerManager: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-xs font-bold text-[#256B3A] dark:text-emerald-400 hover:underline"
+                    className="px-3.5 py-1.5 rounded-lg bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    {editingFarmer.avatar ? 'Change Photo' : 'Upload Profile Photo'}
+                    <Upload className="w-3.5 h-3.5 text-[#BFDC28]" />
+                    <span>{editingFarmer.avatar ? 'Upload New Photo' : 'Upload Photo'}</span>
                   </button>
                   {editingFarmer.avatar && (
                     <button
                       type="button"
                       onClick={() => setEditingFarmer({ ...editingFarmer, avatar: '' })}
-                      className="text-xs text-rose-500 hover:underline"
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
                     >
                       Remove
                     </button>
                   )}
+                </div>
+
+                {/* Direct Avatar Link Embed */}
+                <div className="w-full max-w-sm pt-2 border-t border-[#F0EBE0] dark:border-slate-800">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6F5B3C] dark:text-slate-400 mb-1">
+                    Or Embed Direct Image Link
+                  </label>
+                  <input
+                    type="url"
+                    value={editingFarmer.avatar || ''}
+                    onChange={(e) => setEditingFarmer({ ...editingFarmer, avatar: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-[#DDD4BC] dark:border-slate-700 text-[#143520] dark:text-white focus:outline-hidden focus:border-[#256B3A]"
+                  />
                 </div>
               </div>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { FarmerRecord } from '../../types/farmer';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 import { 
   X, 
   BadgeCheck, 
@@ -93,7 +94,7 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
             <div className="w-24 h-24 rounded-full p-1 ring-4 ring-[#256B3A]/30 shadow-md flex items-center justify-center bg-emerald-50 dark:bg-emerald-950">
               {farmer.avatar ? (
                 <img
-                  src={farmer.avatar}
+                  src={resolveImageUrl(farmer.avatar)}
                   alt={farmer.fullName}
                   className="w-full h-full rounded-full object-cover"
                 />

@@ -21,6 +21,7 @@ import { ShareButtons } from '../components/article/ShareButtons';
 import { RelatedPosts } from '../components/article/RelatedPosts';
 import { CommentsSection } from '../components/article/CommentsSection';
 import { ShareModal } from '../components/common/ShareModal';
+import { resolveImageUrl } from '../utils/imageUrlResolver';
 
 export const ArticleDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -158,9 +159,13 @@ export const ArticleDetailPage: React.FC = () => {
         <div className="max-w-4xl mx-auto mb-12">
           <div className="relative aspect-16/9 rounded-3xl overflow-hidden shadow-lg border border-[#DDD4BC] bg-[#EBE6D6]">
             <img
-              src={article.coverImage}
+              src={resolveImageUrl(article.coverImage)}
               alt={article.title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80';
+              }}
             />
           </div>
           <div className="text-[11px] text-[#6F5B3C] text-right mt-2 italic">

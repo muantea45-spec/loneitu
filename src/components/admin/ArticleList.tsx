@@ -19,6 +19,7 @@ import {
 import { useBlog } from '../../context/BlogContext';
 import { formatDate } from '../../utils/formatDate';
 import { useToast } from '../common/Toast';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 
 interface ArticleListProps {
   onNewArticle: () => void;
@@ -158,9 +159,13 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                       <td className="px-3 sm:px-5 py-3 w-auto min-w-0 overflow-hidden">
                         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                           <img
-                            src={art.coverImage}
+                            src={resolveImageUrl(art.coverImage)}
                             alt=""
                             className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover shrink-0 border border-[#DDD4BC]"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=200&q=80';
+                            }}
                           />
                           <div className="min-w-0 flex-1">
                             <Link

@@ -229,7 +229,10 @@ async function uploadImageToCloud(dataUrl: string, filename?: string): Promise<s
       if (res.ok) {
         const json = await res.json();
         if (json && json.success && json.url) {
-          return json.url;
+          const resolved = json.url.startsWith('http')
+            ? json.url
+            : `https://loneitu.ddvktp.workers.dev${json.url}`;
+          return resolved;
         }
       }
     } catch {

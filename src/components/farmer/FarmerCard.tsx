@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FarmerRecord } from '../../types/farmer';
 import { ArrowRight, BadgeCheck } from 'lucide-react';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 
 interface FarmerCardProps {
   farmer: FarmerRecord;
@@ -31,17 +32,23 @@ export const FarmerCard: React.FC<FarmerCardProps> = ({ farmer, onSelect }) => {
         {/* Top: Centered Circular Avatar + Farmer Name */}
         <div className="flex flex-col items-center text-center pb-5 border-b border-[#F0EBE0] dark:border-slate-800">
           <div className="relative mb-3">
-            <div className="w-20 h-20 rounded-full p-1 ring-2 ring-[#E5E0D0] dark:ring-slate-800 group-hover:ring-[#256B3A]/30 transition-all">
-              <img
-                src={farmer.avatar}
-                alt={farmer.fullName}
-                className="w-full h-full rounded-full object-cover shadow-inner"
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
-                }}
-              />
+            <div className="w-20 h-20 rounded-full p-1 ring-2 ring-[#E5E0D0] dark:ring-slate-800 group-hover:ring-[#256B3A]/30 transition-all overflow-hidden flex items-center justify-center">
+              {farmer.avatar ? (
+                <img
+                  src={resolveImageUrl(farmer.avatar)}
+                  alt={farmer.fullName}
+                  className="w-full h-full rounded-full object-cover shadow-inner"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-[#143520] to-[#256B3A] text-white font-black text-2xl flex items-center justify-center shadow-inner">
+                  {farmer.fullName ? farmer.fullName.trim().charAt(0).toUpperCase() : 'F'}
+                </div>
+              )}
             </div>
             <div 
               className="absolute bottom-0 right-0 bg-[#256B3A] text-white p-1 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-900"

@@ -50,6 +50,7 @@ import { calculateReadingTime } from '../../utils/readingTime';
 import { useToast } from '../common/Toast';
 import { compressImage } from '../../utils/imageCompressor';
 import { markdownToHtml } from '../../utils/richTextFormatter';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 
 interface ArticleEditorProps {
   articleId?: string | null;
@@ -257,11 +258,12 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
       return;
     }
     restoreSelection();
+    const cleanUrl = resolveImageUrl(url.trim());
     const cleanCaption = captionText.trim();
     const imgHtml = `
 <figure style="margin: 24px 0; display: block; text-align: center;">
   <div style="overflow: hidden; border-radius: 16px; border: 1px solid #ddd4bc; background: #f6f4eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); display: inline-block; max-width: 100%;">
-    <img src="${url.trim()}" alt="${cleanCaption}" style="width: 100%; max-height: 550px; object-fit: cover; display: block;" loading="lazy" />
+    <img src="${cleanUrl}" alt="${cleanCaption}" style="width: 100%; max-height: 550px; object-fit: cover; display: block;" loading="lazy" />
   </div>
   ${cleanCaption ? `<figcaption style="text-align: center; font-size: 12px; color: #8f7855; margin-top: 8px; font-style: italic;">${cleanCaption}</figcaption>` : ''}
 </figure>
@@ -446,17 +448,22 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     setIsCompressing(true);
     try {
       const result = await compressImage(file, 1200, 0.82);
-      const cloudUrl = await uploadImage(result.dataUrl, file.name);
-      setImageUploadPreview(cloudUrl);
+      // Immediately set preview with dataUrl so preview is never blank or dummy!
+      setImageUploadPreview(result.dataUrl);
       setImageUploadSizeKb(result.sizeKb);
       if (!imageCaption) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
         setImageCaption(nameWithoutExt);
       }
+      const cloudUrl = await uploadImage(result.dataUrl, file.name);
+      if (cloudUrl) {
+        setImageUploadPreview(cloudUrl);
+      }
     } catch {
       showToast('Error processing image. Please try another file.', 'error');
     } finally {
       setIsCompressing(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -472,8 +479,12 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     setIsCoverUploading(true);
     try {
       const result = await compressImage(file, 1600, 0.85);
+      // Immediately set cover image to dataUrl for instant zero-latency preview
+      setCoverImage(result.dataUrl);
       const cdnUrl = await uploadImage(result.dataUrl, file.name);
-      setCoverImage(cdnUrl);
+      if (cdnUrl) {
+        setCoverImage(cdnUrl);
+      }
       showToast('Cover photo uploaded successfully!', 'success');
     } catch {
       showToast('Failed to upload cover photo. Please try another file.', 'error');
@@ -1516,107 +1527,60 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
               className="hidden"
             />
 
-            {/* Active Preview if Cover Image exists */}
-            {coverImage ? (
-              <div className="space-y-3">
-                <div className="relative aspect-16/10 rounded-xl overflow-hidden bg-[#EBE6D6] border border-[#DDD4BC] group">
-                  <img
-                    src={coverImage}
-                    alt="Cover preview"
-                    className="w-full h-full object-cover"
-                    onError={e => {
-                      (e.currentTarget as HTMLImageElement).src = PRESET_COVERS[0].url;
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-3">
-                    <button
-                      type="button"
-                      onClick={() => coverFileInputRef.current?.click()}
-                      className="px-3 py-1.5 rounded-lg bg-white/95 hover:bg-white text-[#143520] text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
-                      <span>Upload New</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCoverImage('')}
-                      className="p-1.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white transition-all shadow-xs cursor-pointer"
-                      title="Remove Cover Photo"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/70 text-white text-[10px] font-mono">
-                    Active Cover Photo
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs">
-                  <button
-                    type="button"
-                    onClick={() => coverFileInputRef.current?.click()}
-                    className="text-[#256B3A] font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Upload className="w-3 h-3" />
-                    <span>Upload different photo</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCoverImage('')}
-                    className="text-[#8F7855] hover:text-red-600 font-medium cursor-pointer"
-                  >
-                    Change or embed via link
-                  </button>
-                </div>
+            <div className="space-y-3">
+              {/* Cover Source Switcher: Upload vs Link Embedding */}
+              <div className="flex items-center p-1 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]">
+                <button
+                  type="button"
+                  onClick={() => setCoverImageTab('upload')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    coverImageTab === 'upload'
+                      ? 'bg-white text-[#143520] shadow-xs'
+                      : 'text-[#6F5B3C] hover:text-[#143520]'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
+                  <span>Upload Photo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverImageTab('embed')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    coverImageTab === 'embed'
+                      ? 'bg-white text-[#143520] shadow-xs'
+                      : 'text-[#6F5B3C] hover:text-[#143520]'
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5 text-[#256B3A]" />
+                  <span>Embed Link</span>
+                </button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center p-1 bg-[#F6F4EB] rounded-xl border border-[#DDD4BC]">
-                  <button
-                    type="button"
-                    onClick={() => setCoverImageTab('upload')}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      coverImageTab === 'upload'
-                        ? 'bg-white text-[#143520] shadow-xs'
-                        : 'text-[#6F5B3C] hover:text-[#143520]'
-                    }`}
-                  >
-                    <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
-                    <span>Upload Photo</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCoverImageTab('embed')}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      coverImageTab === 'embed'
-                        ? 'bg-white text-[#143520] shadow-xs'
-                        : 'text-[#6F5B3C] hover:text-[#143520]'
-                    }`}
-                  >
-                    <Link2 className="w-3.5 h-3.5 text-[#256B3A]" />
-                    <span>Embed Link</span>
-                  </button>
-                </div>
 
-                {coverImageTab === 'upload' ? (
+              {coverImageTab === 'upload' ? (
+                <div className="space-y-2">
                   <div
                     onClick={() => coverFileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#DDD4BC] hover:border-[#256B3A] rounded-xl p-5 text-center bg-[#FAF8F3] hover:bg-[#F6F4EB] transition-colors cursor-pointer space-y-2"
+                    className="border-2 border-dashed border-[#DDD4BC] hover:border-[#256B3A] rounded-xl p-4 text-center bg-[#FAF8F3] hover:bg-[#F6F4EB] transition-colors cursor-pointer space-y-1.5"
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center mx-auto">
-                      <Upload className="w-5 h-5" />
+                    <div className="w-9 h-9 rounded-full bg-[#EBF1EA] text-[#256B3A] flex items-center justify-center mx-auto">
+                      <Upload className="w-4 h-4" />
                     </div>
                     <div>
                       <span className="text-xs font-bold text-[#143520] block">
-                        {isCoverUploading ? 'Uploading cover...' : 'Select Cover Image from Device'}
+                        {isCoverUploading ? 'Uploading cover photo...' : 'Click to Upload Picture from Device'}
                       </span>
                       <span className="text-[11px] text-[#8F7855]">
-                        JPG, PNG, WEBP. Compressed automatically.
+                        JPG, PNG, WEBP. Fast automatic web compression.
                       </span>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#6F5B3C] mb-1">
+                      Direct Image Web Link
+                    </label>
                     <input
                       type="url"
                       value={coverImage}
@@ -1624,22 +1588,70 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                       placeholder="Paste image URL (https://...)"
                       className="w-full px-3.5 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
                     />
-                    <div className="grid grid-cols-4 gap-1.5 pt-1">
-                      {PRESET_COVERS.slice(0, 4).map((p, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setCoverImage(p.url)}
-                          className="aspect-16/10 rounded-lg overflow-hidden border border-[#DDD4BC] hover:border-[#256B3A] relative group cursor-pointer"
-                        >
-                          <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {PRESET_COVERS.slice(0, 4).map((p, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setCoverImage(p.url)}
+                        className="aspect-16/10 rounded-lg overflow-hidden border border-[#DDD4BC] hover:border-[#256B3A] relative group cursor-pointer"
+                        title={p.label}
+                      >
+                        <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Active Cover Image Preview */}
+              {coverImage && (
+                <div className="space-y-2 pt-2 border-t border-[#EBE6D6]">
+                  <div className="relative aspect-16/10 rounded-xl overflow-hidden bg-[#EBE6D6] border border-[#DDD4BC] group">
+                    <img
+                      src={resolveImageUrl(coverImage)}
+                      alt="Cover preview"
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        (e.currentTarget as HTMLImageElement).src = PRESET_COVERS[0].url;
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-3">
+                      <button
+                        type="button"
+                        onClick={() => coverFileInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg bg-white/95 hover:bg-white text-[#143520] text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-[#256B3A]" />
+                        <span>Change Photo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCoverImage('')}
+                        className="p-1.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white transition-all shadow-xs cursor-pointer"
+                        title="Remove Cover Photo"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/70 text-white text-[10px] font-mono">
+                      Active Cover Photo Preview
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+                  <div className="flex items-center justify-between text-xs text-[#8F7855]">
+                    <span>Cover is ready for publication</span>
+                    <button
+                      type="button"
+                      onClick={() => setCoverImage('')}
+                      className="text-red-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      Clear image
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

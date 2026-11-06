@@ -5,6 +5,7 @@ import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
 import { ShareModal } from '../common/ShareModal';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 
 interface BlogCardProps {
   article: Article;
@@ -38,10 +39,14 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
       <div className="relative overflow-hidden aspect-16/10 bg-[#EBE6D6]">
         <Link to={`/article/${article.slug}`} className="block w-full h-full">
           <img
-            src={article.coverImage}
+            src={resolveImageUrl(article.coverImage)}
             alt={article.title}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80';
+            }}
           />
         </Link>
 
