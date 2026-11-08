@@ -21,10 +21,18 @@ function escapeHtml(str: string): string {
 
 function stripMarkdown(text: string): string {
   return (text || '')
-    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<[^>]*>/g, ' ')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/[#*`_~>[\]]/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -310,8 +318,8 @@ export default {
           // Clean excerpt stripped of markdown characters
           let rawExcerpt = article.excerpt || article.content || '';
           let cleanExcerpt = stripMarkdown(rawExcerpt);
-          if (cleanExcerpt.length > 180) {
-            cleanExcerpt = cleanExcerpt.substring(0, 177).trim() + '...';
+          if (cleanExcerpt.length > 160) {
+            cleanExcerpt = cleanExcerpt.substring(0, 157).trim() + '...';
           }
           if (!cleanExcerpt) {
             cleanExcerpt = article.title;
@@ -319,11 +327,15 @@ export default {
           const desc = escapeHtml(cleanExcerpt);
 
           // Ensure absolute cover URL for WhatsApp & Social crawlers
-          let cover = article.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80';
-          if (cover.startsWith('/')) {
+          let cover = (article.coverImage || '').trim();
+          if (!cover || cover.startsWith('data:')) {
+            cover = `${url.origin}/logo.jpg`;
+          } else if (cover.startsWith('/')) {
             cover = `${url.origin}${cover}`;
           }
 
+          const isPng = cover.toLowerCase().endsWith('.png');
+          const imageType = isPng ? 'image/png' : 'image/jpeg';
           const fullUrl = `${url.origin}/article/${slug}`;
 
           const botHtml = `<!DOCTYPE html>
@@ -338,12 +350,13 @@ export default {
   <link rel="canonical" href="${fullUrl}" />
 
   <!-- Open Graph / WhatsApp / Facebook Rich Preview -->
-  <meta property="og:site_name" content="Loneitu (MIZORAM TAN)" />
+  <meta property="og:site_name" content="Loneitu (MIZORAM TAN) — Mizo Farm Solutions" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${desc}" />
   <meta property="og:image" content="${cover}" />
   <meta property="og:image:secure_url" content="${cover}" />
+  <meta property="og:image:type" content="${imageType}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${title}" />

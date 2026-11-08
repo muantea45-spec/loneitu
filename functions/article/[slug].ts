@@ -12,11 +12,21 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function stripMarkdown(text: string): string {
-  return (text || '')
+function cleanArticleExcerpt(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]*>/g, ' ')
     .replace(/!\[.*?\]\(.*?\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/[#*`_~>[\]]/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -34,34 +44,66 @@ export const onRequest: PagesFunction = async (context) => {
   }
 
   const url = new URL(request.url);
-  const slug = (context.params.slug as string) || url.pathname.replace('/article/', '').split('/')[0].split('?')[0].trim();
+  const rawSlug = (context.params.slug as string) || url.pathname.replace('/article/', '').split('/')[0].split('?')[0].trim();
+  const slug = decodeURIComponent(rawSlug).replace(/\/+$/, '');
 
   try {
-    // Fetch latest database from backend KV API
-    const dbRes = await fetch('https://loneitu.ddvktp.workers.dev/api/db');
-    const json = await dbRes.json();
-    const articles = json?.data?.articles || [];
+    const env = context.env as any;
+    let articles: any[] = [];
+
+    // 1. Direct KV read if available in Pages context (fastest: ~5ms, zero network latency)
+    if (env?.LONEITU_KV) {
+      try {
+        const kvData = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+        if (kvData?.articles && Array.isArray(kvData.articles)) {
+          articles = kvData.articles;
+        }
+      } catch (kvErr) {
+        console.warn('KV read in social preview', kvErr);
+      }
+    }
+
+    // 2. Fallback to lightweight articles-only endpoint from backend worker
+    if (!articles || articles.length === 0) {
+      try {
+        const dbRes = await fetch('https://loneitu.ddvktp.workers.dev/api/db?section=articles');
+        if (dbRes.ok) {
+          const json: any = await dbRes.json();
+          if (json?.data && Array.isArray(json.data)) {
+            articles = json.data;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Worker articles fetch in social preview', fetchErr);
+      }
+    }
 
     const article = articles.find((a: any) => a.slug === slug || a.id === slug);
 
     if (article) {
       const title = escapeHtml(article.title);
 
-      let rawExcerpt = article.excerpt || article.content || '';
-      let cleanExcerpt = stripMarkdown(rawExcerpt);
-      if (cleanExcerpt.length > 180) {
-        cleanExcerpt = cleanExcerpt.substring(0, 177).trim() + '...';
+      // Clean excerpt stripped of all HTML and markdown tags
+      let rawExcerpt = article.excerpt?.trim() || article.content?.trim() || '';
+      let cleanExcerpt = cleanArticleExcerpt(rawExcerpt);
+      if (cleanExcerpt.length > 160) {
+        cleanExcerpt = cleanExcerpt.substring(0, 157).trim() + '...';
       }
       if (!cleanExcerpt) {
         cleanExcerpt = article.title;
       }
       const desc = escapeHtml(cleanExcerpt);
 
-      let cover = article.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80';
-      if (cover.startsWith('/')) {
-        cover = `https://loneitu.ddvktp.workers.dev${cover}`;
+      // Ensure absolute cover URL for WhatsApp & Social crawlers
+      let cover = (article.coverImage || '').trim();
+      if (!cover || cover.startsWith('data:')) {
+        cover = `${url.origin}/logo.jpg`;
+      } else if (cover.startsWith('/')) {
+        cover = `${url.origin}${cover}`;
       }
 
+      const isPng = cover.toLowerCase().endsWith('.png');
+      const imageType = isPng ? 'image/png' : 'image/jpeg';
       const fullUrl = `${url.origin}/article/${slug}`;
 
       const botHtml = `<!DOCTYPE html>
@@ -74,12 +116,13 @@ export const onRequest: PagesFunction = async (context) => {
 
   <link rel="canonical" href="${fullUrl}" />
 
-  <meta property="og:site_name" content="Loneitu (MIZORAM TAN)" />
+  <meta property="og:site_name" content="Loneitu (MIZORAM TAN) — Mizo Farm Solutions" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${desc}" />
   <meta property="og:image" content="${cover}" />
   <meta property="og:image:secure_url" content="${cover}" />
+  <meta property="og:image:type" content="${imageType}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${title}" />
@@ -94,7 +137,7 @@ export const onRequest: PagesFunction = async (context) => {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; color: #1e2922;">
   <p><a href="${fullUrl}" style="color: #256b3a; font-weight: bold; text-decoration: none;">← Open on Loneitu Journal</a></p>
   <h1 style="color: #143520; font-size: 24px;">${title}</h1>
-  <p style="color: #54432c;">${desc}</p>
+  <p style="color: #54432c; line-height: 1.6;">${desc}</p>
   <img src="${cover}" alt="${title}" style="max-width: 100%; border-radius: 12px; margin-top: 16px;" />
 </body>
 </html>`;
