@@ -11,11 +11,11 @@ export const Footer: React.FC = () => {
     tagline: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
     copyrightText: 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.',
     dedicationText: 'Loneitute leh zirtirtute tana duhsakna nen',
-    contactEmail: 'muantea45@gmail.com',
+    contactEmail: '',
     bannerEnabled: false,
   };
 
-  const contactEmail = data.contactEmail || 'muantea45@gmail.com';
+  const contactEmail = (data.contactEmail || '').trim();
 
   return (
     <footer className="w-full bg-[#143520] text-[#EBF1EA] border-t border-[#1E542E] mt-4 sm:mt-6">

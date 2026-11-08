@@ -18,35 +18,35 @@ export const DEFAULT_COMPANY_BANNER: CompanyBannerData = {
 export const INITIAL_AUTHORS: Author[] = [
   {
     id: 'auth-1',
-    name: 'Dr. Lalhmingmawii Vance',
-    role: 'Principal Soil Microbiologist',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
-    bio: 'Leilung nung (rhizosphere biome), thing phur zungzawng (fungal-bacterial ratios), leh leitha vawn ngheh dan zirchiangtu.',
-    institution: 'Institute for Regenerative Agriculture'
+    name: 'Loneitu Editorial Desk',
+    role: 'Agricultural Research & Field Operations',
+    avatar: '/logo.png',
+    bio: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
+    institution: 'Loneitu (MIZORAM TAN)'
   },
   {
     id: 'auth-2',
-    name: 'Marcus Thorne',
-    role: 'AgTech & IoT Systems Engineer',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    bio: 'Lo neihna atana khawl changkang, LoRaWAN wireless sensor, leh drone hmanga thlai hriselna enfiah dan thiam bik.',
-    institution: 'Precision Agronomics Lab'
+    name: 'Mizo Farm Solutions Desk',
+    role: 'Agronomy & Extension Research',
+    avatar: '/logo.png',
+    bio: 'Champhai-based agricultural collective advancing organic inputs, greenhouse farming, and rural mechanization.',
+    institution: 'Mizo Farm Solutions, Champhai'
   },
   {
     id: 'auth-3',
-    name: 'Priya Nair',
-    role: 'Agroforestry & Silvopasture Specialist',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
-    bio: 'Thing lian hlimhnuaia ran vulh, thlai leh theihuan chin kawp (multi-strata agroforestry) zirchiangtu.',
-    institution: 'Global Silvopasture Collective'
+    name: 'Horticulture & Cash Crops Desk',
+    role: 'Field Investigation & Advisory',
+    avatar: '/logo.png',
+    bio: 'Thei leh thlai hlawk zawk chin dan, polyhouse enkawl, leh rannung venhim dan zirchiangtu.',
+    institution: 'Loneitu (MIZORAM TAN)'
   },
   {
     id: 'auth-4',
-    name: 'David Lalthanpuia',
-    role: 'Horticulturist & Polyhouse Farmer',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-    bio: 'Polyhouse chhung thlai chin, thei chi ṭha thlan, leh rannung laka thlai venhimna damdawi tel lova kalpui thiam.',
-    institution: 'Mizoram Horticultural Guild'
+    name: 'Livestock & Agroforestry Desk',
+    role: 'Animal Stewardship & Silvopasture',
+    avatar: '/logo.png',
+    bio: 'Vawk, ar, sangha vulh dan leh thing lian hlimhnuaia lo leh huan enkawl kawp dan.',
+    institution: 'Loneitu (MIZORAM TAN)'
   }
 ];
 
@@ -152,7 +152,7 @@ Kum sawm ruk liamta chhung khan leilung hi bungrua leh thing remkhawm ang maiah 
 He fungi hrui inzawmna tello chuan leilungin tui a chelh theihna (sponge ang leilung) a bo va, ruah a surin lei ṭha a luang ral a, khaw ro deuh hlekin lei a khi phutin thlai an thi thuai thin a ni.
 
 > *"Leilung hrisel ṭha kut khat chhung lek pawh hian khawvel mihring zawng zawng awm tawh zat aia tam leilung nungcha te tak te an cheng a ni. Thlai chauh kan enkawl lo, leilung rilpui kan chawm a ni."*
-> — **Dr. Lalhmingmawii Vance**, Institute for Regenerative Agriculture
+> — **Loneitu Agronomy Research**
 
 ---
 
@@ -498,57 +498,6 @@ Today, a quiet agricultural revolution is underway. Farmers worldwide are demons
           'col-1793872810199': 'More than 10 years of field work experience with several published research papers. Awarded Appreciation Certificates by the Minister of Horticulture, Government of Mizoram, Minister of State, Adviser to Chief Minister, and MLA. Extensive work experience under NABARD.',
         },
       },
-      {
-        id: 'card-1',
-        name: 'Dr. C. Lalremruata',
-        designation: 'Senior Soil & Agronomy Specialist',
-        portfolio: 'Microbial Inoculants & Soil Health',
-        qualification: 'Ph.D. Soil Science',
-        experience: 'Oversees high-altitude soil profiling, microbial fungal inoculants, and cold-climate grape vineyard monitoring across Mizoram.',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-        title: 'Dr. C. Lalremruata',
-        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-        columnValues: {
-          'col-location': 'Senior Soil & Agronomy Specialist',
-          'col-contact': 'Microbial Inoculants & Soil Health',
-          'col-status': 'Ph.D. Soil Science',
-          'col-1793872810199': 'Oversees high-altitude soil profiling, microbial fungal inoculants, and cold-climate grape vineyard monitoring across Mizoram.',
-        },
-      },
-      {
-        id: 'card-2',
-        name: 'Pi Lalhmingmawii Vance',
-        designation: 'Principal Horticultural Investigator',
-        portfolio: 'Citrus & Dragon Fruit Canopy',
-        qualification: 'M.Sc. Horticulture',
-        experience: 'Specializes in tropical fruit canopy pruning, dragon fruit trellis architectures, and Assam lemon disease-free rootstocks.',
-        avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
-        title: 'Pi Lalhmingmawii Vance',
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
-        columnValues: {
-          'col-location': 'Principal Horticultural Investigator',
-          'col-contact': 'Citrus & Dragon Fruit Canopy',
-          'col-status': 'M.Sc. Horticulture',
-          'col-1793872810199': 'Specializes in tropical fruit canopy pruning, dragon fruit trellis architectures, and Assam lemon disease-free rootstocks.',
-        },
-      },
-      {
-        id: 'card-3',
-        name: 'Pu R. Lalhmachhuana',
-        designation: 'Organic Input & Composting Officer',
-        portfolio: 'Bio-fertilizer & Certification',
-        qualification: 'B.Sc. Agriculture',
-        experience: 'Leads farmer participatory bio-fertilizer formulations, vermicomposting clusters, and community organic certification.',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-        title: 'Pu R. Lalhmachhuana',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-        columnValues: {
-          'col-location': 'Organic Input & Composting Officer',
-          'col-contact': 'Bio-fertilizer & Certification',
-          'col-status': 'B.Sc. Agriculture',
-          'col-1793872810199': 'Leads farmer participatory bio-fertilizer formulations, vermicomposting clusters, and community organic certification.',
-        },
-      },
     ],
   },
   authorsTitle: 'Contributing Agronomists & Field Researchers',
@@ -567,7 +516,7 @@ export const INITIAL_FOOTER_DATA: FooterData = {
   tagline: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
   copyrightText: 'Loneitu (MIZORAM TAN). Mizoram thlai leh leilung humhalhna.',
   dedicationText: 'Loneitute leh zirtirtute tana duhsakna nen',
-  contactEmail: 'muantea45@gmail.com',
+  contactEmail: '',
   bannerEnabled: false,
   bannerBadge: 'HRIATTIRNA',
   bannerTitle: 'Loneitu Field Advisory & Community Journal',

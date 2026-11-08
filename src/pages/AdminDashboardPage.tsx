@@ -79,6 +79,8 @@ export const AdminDashboardPage: React.FC = () => {
     } catch {}
   }, [currentTab]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!isAdminLoggedIn) {
     return <AdminLoginPage />;
   }
@@ -97,8 +99,6 @@ export const AdminDashboardPage: React.FC = () => {
     setCurrentTab('articles');
     setEditingArticleId(null);
   };
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportJSON = () => {
     const backup = {

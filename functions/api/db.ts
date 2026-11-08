@@ -128,11 +128,40 @@ export const onRequestPost: PagesFunction = async (context) => {
 
     if (env?.LONEITU_KV) {
       try {
+        const current = (await env.LONEITU_KV.get('loneitu_global_db_v1', 'json')) || {};
+
+        // Security Check: Verify Administrator credentials before writing to KV
+        if (current && Object.keys(current).length > 0) {
+          const authorizedEmails: string[] = (
+            current.authorizedEmails || ['muantea45@gmail.com', 'hriata.cherput@gmail.com']
+          ).map((e: string) => e.trim().toLowerCase());
+          const expectedKey = current.adminSecurityKey || '';
+          const primaryOwner = (current.primaryOwnerEmail || 'hriata.cherput@gmail.com').trim().toLowerCase();
+
+          const isKeyValid = adminKey && expectedKey && adminKey === expectedKey;
+          const isEmailValid = adminEmail && (authorizedEmails.includes(adminEmail) || adminEmail === primaryOwner);
+
+          if (!isKeyValid && !isEmailValid) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: 'Unauthorized: Valid administrator authorization key or whitelisted email is required.',
+              }),
+              {
+                status: 401,
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...CORS_HEADERS,
+                },
+              }
+            );
+          }
+        }
+
         const parsed = JSON.parse(bodyText);
         savedUpdatedAt = parsed.updatedAt || savedUpdatedAt;
         let toSave = parsed;
         if (!parsed.farmers || !Array.isArray(parsed.farmers)) {
-          const current = (await env.LONEITU_KV.get('loneitu_global_db_v1', 'json')) || {};
           toSave = {
             ...current,
             ...parsed,

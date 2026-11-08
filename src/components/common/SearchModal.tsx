@@ -9,6 +9,21 @@ interface SearchModalProps {
   onClose: () => void;
 }
 
+function highlightMatch(text: string, search: string): React.ReactNode {
+  if (!search.trim() || !text) return text;
+  const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === search.toLowerCase() ? (
+      <mark key={i} className="bg-[#BFDC28]/70 text-[#143520] font-bold rounded-xs px-0.5">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
+
 export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const { articles, categories, tags, setFilterTag } = useBlog();
@@ -162,11 +177,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                   />
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-semibold text-[#256B3A] uppercase tracking-wider">
-                      {art.category}
+                      {highlightMatch(art.category, query)}
                     </span>
                     <h4 className="text-sm font-semibold text-[#13341D] group-hover:text-[#256B3A] line-clamp-1 font-serif">
-                      {art.title}
+                      {highlightMatch(art.title, query)}
                     </h4>
+                    {art.excerpt && (
+                      <p className="text-xs text-[#6F5B3C] line-clamp-2 mt-1 leading-relaxed">
+                        {highlightMatch(art.excerpt, query)}
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 text-[11px] text-[#6F5B3C] mt-1.5">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" /> {formatDate(art.publishedAt)}

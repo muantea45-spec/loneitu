@@ -219,7 +219,10 @@ export const ArticleDetailPage: React.FC = () => {
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw]}
                 components={{
-                  h2: ({ node, ...props }) => {
+                  p: ({ node: _node, ...props }) => (
+                    <p className="leading-[1.8] text-base sm:text-lg mb-6 text-justify [text-align:justify] text-[#2D3A31]" {...props} />
+                  ),
+                  h2: ({ node: _node, ...props }) => {
                     const text = String(props.children);
                     const id = text
                       .toLowerCase()
@@ -227,7 +230,7 @@ export const ArticleDetailPage: React.FC = () => {
                       .replace(/\s+/g, '-');
                     return <h2 id={id} {...props} />;
                   },
-                  h3: ({ node, ...props }) => {
+                  h3: ({ node: _node, ...props }) => {
                     const text = String(props.children);
                     const id = text
                       .toLowerCase()
@@ -235,7 +238,7 @@ export const ArticleDetailPage: React.FC = () => {
                       .replace(/\s+/g, '-');
                     return <h3 id={id} {...props} />;
                   },
-                  img: ({ node, ...props }) => (
+                  img: ({ node: _node, ...props }) => (
                     <figure className="my-8 block">
                       <div className="overflow-hidden rounded-2xl border border-[#DDD4BC] bg-[#F6F4EB] shadow-xs">
                         <img

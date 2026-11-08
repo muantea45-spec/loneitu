@@ -1,5 +1,6 @@
-import * as XLSX from 'xlsx';
 import type { FarmerRecord } from '../types/farmer';
+
+const getXLSX = async () => await import('xlsx');
 
 export interface ParseResult {
   records: FarmerRecord[];
@@ -41,6 +42,7 @@ export function formatBlockName(raw: string): string {
  * requiring profiles to be uploaded manually.
  */
 export async function parseExcelToFarmers(file: File): Promise<ParseResult> {
+  const XLSX = await getXLSX();
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
 
@@ -151,7 +153,8 @@ export async function parseExcelToFarmers(file: File): Promise<ParseResult> {
 /**
  * Generates a sample Excel template (.xlsx) with clean, flexible columns.
  */
-export function generateSampleFarmerExcel(): Uint8Array {
+export async function generateSampleFarmerExcel(): Promise<Uint8Array> {
+  const XLSX = await getXLSX();
   const headers = [
     'Sl No',
     'Farmer Name',
@@ -202,8 +205,8 @@ export function generateSampleFarmerExcel(): Uint8Array {
 /**
  * Triggers a download of the sample Excel template
  */
-export function downloadSampleFarmerTemplate(): void {
-  const data = generateSampleFarmerExcel();
+export async function downloadSampleFarmerTemplate(): Promise<void> {
+  const data = await generateSampleFarmerExcel();
   const blob = new Blob([data.buffer as ArrayBuffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
@@ -220,11 +223,13 @@ export function downloadSampleFarmerTemplate(): void {
 /**
  * Exports current farmer records dynamically using only the columns that exist.
  */
-export function exportFarmersToExcel(farmers: FarmerRecord[]): void {
+export async function exportFarmersToExcel(farmers: FarmerRecord[]): Promise<void> {
   if (farmers.length === 0) {
     alert('No farmer records available to export.');
     return;
   }
+
+  const XLSX = await getXLSX();
 
   // Collect all unique column headers present across all records
   const dynamicColsSet = new Set<string>();

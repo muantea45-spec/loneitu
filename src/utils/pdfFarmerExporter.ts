@@ -1,5 +1,4 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import type { jsPDF } from 'jspdf';
 import type { FarmerRecord } from '../types/farmer';
 
 export interface ExportFarmerPdfOptions {
@@ -10,17 +9,20 @@ export interface ExportFarmerPdfOptions {
 
 /**
  * Generates and downloads a clean, beautifully formatted official PDF
- * of the Mizoram Farmer Registry.
+ * of the Mizoram Farmer Registry on demand.
  */
-export function exportFarmersToPdf(
+export async function exportFarmersToPdf(
   farmers: FarmerRecord[],
   activeColumns: string[],
   options: ExportFarmerPdfOptions = {}
-): void {
+): Promise<void> {
   if (!farmers || farmers.length === 0) {
     alert('No farmer records available to export.');
     return;
   }
+
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
 
   // Determine orientation: landscape if more than 4 dynamic columns
   const isLandscape = activeColumns.length > 4;

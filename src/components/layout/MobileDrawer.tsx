@@ -29,7 +29,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           <div>
             <div className="p-4 border-b border-[#EBE6D6] flex items-center justify-between bg-white">
               <div className="flex items-center gap-2.5">
-                <img src="/logo.png" alt="Loneitu" className="w-9 h-9 object-contain mix-blend-multiply shrink-0" />
+                <img src="/logo.png" alt="Loneitu" className="w-9 h-9 object-contain shrink-0" />
                 <div>
                   <span className="font-serif font-bold text-lg text-[#143520] block leading-none">Loneitu</span>
                   <span className="text-[8px] font-bold text-[#256B3A] tracking-widest uppercase mt-0.5 block">MIZORAM TAN</span>

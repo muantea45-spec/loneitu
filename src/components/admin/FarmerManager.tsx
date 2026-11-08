@@ -545,21 +545,21 @@ export const FarmerManager: React.FC = () => {
   };
 
   // Export handlers
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (farmers.length === 0) {
       setStatusFeedback({ type: 'error', message: 'No farmer records to export.' });
       return;
     }
-    exportFarmersToExcel(farmers);
+    await exportFarmersToExcel(farmers);
     setStatusFeedback({ type: 'success', message: `Exported ${farmers.length} records to Excel (.xlsx)` });
   };
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (farmers.length === 0) {
       setStatusFeedback({ type: 'error', message: 'No farmer records to export.' });
       return;
     }
-    exportFarmersToPdf(farmers, allColumns);
+    await exportFarmersToPdf(farmers, allColumns);
     setStatusFeedback({ type: 'success', message: `Exported ${farmers.length} records to PDF document (.pdf)` });
   };
 

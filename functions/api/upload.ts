@@ -19,11 +19,19 @@ export const onRequestOptions: PagesFunction = async () => {
 export const onRequestPost: PagesFunction = async (context) => {
   try {
     const body = await context.request.text();
+    const reqHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const adminKey = context.request.headers.get('x-admin-key');
+    const adminEmail = context.request.headers.get('x-admin-email');
+    const authHeader = context.request.headers.get('authorization');
+    if (adminKey) reqHeaders['x-admin-key'] = adminKey;
+    if (adminEmail) reqHeaders['x-admin-email'] = adminEmail;
+    if (authHeader) reqHeaders['authorization'] = authHeader;
+
     const res = await fetch('https://loneitu.ddvktp.workers.dev/api/upload', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: reqHeaders,
       body,
     });
     const text = await res.text();

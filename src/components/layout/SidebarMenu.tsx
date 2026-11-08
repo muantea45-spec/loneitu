@@ -30,7 +30,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             {/* Header */}
             <div className="p-5 border-b border-[#EBE6D6] flex items-center justify-between bg-white sticky top-0 z-10">
               <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Loneitu" className="w-10 h-10 object-contain mix-blend-multiply shrink-0" />
+                <img src="/logo.png" alt="Loneitu" className="w-10 h-10 object-contain shrink-0" />
                 <div>
                   <span className="font-serif font-bold text-xl text-[#143520] block leading-tight">
                     Loneitu
