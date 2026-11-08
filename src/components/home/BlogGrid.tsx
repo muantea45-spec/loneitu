@@ -28,17 +28,12 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
   }, []);
 
   const postsPerPage = isDesktop ? POSTS_PER_PAGE_DESKTOP : POSTS_PER_PAGE_MOBILE;
-  const totalPages = Math.ceil(articles.length / postsPerPage);
-
-  // If filtered articles count drops and currentPage is out of range, reset to 1
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [articles.length, totalPages, currentPage]);
+  const totalPages = Math.ceil(articles.length / postsPerPage) || 1;
+  const effectivePage = Math.min(Math.max(1, currentPage), totalPages);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const targetPage = Math.min(Math.max(1, page), totalPages);
+    setCurrentPage(targetPage);
     if (gridTopRef.current) {
       gridTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -70,8 +65,39 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
   }
 
   // Slice posts according to viewport (up to 6 for desktop, 5 for mobile)
-  const startIndex = (currentPage - 1) * postsPerPage;
+  const startIndex = (effectivePage - 1) * postsPerPage;
   const currentArticles = articles.slice(startIndex, startIndex + postsPerPage);
+
+  // Helper to compute compact mobile pages (up to 2 page options at a time)
+  const getMobilePages = (): number[] => {
+    if (totalPages <= 2) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (effectivePage <= 2) {
+      return [1, 2];
+    }
+    if (effectivePage >= totalPages) {
+      return [totalPages - 1, totalPages];
+    }
+    return [effectivePage, effectivePage + 1];
+  };
+
+  // Helper to compute clean desktop pages with ellipsis
+  const getDesktopPages = (): (number | '...')[] => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (effectivePage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (effectivePage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', effectivePage - 1, effectivePage, effectivePage + 1, '...', totalPages];
+  };
+
+  const mobilePages = getMobilePages();
+  const desktopPages = getDesktopPages();
 
   return (
     <div ref={gridTopRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,37 +108,69 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
         </h2>
       </div>
 
-      {/* Grid container with up to 5 posts */}
+      {/* Grid container with articles */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {currentArticles.map(article => (
           <BlogCard key={article.id} article={article} />
         ))}
       </div>
 
-      {/* Pagination Controls (when posts exceed 5) */}
+      {/* Pagination Controls */}
       {totalPages > 1 && (
         <nav
           aria-label="Article pagination"
-          className="flex flex-wrap items-center justify-center gap-2 mt-12 pt-8 border-t border-[#EBE6D6]"
+          className="flex items-center justify-center gap-2 mt-12 pt-8 border-t border-[#EBE6D6]"
         >
           {/* Previous Button */}
           <button
             type="button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+            onClick={() => handlePageChange(effectivePage - 1)}
+            disabled={effectivePage === 1}
+            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Previous page"
           >
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Hmasa</span>
           </button>
 
-          {/* Numbered Page Buttons: Page 1, 2, 3... */}
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: totalPages }, (_, index) => {
-              const pageNumber = index + 1;
-              const isActive = currentPage === pageNumber;
+          {/* MOBILE VIEW: Shows up to 2 page options (e.g. Page 1, Page 2) followed by Next arrow */}
+          <div className="flex md:hidden items-center gap-1.5">
+            {mobilePages.map(pageNumber => {
+              const isActive = effectivePage === pageNumber;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`min-w-[44px] min-h-[44px] px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
+                    isActive
+                      ? 'bg-[#143520] text-[#BFDC28] shadow-sm ring-2 ring-[#143520]/20'
+                      : 'bg-white border border-[#DDD4BC] text-[#143520] hover:bg-[#F6F4EB]'
+                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-label={`Page ${pageNumber}`}
+                >
+                  <span>Page {pageNumber}</span>
+                </button>
+              );
+            })}
+          </div>
 
+          {/* DESKTOP VIEW: Full windowed pagination with ellipsis */}
+          <div className="hidden md:flex items-center gap-1.5">
+            {desktopPages.map((pageItem, index) => {
+              if (pageItem === '...') {
+                return (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-xs font-bold text-[#8F7855] select-none"
+                  >
+                    ...
+                  </span>
+                );
+              }
+              const pageNumber = pageItem as number;
+              const isActive = effectivePage === pageNumber;
               return (
                 <button
                   key={pageNumber}
@@ -135,9 +193,9 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
           {/* Next Button */}
           <button
             type="button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+            onClick={() => handlePageChange(effectivePage + 1)}
+            disabled={effectivePage === totalPages}
+            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Next page"
           >
             <span className="hidden sm:inline">Dawt</span>
