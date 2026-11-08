@@ -62,6 +62,7 @@ export const AdminDashboardPage: React.FC = () => {
   }, [tabParam]);
 
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [importedBlogspotPost, setImportedBlogspotPost] = useState<any>(null);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [makePrimaryImmediately, setMakePrimaryImmediately] = useState(false);
   const [securityKeyDraft, setSecurityKeyDraft] = useState('');
@@ -87,17 +88,26 @@ export const AdminDashboardPage: React.FC = () => {
 
   const handleStartNewArticle = () => {
     setEditingArticleId(null);
+    setImportedBlogspotPost(null);
     setCurrentTab('new-article');
   };
 
   const handleEditArticle = (articleId: string) => {
     setEditingArticleId(articleId);
+    setImportedBlogspotPost(null);
     setCurrentTab('edit-article');
+  };
+
+  const handleImportBlogspotToEditor = (post: any) => {
+    setImportedBlogspotPost(post);
+    setEditingArticleId(null);
+    setCurrentTab('new-article');
   };
 
   const handleEditorSaved = () => {
     setCurrentTab('articles');
     setEditingArticleId(null);
+    setImportedBlogspotPost(null);
   };
 
   const handleExportJSON = () => {
@@ -203,14 +213,19 @@ export const AdminDashboardPage: React.FC = () => {
             <ArticleList
               onNewArticle={handleStartNewArticle}
               onEditArticle={handleEditArticle}
+              onImportToEditor={handleImportBlogspotToEditor}
             />
           )}
 
           {(currentTab === 'new-article' || currentTab === 'edit-article') && (
             <ArticleEditor
               articleId={editingArticleId}
+              importedPost={currentTab === 'new-article' ? importedBlogspotPost : undefined}
               onSaved={handleEditorSaved}
-              onCancel={() => setCurrentTab('articles')}
+              onCancel={() => {
+                setImportedBlogspotPost(null);
+                setCurrentTab('articles');
+              }}
             />
           )}
 

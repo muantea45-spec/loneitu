@@ -15,26 +15,31 @@ import {
   Tag as TagIcon,
   User,
   FolderTree,
+  Globe,
 } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { formatDate } from '../../utils/formatDate';
 import { useToast } from '../common/Toast';
 import { resolveImageUrl } from '../../utils/imageUrlResolver';
+import { BlogspotImportModal } from './BlogspotImportModal';
 
 interface ArticleListProps {
   onNewArticle: () => void;
   onEditArticle: (articleId: string) => void;
+  onImportToEditor?: (post: any) => void;
 }
 
 export const ArticleList: React.FC<ArticleListProps> = ({
   onNewArticle,
   onEditArticle,
+  onImportToEditor,
 }) => {
   const { articles, deleteArticle, toggleStatus } = useBlog();
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isBlogspotModalOpen, setIsBlogspotModalOpen] = useState(false);
 
   const filtered = articles.filter(art => {
     if (statusFilter === 'published' && art.status !== 'published') return false;
@@ -82,13 +87,24 @@ export const ArticleList: React.FC<ArticleListProps> = ({
               Manage publication status, featured stories, and content drafts
             </p>
           </div>
-          <button
-            onClick={onNewArticle}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#143520] text-white text-xs font-semibold hover:bg-[#1E542E] transition-colors shrink-0 shadow-xs cursor-pointer w-full sm:w-auto"
-          >
-            <Plus className="w-4 h-4 text-[#BFDC28]" />
-            <span>Create New Article</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsBlogspotModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[#DDD4BC] bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] text-xs font-semibold transition-colors shrink-0 shadow-2xs cursor-pointer"
+              title="Import posts directly from any Blogspot.com or Blogspot.in blog"
+            >
+              <Globe className="w-4 h-4 text-[#256B3A]" />
+              <span>Import from Blogspot</span>
+            </button>
+            <button
+              onClick={onNewArticle}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#143520] text-white text-xs font-semibold hover:bg-[#1E542E] transition-colors shrink-0 shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-[#BFDC28]" />
+              <span>Create New Article</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter bar */}
@@ -368,6 +384,13 @@ export const ArticleList: React.FC<ArticleListProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Blogspot Import Modal */}
+      <BlogspotImportModal
+        isOpen={isBlogspotModalOpen}
+        onClose={() => setIsBlogspotModalOpen(false)}
+        onImportToEditor={onImportToEditor}
+      />
     </div>
   );
 };

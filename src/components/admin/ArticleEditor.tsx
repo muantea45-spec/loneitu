@@ -43,6 +43,7 @@ import {
   Eraser,
   Undo,
   Redo,
+  Globe,
 } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { slugify } from '../../utils/slugify';
@@ -52,9 +53,11 @@ import { useToast } from '../common/Toast';
 import { compressImage } from '../../utils/imageCompressor';
 import { markdownToHtml } from '../../utils/richTextFormatter';
 import { resolveImageUrl } from '../../utils/imageUrlResolver';
+import { BlogspotImportModal } from './BlogspotImportModal';
 
 interface ArticleEditorProps {
   articleId?: string | null;
+  importedPost?: any;
   onSaved: () => void;
   onCancel: () => void;
 }
@@ -89,6 +92,7 @@ const HIGHLIGHT_COLORS = [
 
 export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   articleId,
+  importedPost,
   onSaved,
   onCancel,
 }) => {
@@ -98,18 +102,22 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const existingArticle = articleId ? articles.find(a => a.id === articleId) : null;
 
   // Form states
-  const [title, setTitle] = useState(existingArticle?.title || '');
-  const [slug, setSlug] = useState(existingArticle?.slug || '');
+  const [title, setTitle] = useState(importedPost?.title || existingArticle?.title || '');
+  const [slug, setSlug] = useState(
+    existingArticle?.slug || (importedPost?.title ? slugify(importedPost.title) : '')
+  );
   const [isSlugManual, setIsSlugManual] = useState(Boolean(existingArticle));
-  const [content, setContent] = useState(existingArticle?.content || '');
-  const [coverImage, setCoverImage] = useState(existingArticle?.coverImage || '');
+  const [content, setContent] = useState(importedPost?.content || existingArticle?.content || '');
+  const [coverImage, setCoverImage] = useState(importedPost?.coverImage || existingArticle?.coverImage || '');
   const [coverImageTab, setCoverImageTab] = useState<'upload' | 'embed'>('upload');
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState(
     existingArticle?.category || (categories[0]?.name || 'Agronomy & Soil Health')
   );
-  const [tagsList, setTagsList] = useState<string[]>(existingArticle?.tags || []);
+  const [tagsList, setTagsList] = useState<string[]>(
+    importedPost?.tags && importedPost.tags.length > 0 ? importedPost.tags : existingArticle?.tags || []
+  );
   const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState<'published' | 'draft'>(
     existingArticle?.status || 'published'
@@ -118,6 +126,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [authorId, setAuthorId] = useState<string>(
     existingArticle?.author?.id || authors[0]?.id || ''
   );
+  const [isBlogspotModalOpen, setIsBlogspotModalOpen] = useState(false);
 
   // Editor View modes: 'edit' (Visual Canvas) | 'split' | 'preview' | 'code' (Raw HTML/MD)
   const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview' | 'code'>('edit');
@@ -165,12 +174,30 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   // Initialize canvas with rich HTML on load
   useEffect(() => {
     if (canvasRef.current && !isCanvasInitializedRef.current) {
-      const initialHtml = markdownToHtml(existingArticle?.content || '');
+      const initialHtml = importedPost?.content
+        ? importedPost.content
+        : markdownToHtml(existingArticle?.content || '');
       canvasRef.current.innerHTML = initialHtml;
       setContent(initialHtml);
       isCanvasInitializedRef.current = true;
     }
-  }, [existingArticle]);
+  }, [existingArticle, importedPost]);
+
+  const handleApplyImportedPost = (post: any) => {
+    setTitle(post.title || '');
+    setSlug(slugify(post.title || ''));
+    setContent(post.content || '');
+    if (canvasRef.current) {
+      canvasRef.current.innerHTML = post.content || '';
+    }
+    if (post.coverImage) {
+      setCoverImage(post.coverImage);
+    }
+    if (post.tags && Array.isArray(post.tags) && post.tags.length > 0) {
+      setTagsList(post.tags);
+    }
+    showToast('Imported Blogspot article into editor!', 'success');
+  };
 
   // When switching from raw code mode back to visual canvas, sync innerHTML
   const handleViewModeChange = (mode: 'edit' | 'split' | 'preview' | 'code') => {
@@ -668,6 +695,16 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setIsBlogspotModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[#DDD4BC] bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#143520] text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+            title="Import content directly from any Blogspot post URL"
+          >
+            <Globe className="w-4 h-4 text-[#256B3A]" />
+            <span className="hidden sm:inline">Import Blogspot</span>
+            <span className="sm:hidden">Blogspot</span>
+          </button>
           <button
             type="button"
             onClick={onCancel}
@@ -2130,6 +2167,13 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
           </div>
         </div>
       )}
+
+      {/* Blogspot Import Modal */}
+      <BlogspotImportModal
+        isOpen={isBlogspotModalOpen}
+        onClose={() => setIsBlogspotModalOpen(false)}
+        onImportToEditor={handleApplyImportedPost}
+      />
     </form>
   );
 };

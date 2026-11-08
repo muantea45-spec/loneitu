@@ -293,6 +293,134 @@ export default {
       return new Response('Image Not Found', { status: 404 });
     }
 
+    // 4.5 Blogspot Import Proxy: POST /api/import-blogspot
+    if (url.pathname === '/api/import-blogspot' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as {
+          url?: string;
+          mode?: 'auto' | 'single' | 'feed';
+          maxResults?: number;
+        };
+
+        if (!body || !body.url || !body.url.trim()) {
+          return new Response(JSON.stringify({ success: false, error: 'A valid Blogspot URL is required.' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+          });
+        }
+
+        let urlStr = body.url.trim();
+        if (!/^https?:\/\//i.test(urlStr)) urlStr = 'https://' + urlStr;
+        const targetUrl = new URL(urlStr);
+
+        const pathname = targetUrl.pathname.toLowerCase();
+        const isSinglePost =
+          body.mode === 'single' ||
+          (body.mode !== 'feed' && (pathname.endsWith('.html') || /\/\d{4}\/\d{2}\//.test(pathname)));
+
+        if (isSinglePost) {
+          const feedUrl = `https://${targetUrl.hostname}/feeds/posts/default?alt=json&path=${encodeURIComponent(targetUrl.pathname)}`;
+          let postData: any = null;
+
+          try {
+            const feedRes = await fetch(feedUrl, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+            });
+            if (feedRes.ok) {
+              const feedJson: any = await feedRes.json();
+              const entry = feedJson.entry || feedJson.feed?.entry?.[0];
+              if (entry) {
+                const title = (entry.title?.$t || '').trim();
+                const content = (entry.content?.$t || entry.summary?.$t || '').trim();
+                let cover = '';
+                if (entry.media$thumbnail?.url) {
+                  cover = entry.media$thumbnail.url.replace(/\/s72-c(\/|$)/, '/s1600$1').replace(/\/w\d+-h\d+-c\//, '/s1600/');
+                }
+                if (!cover && content) {
+                  const m = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+                  if (m) cover = m[1];
+                }
+                const tags = Array.isArray(entry.category) ? entry.category.map((c: any) => (c.term || '').trim()).filter(Boolean) : [];
+                const altLink = Array.isArray(entry.link) ? entry.link.find((l: any) => l.rel === 'alternate')?.href || '' : '';
+                postData = {
+                  title,
+                  content,
+                  excerpt: stripMarkdown(content).substring(0, 160),
+                  coverImage: cover,
+                  publishedAt: entry.published?.$t || new Date().toISOString(),
+                  tags,
+                  authorName: entry.author?.[0]?.name?.$t || '',
+                  originalUrl: altLink || targetUrl.href,
+                };
+              }
+            }
+          } catch {}
+
+          if (!postData) {
+            return new Response(
+              JSON.stringify({ success: false, error: 'Could not extract article content from this Blogspot URL.' }),
+              { status: 404, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+            );
+          }
+
+          return new Response(JSON.stringify({ success: true, mode: 'single', post: postData }), {
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+          });
+        }
+
+        // Feed mode
+        const limit = Math.min(Math.max(body.maxResults || 25, 1), 50);
+        const feedUrl = `https://${targetUrl.hostname}/feeds/posts/default?alt=json&max-results=${limit}`;
+        const feedRes = await fetch(feedUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        });
+
+        if (!feedRes.ok) {
+          return new Response(JSON.stringify({ success: false, error: `Failed to fetch blog feed from ${targetUrl.hostname}` }), {
+            status: feedRes.status,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+          });
+        }
+
+        const feedJson: any = await feedRes.json();
+        const blogTitle = (feedJson.feed?.title?.$t || targetUrl.hostname).trim();
+        const rawEntries = feedJson.feed?.entry || [];
+        const posts = rawEntries.map((entry: any) => {
+          const title = (entry.title?.$t || '').trim();
+          const content = (entry.content?.$t || entry.summary?.$t || '').trim();
+          let cover = '';
+          if (entry.media$thumbnail?.url) {
+            cover = entry.media$thumbnail.url.replace(/\/s72-c(\/|$)/, '/s1600$1').replace(/\/w\d+-h\d+-c\//, '/s1600/');
+          }
+          if (!cover && content) {
+            const m = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (m) cover = m[1];
+          }
+          const tags = Array.isArray(entry.category) ? entry.category.map((c: any) => (c.term || '').trim()).filter(Boolean) : [];
+          const altLink = Array.isArray(entry.link) ? entry.link.find((l: any) => l.rel === 'alternate')?.href || '' : '';
+          return {
+            title,
+            content,
+            excerpt: stripMarkdown(content).substring(0, 160),
+            coverImage: cover,
+            publishedAt: entry.published?.$t || new Date().toISOString(),
+            tags,
+            authorName: entry.author?.[0]?.name?.$t || '',
+            originalUrl: altLink,
+          };
+        }).filter((p: any) => p.title);
+
+        return new Response(JSON.stringify({ success: true, mode: 'feed', blogTitle, totalPosts: posts.length, posts }), {
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        });
+      } catch (err: any) {
+        return new Response(JSON.stringify({ success: false, error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        });
+      }
+    }
+
     // 5. Social Bot Open Graph Rich Previews: /article/:slug
     if (url.pathname.startsWith('/article/')) {
       const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
