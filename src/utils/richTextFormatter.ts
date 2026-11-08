@@ -2,6 +2,8 @@
  * Utility to convert between Markdown and rich HTML for Loneitu's Post Canvas
  */
 
+import { parseMediaUrl, generateMediaEmbedHtml } from './mediaEmbed';
+
 export function markdownToHtml(md: string): string {
   if (!md) return '';
 
@@ -95,7 +97,11 @@ export function markdownToHtml(md: string): string {
   const formattedBlocks = blocks.map(block => {
     const trimmed = block.trim();
     if (!trimmed) return '';
-    if (/^<(h[1-6]|ul|ol|blockquote|table|pre|hr|div|p)\b/i.test(trimmed)) {
+    const parsedMedia = parseMediaUrl(trimmed);
+    if (parsedMedia) {
+      return generateMediaEmbedHtml(parsedMedia);
+    }
+    if (/^<(h[1-6]|ul|ol|blockquote|table|pre|hr|div|p|figure)\b/i.test(trimmed)) {
       return trimmed;
     }
     return `<p style="margin-bottom: 16px; line-height: 1.75;">${trimmed.replace(/\n/g, '<br />')}</p>`;

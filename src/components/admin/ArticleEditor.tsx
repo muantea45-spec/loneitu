@@ -44,6 +44,8 @@ import {
   Undo,
   Redo,
   Globe,
+  Video,
+  Play,
 } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { slugify } from '../../utils/slugify';
@@ -53,6 +55,7 @@ import { useToast } from '../common/Toast';
 import { compressImage } from '../../utils/imageCompressor';
 import { markdownToHtml } from '../../utils/richTextFormatter';
 import { resolveImageUrl } from '../../utils/imageUrlResolver';
+import { parseMediaUrl, generateMediaEmbedHtml, extractMediaFromContent } from '../../utils/mediaEmbed';
 import { BlogspotImportModal } from './BlogspotImportModal';
 
 interface ArticleEditorProps {
@@ -165,6 +168,12 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [imageCaption, setImageCaption] = useState<string>('');
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Inline Video & Reels Embed modal
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [videoCaptionInput, setVideoCaptionInput] = useState('');
+  const [setCoverFromVideo, setSetCoverFromVideo] = useState(true);
 
   // Canvas DOM refs
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -306,6 +315,27 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     showToast('Photo inserted into canvas!', 'success');
   };
 
+  // Video and Reels insertion into the visual canvas
+  const handleInsertVideo = () => {
+    const parsed = parseMediaUrl(videoUrlInput);
+    if (!parsed) {
+      showToast('Please enter a valid YouTube or Instagram Reel link', 'error');
+      return;
+    }
+    restoreSelection();
+    const embedHtml = generateMediaEmbedHtml(parsed, videoCaptionInput);
+    insertHtmlAtCursor(embedHtml);
+    if (setCoverFromVideo && parsed.thumbnailUrl) {
+      setCoverImage(parsed.thumbnailUrl);
+      showToast(`Embedded ${parsed.label}! Video thumbnail set for Homepage.`, 'success');
+    } else {
+      showToast(`Embedded ${parsed.label} into canvas!`, 'success');
+    }
+    setShowVideoModal(false);
+    setVideoUrlInput('');
+    setVideoCaptionInput('');
+  };
+
   // Link Dialog Handlers
   const handleOpenLinkModal = () => {
     saveSelection();
@@ -441,25 +471,54 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     }
   };
 
-  // Paste image into Canvas
+  // Paste image or video link into Canvas
   const handleCanvasPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    // 1. Check for pasted image file
     const items = e.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          e.preventDefault();
-          try {
-            const result = await compressImage(file, 1200, 0.82);
-            const cloudUrl = await uploadImage(result.dataUrl, file.name);
-            insertImageAtCursor(cloudUrl, 'Pasted observation photograph');
-          } catch {
-            showToast('Failed to paste image', 'error');
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            try {
+              const result = await compressImage(file, 1200, 0.82);
+              const cloudUrl = await uploadImage(result.dataUrl, file.name);
+              insertImageAtCursor(cloudUrl, 'Pasted observation photograph');
+            } catch {
+              showToast('Failed to paste image', 'error');
+            }
+            return;
           }
-          break;
         }
       }
+    }
+
+    // 2. Check for pasted YouTube / Instagram Reel URL
+    const pastedText = e.clipboardData?.getData('text/plain')?.trim();
+    if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://'))) {
+      const parsed = parseMediaUrl(pastedText);
+      if (parsed) {
+        e.preventDefault();
+        const html = generateMediaEmbedHtml(parsed);
+        insertHtmlAtCursor(html);
+        if (!coverImage && parsed.thumbnailUrl) {
+          setCoverImage(parsed.thumbnailUrl);
+          showToast(`Embedded ${parsed.label}! Thumbnail set for homepage.`, 'success');
+        } else {
+          showToast(`Embedded ${parsed.label}!`, 'success');
+        }
+      }
+    }
+  };
+
+  const handleCoverImageChange = (val: string) => {
+    const parsed = parseMediaUrl(val);
+    if (parsed && parsed.thumbnailUrl) {
+      setCoverImage(parsed.thumbnailUrl);
+      showToast(`Detected ${parsed.label}! Extracted video thumbnail for cover.`, 'success');
+    } else {
+      setCoverImage(val);
     }
   };
 
@@ -1168,7 +1227,22 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                     title="Insert Photo / Picture with Caption into Canvas"
                   >
                     <ImagePlus className="w-3.5 h-3.5 text-[#256B3A]" />
-                    <span className="text-[11px]">+ Insert / Upload Photo</span>
+                    <span className="text-[11px]">+ Insert Photo</span>
+                  </button>
+
+                  {/* Embed Video / Reels */}
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      saveSelection();
+                      setShowVideoModal(true);
+                    }}
+                    className="h-8 px-3 bg-[#FEF3C7] text-[#78350F] hover:bg-[#FDE68A] border border-[#FCD34D] rounded-lg flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                    title="Embed YouTube Video, YouTube Shorts, or Instagram Reels into Canvas"
+                  >
+                    <Video className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span className="text-[11px]">+ Embed Video / Reel</span>
                   </button>
 
                   {/* Insert Link */}
@@ -1619,16 +1693,35 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                 <div className="space-y-2">
                   <div>
                     <label className="block text-[11px] font-bold text-[#6F5B3C] mb-1">
-                      Direct Image Web Link
+                      Direct Image Web Link or YouTube Link
                     </label>
                     <input
                       type="url"
                       value={coverImage}
-                      onChange={e => setCoverImage(e.target.value)}
-                      placeholder="Paste image URL (https://...)"
+                      onChange={e => handleCoverImageChange(e.target.value)}
+                      placeholder="Paste image URL (https://...) or YouTube video link"
                       className="w-full px-3.5 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
                     />
                   </div>
+                  {(() => {
+                    const mediaInContent = extractMediaFromContent(content);
+                    if (mediaInContent?.thumbnailUrl && coverImage !== mediaInContent.thumbnailUrl) {
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverImage(mediaInContent.thumbnailUrl!);
+                            showToast(`Set cover image to ${mediaInContent.label} thumbnail!`, 'success');
+                          }}
+                          className="mt-1 text-[11px] font-bold text-[#256B3A] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[#256B3A]" />
+                          <span>Use embedded video thumbnail as Cover</span>
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="grid grid-cols-4 gap-1.5 pt-1">
                     {PRESET_COVERS.slice(0, 4).map((p, i) => (
                       <button
@@ -1973,6 +2066,155 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
               >
                 <Plus className="w-3.5 h-3.5 text-[#BFDC28]" />
                 <span>Insert into Article</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Embed YouTube / Reels Modal */}
+      {showVideoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-[#DDD4BC] p-6 max-w-lg w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-[#EBE6D6] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                  <Video className="w-4 h-4 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-[#143520]">
+                    Embed YouTube or Instagram Reel
+                  </h3>
+                  <p className="text-[11px] text-[#6F5B3C]">
+                    Embed videos directly into canvas & display on Homepage
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVideoModal(false);
+                  setVideoUrlInput('');
+                }}
+                className="p-1 rounded-lg text-[#8F7855] hover:text-[#143520] hover:bg-[#F6F4EB] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-[#143520] mb-1">
+                  Video or Reel URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  autoFocus
+                  value={videoUrlInput}
+                  onChange={e => setVideoUrlInput(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=... or https://www.instagram.com/reel/..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#DDD4BC] bg-[#FAF8F3] text-xs text-[#143520] focus:ring-2 focus:ring-[#256B3A] focus:outline-hidden"
+                />
+                <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10.5px] text-[#8F7855]">
+                  <span>Supported:</span>
+                  <span className="bg-[#F6F4EB] px-1.5 py-0.5 rounded font-mono text-[#143520]">YouTube</span>
+                  <span className="bg-[#F6F4EB] px-1.5 py-0.5 rounded font-mono text-[#143520]">YouTube Shorts</span>
+                  <span className="bg-[#F6F4EB] px-1.5 py-0.5 rounded font-mono text-[#143520]">Instagram Reels</span>
+                </div>
+              </div>
+
+              {/* Live Detection Preview */}
+              {(() => {
+                const parsed = parseMediaUrl(videoUrlInput);
+                if (!parsed) {
+                  if (videoUrlInput.trim().length > 5) {
+                    return (
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                        <span>Could not detect a valid YouTube or Instagram link. Check the URL format.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                }
+
+                return (
+                  <div className="p-3.5 rounded-xl bg-[#F2F7F3] border border-[#B7CEB4] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#143520] text-[#BFDC28]">
+                        <CheckCircle2 className="w-3 h-3 text-[#BFDC28]" />
+                        {parsed.label} Detected
+                      </span>
+                      <span className="text-[10.5px] font-mono text-[#6F5B3C]">
+                        ID: {parsed.id}
+                      </span>
+                    </div>
+
+                    {parsed.thumbnailUrl && (
+                      <div className="relative rounded-lg overflow-hidden border border-[#DDD4BC] bg-black aspect-16/9 max-h-36">
+                        <img
+                          src={parsed.thumbnailUrl}
+                          alt="Video thumbnail preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center">
+                            <Play className="w-4 h-4 fill-white ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {parsed.thumbnailUrl && (
+                      <label className="flex items-start gap-2 cursor-pointer pt-1">
+                        <input
+                          type="checkbox"
+                          checked={setCoverFromVideo}
+                          onChange={e => setSetCoverFromVideo(e.target.checked)}
+                          className="mt-0.5 rounded border-[#DDD4BC] text-[#256B3A] focus:ring-[#256B3A]"
+                        />
+                        <span className="text-[11.5px] text-[#143520] font-medium leading-tight">
+                          Set video thumbnail as Article Cover Image (will display automatically on the Homepage!)
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div>
+                <label className="block font-semibold text-[#143520] mb-1">
+                  Caption or Description (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={videoCaptionInput}
+                  onChange={e => setVideoCaptionInput(e.target.value)}
+                  placeholder="e.g. Demonstration of organic biochar preparation"
+                  className="w-full px-3 py-2 rounded-xl border border-[#DDD4BC] bg-[#FAF8F3] text-xs text-[#143520] focus:ring-2 focus:ring-[#256B3A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#EBE6D6]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVideoModal(false);
+                  setVideoUrlInput('');
+                }}
+                className="px-4 py-2 text-xs font-semibold text-[#6F5B3C] hover:bg-[#F6F4EB] rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!parseMediaUrl(videoUrlInput)}
+                onClick={handleInsertVideo}
+                className="px-4 py-2 text-xs font-bold bg-[#143520] text-[#BFDC28] hover:bg-[#1E542E] rounded-xl transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>Insert Video into Canvas</span>
               </button>
             </div>
           </div>

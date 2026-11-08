@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, Calendar, Heart, ArrowUpRight, Share2 } from 'lucide-react';
+import { Clock, Calendar, Heart, ArrowUpRight, Share2, Play } from 'lucide-react';
 import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
 import { ShareModal } from '../common/ShareModal';
 import { resolveImageUrl } from '../../utils/imageUrlResolver';
+import { getArticleMediaBadge } from '../../utils/mediaEmbed';
 
 interface BlogCardProps {
   article: Article;
@@ -17,6 +18,8 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
   const navigate = useNavigate();
 
   const isLiked = likedArticles.includes(article.id);
+  const mediaBadge = getArticleMediaBadge(article);
+  const coverSrc = resolveImageUrl(article.coverImage) || mediaBadge?.thumbnailUrl || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80';
 
   const handleCategoryClick = (e: React.MouseEvent, catName: string) => {
     e.preventDefault();
@@ -39,7 +42,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
       <div className="relative overflow-hidden aspect-16/10 bg-[#EBE6D6]">
         <Link to={`/article/${article.slug}`} className="block w-full h-full">
           <img
-            src={resolveImageUrl(article.coverImage)}
+            src={coverSrc}
             alt={article.title}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -51,14 +54,29 @@ export const BlogCard: React.FC<BlogCardProps> = ({ article }) => {
         </Link>
 
         {/* Category Pill Floating */}
-        <div className="absolute top-3 left-3 z-10">
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap">
           <button
             onClick={e => handleCategoryClick(e, article.category)}
             className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#143520]/90 hover:bg-[#143520] text-[#BFDC28] backdrop-blur-md shadow-sm transition-colors cursor-pointer"
           >
             {article.category}
           </button>
+          {mediaBadge && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold tracking-wider bg-black/75 text-white backdrop-blur-md shadow-xs border border-white/15">
+              <Play className="w-2.5 h-2.5 fill-red-500 text-red-500" />
+              <span>{mediaBadge.label}</span>
+            </span>
+          )}
         </div>
+
+        {/* Center Play Button Overlay on Video Articles */}
+        {mediaBadge && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-xs text-white border border-white/20 flex items-center justify-center shadow-lg group-hover:scale-115 group-hover:bg-[#143520] group-hover:text-[#BFDC28] group-hover:border-[#BFDC28]/50 transition-all duration-300">
+              <Play className="w-5 h-5 fill-current ml-0.5" />
+            </div>
+          </div>
+        )}
 
         {/* Action icons floating top right: Share and Like */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2 opacity-90 group-hover:opacity-100 transition-opacity">

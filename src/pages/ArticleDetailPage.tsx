@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Eye,
   BookOpen,
-  Share2
+  Share2,
+  Play
 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatDate } from '../utils/formatDate';
@@ -21,6 +22,7 @@ import { ShareButtons } from '../components/article/ShareButtons';
 import { RelatedPosts } from '../components/article/RelatedPosts';
 import { ShareModal } from '../components/common/ShareModal';
 import { resolveImageUrl } from '../utils/imageUrlResolver';
+import { getArticleMediaBadge } from '../utils/mediaEmbed';
 
 export const ArticleDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -29,6 +31,10 @@ export const ArticleDetailPage: React.FC = () => {
   const navigate = useNavigate();
 
   const article = articles.find(a => a.slug === slug);
+  const mediaBadge = article ? getArticleMediaBadge(article) : null;
+  const coverSrc = article
+    ? resolveImageUrl(article.coverImage) || mediaBadge?.thumbnailUrl || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80'
+    : '';
 
   useEffect(() => {
     try {
@@ -158,7 +164,7 @@ export const ArticleDetailPage: React.FC = () => {
         <div className="max-w-4xl mx-auto mb-12">
           <div className="relative aspect-16/9 rounded-3xl overflow-hidden shadow-lg border border-[#DDD4BC] bg-[#EBE6D6]">
             <img
-              src={resolveImageUrl(article.coverImage)}
+              src={coverSrc}
               alt={article.title}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -166,6 +172,14 @@ export const ArticleDetailPage: React.FC = () => {
                   'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80';
               }}
             />
+            {mediaBadge && (
+              <div className="absolute top-4 left-4 z-10">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-lg">
+                  <Play className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+                  <span>{mediaBadge.label}</span>
+                </span>
+              </div>
+            )}
           </div>
           <div className="text-[11px] text-[#6F5B3C] text-right mt-2 italic">
             Field photography: Verified agrarian site documentation
@@ -254,6 +268,24 @@ export const ArticleDetailPage: React.FC = () => {
                       )}
                     </figure>
                   ),
+                  iframe: ({ node: _node, ...props }) => {
+                    const src = props.src || '';
+                    const isInstagram = src.includes('instagram.com');
+                    const isShorts = src.includes('/shorts/') || (props.title && String(props.title).toLowerCase().includes('shorts'));
+                    return (
+                      <div className={`my-8 ${isInstagram ? 'max-w-[440px] mx-auto' : isShorts ? 'max-w-[380px] mx-auto' : 'w-full max-w-3xl mx-auto'}`}>
+                        <div className={`overflow-hidden rounded-2xl border border-[#DDD4BC] bg-black shadow-md ${isInstagram ? 'h-[620px]' : isShorts ? 'aspect-[9/16]' : 'aspect-video'}`}>
+                          <iframe
+                            {...props}
+                            className="w-full h-full border-0"
+                            loading="lazy"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
+                        </div>
+                      </div>
+                    );
+                  },
                 }}
               >
                 {article.content}

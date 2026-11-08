@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Heart, Share2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Heart, Share2, Play } from 'lucide-react';
 import type { Article } from '../../types/blog';
 import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
 import { ShareModal } from '../common/ShareModal';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
+import { getArticleMediaBadge } from '../../utils/mediaEmbed';
 
 import { cleanTextExcerpt } from '../../utils/shareUtils';
 
@@ -21,6 +23,8 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ article }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const isLiked = likedArticles.includes(article.id);
   const excerptText = getPlainTextExcerpt(article);
+  const mediaBadge = getArticleMediaBadge(article);
+  const coverSrc = resolveImageUrl(article.coverImage) || mediaBadge?.thumbnailUrl || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80';
 
   return (
     <section className="w-full relative overflow-hidden bg-gradient-to-b from-[#143520] via-[#1E542E] to-[#143520] text-white pt-3 pb-6 sm:pt-4 sm:pb-8 lg:pt-5 lg:pb-10 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
@@ -113,11 +117,31 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ article }) => {
           <div className="lg:col-span-5 relative group">
             <Link to={`/article/${article.slug}`} className="block relative overflow-hidden rounded-2xl shadow-2xl border-2 border-white/10 group-hover:border-[#BFDC28]/50 transition-all duration-300">
               <img
-                src={article.coverImage}
+                src={coverSrc}
                 alt={article.title}
                 className="w-full h-[300px] sm:h-[360px] object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80';
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+
+              {mediaBadge && (
+                <>
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-md">
+                      <Play className="w-3 h-3 fill-red-500 text-red-500" />
+                      <span>{mediaBadge.label}</span>
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-14 h-14 rounded-full bg-black/60 backdrop-blur-xs text-white border border-white/20 flex items-center justify-center shadow-2xl group-hover:scale-115 group-hover:bg-[#BFDC28] group-hover:text-[#143520] transition-all duration-300">
+                      <Play className="w-6 h-6 fill-current ml-0.5" />
+                    </div>
+                  </div>
+                </>
+              )}
             </Link>
           </div>
         </div>
