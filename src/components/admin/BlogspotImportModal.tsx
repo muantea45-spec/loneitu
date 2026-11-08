@@ -39,7 +39,7 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
   onClose,
   onImportToEditor,
 }) => {
-  const { authors, categories, addArticle } = useBlog();
+  const { authors, categories, addArticle, batchAddArticles } = useBlog();
   const { showToast } = useToast();
 
   const [tab, setTab] = useState<'single' | 'feed'>('single');
@@ -168,31 +168,28 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
     }
 
     setIsImporting(true);
-    setImportProgress(`Importing 0 / ${selectedIndices.size}...`);
+    setImportProgress(`Importing ${selectedIndices.size} articles into repository...`);
 
     const selectedPosts = feedPosts.filter((_, idx) => selectedIndices.has(idx));
     const author = authors.find(a => a.id === selectedAuthorId) || authors[0];
 
     try {
-      let count = 0;
-      for (const post of selectedPosts) {
-        addArticle({
-          title: post.title,
-          content: post.content,
-          excerpt: post.excerpt,
-          coverImage: post.coverImage,
-          category: selectedCategory,
-          tags: post.tags.length > 0 ? post.tags : ['Blogspot'],
-          author,
-          status: 'published',
-          isFeatured: false,
-        });
-        count++;
-        setImportProgress(`Imported ${count} / ${selectedPosts.length}...`);
-        await new Promise(r => setTimeout(r, 60));
-      }
+      const itemsToImport = selectedPosts.map(post => ({
+        title: post.title,
+        content: post.content,
+        excerpt: post.excerpt,
+        coverImage: post.coverImage,
+        category: selectedCategory,
+        tags: post.tags.length > 0 ? post.tags : ['Blogspot'],
+        author,
+        status: 'published' as const,
+        isFeatured: false,
+        publishedAt: post.publishedAt || new Date().toISOString(),
+      }));
 
-      showToast(`Successfully imported ${count} articles into journal!`, 'success');
+      const result = batchAddArticles(itemsToImport);
+
+      showToast(`Successfully imported ${result.count} articles into journal repository!`, 'success');
       onClose();
     } catch (err: any) {
       showToast(`Error during batch import: ${err.message}`, 'error');

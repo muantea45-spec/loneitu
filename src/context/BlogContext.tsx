@@ -59,6 +59,7 @@ interface BlogContextType {
 
   // Article CRUD & Actions
   addArticle: (data: Partial<Article> & { title: string; content: string; category: string }) => Article;
+  batchAddArticles: (items: Array<Partial<Article> & { title: string; content: string; category: string }>) => { count: number; articles: Article[] };
   updateArticle: (id: string, updates: Partial<Article>) => void;
   deleteArticle: (id: string) => void;
   toggleFeatured: (id: string) => void;
@@ -1065,16 +1066,17 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Article Actions
   const addArticle = (data: Partial<Article> & { title: string; content: string; category: string }): Article => {
+    const currentArticles = latestDbStateRef.current.articles || articles;
     const rawSlug = data.slug || slugify(data.title);
     let finalSlug = rawSlug;
     let counter = 1;
-    while (articles.some(a => a.slug === finalSlug)) {
+    while (currentArticles.some(a => a.slug === finalSlug)) {
       finalSlug = `${rawSlug}-${counter}`;
       counter++;
     }
 
     const newArticle: Article = {
-      id: `art-${Date.now()}`,
+      id: `art-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: data.title,
       slug: finalSlug,
       excerpt: cleanTextExcerpt(data.excerpt || data.content, 160),
@@ -1083,7 +1085,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       category: data.category,
       tags: data.tags || [],
       author: data.author || authors[0] || INITIAL_AUTHORS[0],
-      publishedAt: new Date().toISOString(),
+      publishedAt: data.publishedAt || new Date().toISOString(),
       readingTimeMinutes: calculateReadingTime(data.content),
       status: data.status || 'published',
       isFeatured: Boolean(data.isFeatured),
@@ -1092,9 +1094,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       comments: [],
     };
 
-    let baseArticles = articles;
+    let baseArticles = currentArticles;
     if (data.isFeatured) {
-      baseArticles = articles.map(a => (a.isFeatured ? { ...a, isFeatured: false } : a));
+      baseArticles = currentArticles.map(a => (a.isFeatured ? { ...a, isFeatured: false } : a));
     }
     const updatedArticles = [newArticle, ...baseArticles];
     lastMutationTimeRef.current = Date.now();
@@ -1106,6 +1108,65 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
     return newArticle;
+  };
+
+  const batchAddArticles = (
+    items: Array<Partial<Article> & { title: string; content: string; category: string }>
+  ): { count: number; articles: Article[] } => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return { count: 0, articles: [] };
+    }
+
+    const currentArticles = [...(latestDbStateRef.current.articles || articles)];
+    const existingSlugs = new Set(currentArticles.map(a => a.slug));
+    const newArticles: Article[] = [];
+    const timestamp = Date.now();
+
+    items.forEach((data, index) => {
+      const rawSlug = data.slug || slugify(data.title);
+      let finalSlug = rawSlug;
+      let counter = 1;
+      while (existingSlugs.has(finalSlug)) {
+        finalSlug = `${rawSlug}-${counter}`;
+        counter++;
+      }
+      existingSlugs.add(finalSlug);
+
+      const uniqueId = `art-${timestamp}-${index}-${Math.random().toString(36).substring(2, 7)}`;
+      const newArticle: Article = {
+        id: uniqueId,
+        title: data.title,
+        slug: finalSlug,
+        excerpt: cleanTextExcerpt(data.excerpt || data.content, 160),
+        content: data.content,
+        coverImage:
+          data.coverImage ||
+          'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80',
+        category: data.category,
+        tags: data.tags || [],
+        author: data.author || authors[0] || INITIAL_AUTHORS[0],
+        publishedAt: data.publishedAt || new Date().toISOString(),
+        readingTimeMinutes: calculateReadingTime(data.content),
+        status: data.status || 'published',
+        isFeatured: Boolean(data.isFeatured),
+        views: 1,
+        likes: 0,
+        comments: [],
+      };
+      newArticles.push(newArticle);
+    });
+
+    const updatedArticles = [...newArticles, ...currentArticles];
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch { }
+    pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
+
+    return { count: newArticles.length, articles: newArticles };
   };
 
   const updateArticle = (id: string, updates: Partial<Article>) => {
@@ -1862,6 +1923,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthorizedEmail,
         checkAndRefreshAuthorization,
         addArticle,
+        batchAddArticles,
         updateArticle,
         deleteArticle,
         toggleFeatured,
