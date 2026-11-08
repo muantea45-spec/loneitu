@@ -114,7 +114,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              shareToWhatsApp(title, excerpt, targetUrl);
+              shareToWhatsApp(title, cleanExcerpt, targetUrl);
               onClose();
             }}
             className="flex items-center gap-2.5 p-3 rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#143520] hover:text-white border border-[#25D366]/30 transition-all group cursor-pointer"

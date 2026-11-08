@@ -47,6 +47,7 @@ import {
 import { useBlog } from '../../context/BlogContext';
 import { slugify } from '../../utils/slugify';
 import { calculateReadingTime } from '../../utils/readingTime';
+import { cleanTextExcerpt } from '../../utils/shareUtils';
 import { useToast } from '../common/Toast';
 import { compressImage } from '../../utils/imageCompressor';
 import { markdownToHtml } from '../../utils/richTextFormatter';
@@ -606,11 +607,13 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     const selectedAuthor = authors.find(a => a.id === authorId) || authors[0];
     const finalCoverImage = coverImage.trim() || PRESET_COVERS[0].url;
 
+    const generatedExcerpt = cleanTextExcerpt(currentContent, 160);
+
     if (existingArticle) {
       updateArticle(existingArticle.id, {
         title,
         slug: slug || slugify(title),
-        excerpt: '',
+        excerpt: generatedExcerpt,
         content: currentContent,
         coverImage: finalCoverImage,
         category,
@@ -624,7 +627,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
       addArticle({
         title,
         slug: slug || slugify(title),
-        excerpt: '',
+        excerpt: generatedExcerpt,
         content: currentContent,
         coverImage: finalCoverImage,
         category,

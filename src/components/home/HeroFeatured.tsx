@@ -6,21 +6,14 @@ import { formatDate } from '../../utils/formatDate';
 import { useBlog } from '../../context/BlogContext';
 import { ShareModal } from '../common/ShareModal';
 
+import { cleanTextExcerpt } from '../../utils/shareUtils';
+
 interface HeroFeaturedProps {
   article: Article;
 }
 
 function getPlainTextExcerpt(article: Article): string {
-  if (article.excerpt && article.excerpt.trim()) {
-    return article.excerpt.trim();
-  }
-  return (article.content || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/!\[.*?\]\(.*?\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[#*`_~>[\]]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return cleanTextExcerpt(article.excerpt || article.content, 220);
 }
 
 export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ article }) => {

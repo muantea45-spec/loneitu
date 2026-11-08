@@ -7,6 +7,7 @@ import { INITIAL_FARMERS } from '../data/initialFarmers';
 import { DEFAULT_ADMIN_KEY, DEFAULT_AUTHORIZED_EMAILS, GOOGLE_CLIENT_ID, isDefaultAuthorizedEmail, parseGoogleJwtCredential } from '../config/authConfig';
 import { slugify } from '../utils/slugify';
 import { calculateReadingTime } from '../utils/readingTime';
+import { cleanTextExcerpt } from '../utils/shareUtils';
 
 interface BlogContextType {
   articles: Article[];
@@ -242,14 +243,25 @@ async function uploadImageToCloud(dataUrl: string, filename?: string): Promise<s
   return dataUrl;
 }
 
+function normalizeArticleExcerpts(items: Article[]): Article[] {
+  if (!Array.isArray(items)) return [];
+  return items.map(a => {
+    const raw = (a.excerpt || '').trim();
+    if (!raw || raw.includes('<') || raw.toLowerCase().startsWith('div') || raw.toLowerCase().startsWith('<div')) {
+      return { ...a, excerpt: cleanTextExcerpt(a.excerpt || a.content, 160) };
+    }
+    return a;
+  });
+}
+
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Load initial states from localStorage with graceful fallback
   const [articles, setArticles] = useState<Article[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.ARTICLES);
-      return stored ? JSON.parse(stored) : INITIAL_ARTICLES;
+      return stored ? normalizeArticleExcerpts(JSON.parse(stored)) : normalizeArticleExcerpts(INITIAL_ARTICLES);
     } catch {
-      return INITIAL_ARTICLES;
+      return normalizeArticleExcerpts(INITIAL_ARTICLES);
     }
   });
 
@@ -613,11 +625,12 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (Array.isArray(cloudData.articles) && cloudData.articles.length > 0) {
-        const newArticlesStr = JSON.stringify(cloudData.articles);
+        const normalizedArticles = normalizeArticleExcerpts(cloudData.articles);
+        const newArticlesStr = JSON.stringify(normalizedArticles);
         const oldArticlesStr = JSON.stringify(latestDbStateRef.current.articles);
         if (newArticlesStr !== oldArticlesStr) {
-          latestDbStateRef.current.articles = cloudData.articles;
-          setArticles(cloudData.articles);
+          latestDbStateRef.current.articles = normalizedArticles;
+          setArticles(normalizedArticles);
           try {
             localStorage.setItem(STORAGE_KEYS.ARTICLES, newArticlesStr);
           } catch { }
@@ -1064,7 +1077,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       id: `art-${Date.now()}`,
       title: data.title,
       slug: finalSlug,
-      excerpt: '',
+      excerpt: cleanTextExcerpt(data.excerpt || data.content, 160),
       content: data.content,
       coverImage: data.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1600&q=80',
       category: data.category,
@@ -1103,7 +1116,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         return art;
       }
-      const updated = { ...art, ...updates, updatedAt: new Date().toISOString() };
+      const rawExcerpt = updates.excerpt !== undefined ? updates.excerpt : art.excerpt;
+      const cleanExcerpt = cleanTextExcerpt(rawExcerpt || updates.content || art.content, 160);
+      const updated = { ...art, ...updates, excerpt: cleanExcerpt, updatedAt: new Date().toISOString() };
       if (updates.content && !updates.readingTimeMinutes) {
         updated.readingTimeMinutes = calculateReadingTime(updates.content);
       }

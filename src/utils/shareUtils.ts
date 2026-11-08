@@ -5,9 +5,31 @@
 export function cleanTextExcerpt(text?: string, maxLength = 160): string {
   if (!text) return '';
   const cleaned = text
-    .replace(/!\[.*?\]\(.*?\)/g, '') // remove images
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // remove links
-    .replace(/[#*`_~>[\]]/g, '') // remove markdown symbols
+    // 1. Remove script and style tags and content
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    // 2. Decode HTML entities
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    // 3. Remove all standard HTML tags (anything between < and >)
+    .replace(/<[^>]+>/g, ' ')
+    // 4. Remove markdown links and images
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // 5. Remove markdown formatting markers
+    .replace(/[#*`_~[\]]/g, '')
+    // 6. Specifically remove any leading/trailing dangling <div, </div, <p, etc. without consuming other text
+    .replace(/^<\/?(?:div|p|span|section|article|h[1-6]|header|footer)\b(?:\s+class="[^"]*"|\s+style="[^"]*")?\s*/i, '')
+    .replace(/^<[a-zA-Z1-6]+\b\s*/i, '')
+    .replace(/<\/?(?:div|p|span|section|article|h[1-6]|header|footer)\b(?:\s+class="[^"]*"|\s+style="[^"]*")?\s*$/i, '')
+    // 7. Remove any leftover isolated < or >
+    .replace(/[<>]/g, '')
+    // 8. Normalize whitespace
     .replace(/\s+/g, ' ')
     .trim();
 

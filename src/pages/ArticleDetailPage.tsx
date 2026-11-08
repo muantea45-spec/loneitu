@@ -33,7 +33,7 @@ export const ArticleDetailPage: React.FC = () => {
   useEffect(() => {
     try {
       window.scrollTo(0, 0);
-    } catch {}
+    } catch { }
     if (article) {
       incrementViews(article.id);
       document.title = `${article.title} — Loneitu (MIZORAM TAN)`;
