@@ -18,6 +18,8 @@ const CategoryArchivePage = React.lazy(() => import('./pages/CategoryArchivePage
 const TagArchivePage = React.lazy(() => import('./pages/TagArchivePage').then(m => ({ default: m.TagArchivePage })));
 const ArchivePage = React.lazy(() => import('./pages/ArchivePage').then(m => ({ default: m.ArchivePage })));
 const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
+const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage').then(m => ({ default: m.TermsOfUsePage })));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 
 const PageLoadingFallback: React.FC = () => (
@@ -117,6 +119,10 @@ const AppLayout: React.FC = () => {
                 <Route path="/farmers" element={<Navigate to="/admin" replace />} />
                 <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfUsePage />} />
+                <Route path="/terms-of-use" element={<TermsOfUsePage />} />
                 <Route path="/admin/*" element={<AdminDashboardPage />} />
                 <Route path="/dev" element={<Navigate to="/" replace />} />
                 <Route path="/dev/*" element={<Navigate to="/" replace />} />

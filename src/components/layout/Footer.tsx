@@ -105,6 +105,15 @@ export const Footer: React.FC = () => {
               Archive
             </Link>
           </div>
+          <div className="flex items-center justify-center gap-3 text-[11px] font-medium text-[#88A682] flex-wrap w-full md:w-auto">
+            <Link to="/privacy" className="hover:text-[#BFDC28] transition-colors">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link to="/terms" className="hover:text-[#BFDC28] transition-colors">
+              Terms of Use
+            </Link>
+          </div>
         </div>
       </div>
 
