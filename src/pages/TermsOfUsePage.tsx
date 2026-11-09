@@ -161,7 +161,7 @@ export const TermsOfUsePage: React.FC = () => {
               7. Governing Law & Dispute Resolution
             </h2>
             <p className="text-[#4A584E]">
-              These Terms shall be governed by and construed in accordance with the <strong>laws of India</strong>. Any dispute arising out of or related to Loneitu shall be subject to the exclusive jurisdiction of the competent courts in <strong>Aizawl, Mizoram, India</strong>.
+              These Terms shall be governed by and construed in accordance with the <strong>laws of India</strong>. Any dispute arising out of or related to Loneitu shall be subject to the exclusive jurisdiction of the competent courts in <strong>Champhai, Mizoram, India</strong>.
             </p>
           </section>
 
@@ -172,7 +172,7 @@ export const TermsOfUsePage: React.FC = () => {
                 Mizo Farm Solutions — Loneitu Legal Desk
               </div>
               <div className="text-xs text-[#6F5B3C] space-y-1">
-                <div>Location: champhai, Mizoram, India</div>
+                <div>Location: Champhai, Mizoram, India</div>
                 <div className="pt-1">
                   Official Email:{' '}
                   <a
