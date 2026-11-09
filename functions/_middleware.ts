@@ -35,8 +35,6 @@ export const onRequest: PagesFunction = async (context) => {
     userAgent
   );
 
-  const url = new URL(request.url);
-
   // If a social crawler requests the root site URL or homepage
   if (isSocialBot && (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '')) {
     const siteTitle = 'Loneitu (MIZORAM TAN) — Mizo Farm Solutions';

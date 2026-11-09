@@ -209,3 +209,4 @@ export const TermsOfUsePage: React.FC = () => {
     </div>
   );
 };
+
