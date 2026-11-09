@@ -281,3 +281,4 @@ export function getArticleMediaBadge(article: { content?: string; coverImage?: s
 
   return null;
 }
+

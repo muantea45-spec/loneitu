@@ -6,6 +6,30 @@
  */
 export const onRequest: PagesFunction = async (context) => {
   const request = context.request;
+  const url = new URL(request.url);
+
+  // 1. Strictly block any access to /dev and /dev/* with a 404 Not Found
+  if (url.pathname === '/dev' || url.pathname.startsWith('/dev/') || url.pathname === '/dev.html') {
+    return new Response(
+      '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>404 Not Found</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; padding: 60px 20px; color: #1e2922; background-color: #fbfbf8;"><h1 style="font-size: 32px; color: #143520;">404 Not Found</h1><p style="color: #6f5b3c;">The requested URL was not found on this server.</p><hr style="border: 0; border-top: 1px solid #ddd4bc; max-width: 400px; margin: 24px auto;"><small style="color: #8f7855;">Loneitu Server</small></body></html>',
+      {
+        status: 404,
+        statusText: 'Not Found',
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
+  }
+
+  // 2. Redirect legacy *.pages.dev domain to official loneitu.com (except API endpoints)
+  if (url.hostname.endsWith('.pages.dev') && !url.pathname.startsWith('/api/')) {
+    const canonicalUrl = new URL(request.url);
+    canonicalUrl.hostname = 'loneitu.com';
+    return Response.redirect(canonicalUrl.toString(), 301);
+  }
+
   const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
   const isSocialBot = /(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|linkedinbot|discordbot|slackbot|applebot|skypeuripreview|googlebot|bingbot|yahoo|duckduckbot)/i.test(
     userAgent

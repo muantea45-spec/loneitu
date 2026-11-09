@@ -118,6 +118,8 @@ const AppLayout: React.FC = () => {
                 <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/admin/*" element={<AdminDashboardPage />} />
+                <Route path="/dev" element={<Navigate to="/" replace />} />
+                <Route path="/dev/*" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<HomePage />} />
               </Routes>
             </Suspense>
