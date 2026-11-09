@@ -503,8 +503,8 @@ export const AdminDashboardPage: React.FC = () => {
                   <ol className="list-decimal pl-4 space-y-0.5">
                     <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-[#256B3A] underline font-medium">Google Cloud Console &rarr; Credentials</a>.</li>
                     <li>Click <strong>Create Credentials &rarr; OAuth Client ID</strong> (Application type: <em>Web application</em>).</li>
-                    <li>Under <em>Authorized JavaScript origins</em>, add: <code className="bg-white px-1 py-0.5 rounded border border-[#DDD4BC]">https://loneitu.pages.dev</code>.</li>
-                    <li>Under <em>Authorized redirect URIs</em>, add: <code className="bg-white px-1 py-0.5 rounded border border-[#DDD4BC]">https://loneitu.pages.dev</code>.</li>
+                    <li>Under <em>Authorized JavaScript origins</em>, add: <code className="bg-white px-1 py-0.5 rounded border border-[#DDD4BC]">https://loneitu.com</code>, <code className="bg-white px-1 py-0.5 rounded border border-[#DDD4BC]">https://www.loneitu.com</code>, and <code className="bg-white px-1 py-0.5 rounded border border-[#DDD4BC]">https://loneitu.pages.dev</code>.</li>
+                    <li>Under <em>Authorized redirect URIs</em>, add the same URLs.</li>
                     <li>Copy your generated Client ID and paste it here!</li>
                   </ol>
                 </div>
