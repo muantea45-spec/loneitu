@@ -172,7 +172,7 @@ export const TermsOfUsePage: React.FC = () => {
                 Mizo Farm Solutions — Loneitu Legal Desk
               </div>
               <div className="text-xs text-[#6F5B3C] space-y-1">
-                <div>Aizawl, Mizoram, India</div>
+                <div>Location: champhai, Mizoram, India</div>
                 <div className="pt-1">
                   Official Email:{' '}
                   <a
