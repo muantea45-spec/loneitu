@@ -3,6 +3,7 @@ import { useBlog } from '../../context/BlogContext';
 import { calculateFarmerAnalytics } from '../../utils/farmerAnalyticsCalculator';
 import { generateGovernmentPresentationPdf } from '../../utils/governmentPresentationPdfGenerator';
 import { generateGovernmentExcelReport } from '../../utils/governmentExcelReportGenerator';
+import { FarmerComparisonMatrix } from './FarmerComparisonMatrix';
 import { useToast } from '../common/Toast';
 import {
   FileText,
@@ -504,7 +505,10 @@ export const FarmerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Top 10 Agricultural Production Villages */}
+      {/* 5. Manual Multi-Entity Comparison Matrix Studio */}
+      <FarmerComparisonMatrix farmers={farmers} />
+
+      {/* 6. Top 10 Agricultural Production Villages */}
       <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
