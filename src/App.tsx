@@ -91,66 +91,68 @@ const AppLayout: React.FC = () => {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <PullToRefresh onRefresh={fetchCloudDb} disabled={isAdminRoute}>
-      <div className="min-h-screen flex flex-col bg-[#FBFBF8] text-[#1E2922]">
-        {/* Public Navbar (omitted on admin pages for distraction-free console) */}
-        {!isAdminRoute && (
-          <Navbar
-            onOpenSearch={() => setIsSearchOpen(true)}
-            onOpenSidebarMenu={() => setIsSidebarOpen(true)}
-          />
-        )}
+    <>
+      <PullToRefresh onRefresh={fetchCloudDb} disabled={isAdminRoute}>
+        <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[#FBFBF8] text-[#1E2922]">
+          {/* Public Navbar (omitted on admin pages for distraction-free console) */}
+          {!isAdminRoute && (
+            <Navbar
+              onOpenSearch={() => setIsSearchOpen(true)}
+              onOpenSidebarMenu={() => setIsSidebarOpen(true)}
+            />
+          )}
 
-        {/* Main Page Routing with Suspense and ErrorBoundary */}
-        <div className="flex-1">
-          <AppErrorBoundary>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/thuziak-thar" element={<HomePage />} />
-                <Route path="/article/:slug" element={<ArticleDetailPage />} />
-                <Route path="/category/:slug" element={<CategoryArchivePage />} />
-                <Route path="/tag/:slug" element={<TagArchivePage />} />
-                <Route path="/archive" element={<ArchivePage />} />
-                <Route path="/archive/:year" element={<ArchivePage />} />
-                <Route path="/archive/:year/:month" element={<ArchivePage />} />
-                <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
-                <Route path="/archives" element={<ArchivePage />} />
-                <Route path="/farmers" element={<Navigate to="/admin" replace />} />
-                <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-                <Route path="/terms" element={<TermsOfUsePage />} />
-                <Route path="/terms-of-use" element={<TermsOfUsePage />} />
-                <Route path="/admin/*" element={<AdminDashboardPage />} />
-                <Route path="/dev" element={<Navigate to="/" replace />} />
-                <Route path="/dev/*" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<HomePage />} />
-              </Routes>
-            </Suspense>
-          </AppErrorBoundary>
+          {/* Main Page Routing with Suspense and ErrorBoundary */}
+          <div className="flex-1 w-full max-w-full overflow-x-hidden">
+            <AppErrorBoundary>
+              <Suspense fallback={<PageLoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/thuziak-thar" element={<HomePage />} />
+                  <Route path="/article/:slug" element={<ArticleDetailPage />} />
+                  <Route path="/category/:slug" element={<CategoryArchivePage />} />
+                  <Route path="/tag/:slug" element={<TagArchivePage />} />
+                  <Route path="/archive" element={<ArchivePage />} />
+                  <Route path="/archive/:year" element={<ArchivePage />} />
+                  <Route path="/archive/:year/:month" element={<ArchivePage />} />
+                  <Route path="/archive/:year/:month/:day" element={<ArchivePage />} />
+                  <Route path="/archives" element={<ArchivePage />} />
+                  <Route path="/farmers" element={<Navigate to="/admin" replace />} />
+                  <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                  <Route path="/terms" element={<TermsOfUsePage />} />
+                  <Route path="/terms-of-use" element={<TermsOfUsePage />} />
+                  <Route path="/admin/*" element={<AdminDashboardPage />} />
+                  <Route path="/dev" element={<Navigate to="/" replace />} />
+                  <Route path="/dev/*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<HomePage />} />
+                </Routes>
+              </Suspense>
+            </AppErrorBoundary>
+          </div>
+
+          {/* Public Footer */}
+          {!isAdminRoute && <Footer />}
         </div>
+      </PullToRefresh>
 
-        {/* Public Footer */}
-        {!isAdminRoute && <Footer />}
+      {/* Modals & Overlays (Outside PullToRefresh to ensure viewport-fixed positioning and zero transform interference) */}
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
 
-        {/* Modals & Drawers */}
-        <SearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-        />
+      <SidebarMenu
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onOpenSearch={() => setIsSearchOpen(true)}
+      />
 
-        <SidebarMenu
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          onOpenSearch={() => setIsSearchOpen(true)}
-        />
-
-        {/* Offline Field Connectivity Monitor */}
-        <OfflineBanner />
-      </div>
-    </PullToRefresh>
+      {/* Offline Field Connectivity Monitor */}
+      <OfflineBanner />
+    </>
   );
 };
 

@@ -3,7 +3,7 @@
  * Ensures 100% fresh content across all platforms while maintaining reliable offline fallback.
  */
 
-const CACHE_NAME = 'loneitu-instant-v28';
+const CACHE_NAME = 'loneitu-instant-v29';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
