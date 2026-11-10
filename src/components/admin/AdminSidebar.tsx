@@ -12,10 +12,11 @@ import {
   Calendar, 
   Contact,
   ChevronDown,
-  Check
+  Check,
+  BarChart3,
 } from 'lucide-react';
 
-export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'farmers' | 'categories' | 'tags' | 'authors' | 'about' | 'footer' | 'settings';
+export type AdminTab = 'overview' | 'articles' | 'new-article' | 'edit-article' | 'farmers' | 'analytics' | 'categories' | 'tags' | 'authors' | 'about' | 'footer' | 'settings';
 
 interface AdminSidebarProps {
   currentTab: AdminTab;
@@ -75,6 +76,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       highlight: true,
     },
     {
+      id: 'analytics' as AdminTab,
+      label: 'District Analytics & Reports',
+      shortLabel: 'Analytics',
+      icon: BarChart3,
+      badge: farmersCount,
+      highlight: true,
+    },
+    {
       id: 'categories' as AdminTab,
       label: 'Sector Categories',
       shortLabel: 'Categories',
@@ -117,7 +126,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   ) || navItems[0];
   const ActiveIcon = activeItem.icon;
 
-  const quickShortcuts: AdminTab[] = ['overview', 'articles', 'farmers', 'new-article'];
+  const quickShortcuts: AdminTab[] = ['overview', 'articles', 'farmers', 'analytics', 'new-article'];
 
   return (
     <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-[#DDD4BC] p-2.5 md:p-4 shrink-0">
@@ -211,7 +220,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               >
                 <div className="relative">
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#BFDC28]' : 'text-[#256B3A]'}`} />
-                  {item.badge !== undefined && item.badge > 0 && (
+                  {item.badge !== undefined && Number(item.badge) > 0 && (
                     <span className="absolute -top-1.5 -right-2.5 text-[8px] font-black px-1 rounded-full bg-rose-500 text-white">
                       {item.badge}
                     </span>

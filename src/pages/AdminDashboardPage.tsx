@@ -13,6 +13,7 @@ import { AuthorManager } from '../components/admin/AuthorManager';
 import { AboutEditor } from '../components/admin/AboutEditor';
 import { FooterEditor } from '../components/admin/FooterEditor';
 import { FarmerManager } from '../components/admin/FarmerManager';
+import { FarmerAnalyticsDashboard } from '../components/admin/FarmerAnalyticsDashboard';
 import { RotateCcw, Download, Upload, Database, ShieldCheck, Plus, Trash2, Mail, Crown, Lock, KeyRound, Cloud, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/common/Toast';
 
@@ -46,7 +47,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab') as AdminTab | null;
-  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'farmers', 'categories', 'tags', 'authors', 'about', 'footer', 'settings'];
+  const validTabs: AdminTab[] = ['overview', 'articles', 'new-article', 'edit-article', 'farmers', 'analytics', 'categories', 'tags', 'authors', 'about', 'footer', 'settings'];
 
   const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
     if (tabParam && validTabs.includes(tabParam)) {
@@ -208,6 +209,8 @@ export const AdminDashboardPage: React.FC = () => {
           )}
 
           {currentTab === 'farmers' && <FarmerManager />}
+
+          {currentTab === 'analytics' && <FarmerAnalyticsDashboard />}
 
           {currentTab === 'articles' && (
             <ArticleList

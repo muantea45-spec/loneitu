@@ -33,6 +33,7 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
+  BarChart3,
   Database,
   MessageCircle,
   Building2,
@@ -647,6 +648,17 @@ export const FarmerManager: React.FC = () => {
 
           {/* Quick Action Buttons Toolbar (8 Actions: Clean icons/signs on mobile, icon+label on desktop) */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
+            {/* 0. District Analytics & Govt Presentation */}
+            <a
+              href="/admin?tab=analytics"
+              className="inline-flex items-center gap-1.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-bold bg-[#BFDC28] text-[#143520] hover:bg-[#d0ee36] transition-all shadow-md active:scale-95 cursor-pointer"
+              title="District Analytics & Govt Presentation Exports"
+              aria-label="District Analytics"
+            >
+              <BarChart3 className="w-4 h-4 text-[#143520] shrink-0" />
+              <span className="hidden sm:inline">District Analytics</span>
+            </a>
+
             {/* 1. Add Record (+) */}
             <button
               onClick={handleOpenAddModal}
