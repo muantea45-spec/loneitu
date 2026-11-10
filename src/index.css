@@ -1,28 +1,10 @@
 @import "tailwindcss";
 
-html {
-  overflow-x: hidden;
-  max-width: 100%;
-  width: 100%;
-  overscroll-behavior-y: contain;
-  overscroll-behavior-x: none;
-  -webkit-text-size-adjust: 100%;
-}
-
+html,
 body {
   overflow-x: hidden;
   max-width: 100%;
   width: 100%;
-  overscroll-behavior-y: contain;
-  overscroll-behavior-x: none;
-  position: relative;
-}
-
-#root {
-  overflow-x: hidden;
-  max-width: 100%;
-  width: 100%;
-  min-height: 100vh;
 }
 
 @theme {

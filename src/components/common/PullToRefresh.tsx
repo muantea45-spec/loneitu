@@ -18,12 +18,9 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
 }) => {
   const [pullDistance, setPullDistance] = useState(0);
   const [status, setStatus] = useState<'idle' | 'pulling' | 'ready' | 'refreshing' | 'completed'>('idle');
-  const [isDragging, setIsDragging] = useState(false);
 
-  const startXRef = useRef(0);
   const startYRef = useRef(0);
   const isTrackingRef = useRef(false);
-  const isPullGestureRef = useRef<boolean | null>(null);
   const statusRef = useRef(status);
   statusRef.current = status;
 
@@ -36,69 +33,38 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   }, []);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (disabled || statusRef.current === 'refreshing' || e.touches.length > 1) return;
+    if (disabled || statusRef.current === 'refreshing') return;
 
     // Only allow pull to refresh when scrolled to top of window
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     if (scrollY <= 0) {
-      startXRef.current = e.touches[0].clientX;
       startYRef.current = e.touches[0].clientY;
       isTrackingRef.current = true;
-      isPullGestureRef.current = null;
     }
   }, [disabled]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isTrackingRef.current || disabled || statusRef.current === 'refreshing' || e.touches.length > 1) return;
+    if (!isTrackingRef.current || disabled || statusRef.current === 'refreshing') return;
 
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
     if (scrollY > 0) {
       // Scrolled down during gesture; cancel
       isTrackingRef.current = false;
-      isPullGestureRef.current = false;
-      setIsDragging(false);
       setPullDistance(0);
       setStatus('idle');
       return;
     }
 
-    const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
-    const diffX = currentX - startXRef.current;
-    const diffY = currentY - startYRef.current;
+    const diff = currentY - startYRef.current;
 
-    // Direction locking: distinguish between horizontal swipe and downward pull
-    if (isPullGestureRef.current === null) {
-      const absX = Math.abs(diffX);
-      const absY = Math.abs(diffY);
-      if (absX > 6 || absY > 6) {
-        if (absX >= absY || diffY <= 0) {
-          // Horizontal or upward gesture; abort pull tracking
-          isTrackingRef.current = false;
-          isPullGestureRef.current = false;
-          setIsDragging(false);
-          setPullDistance(0);
-          setStatus('idle');
-          return;
-        } else {
-          // Definite vertical downward pull gesture
-          isPullGestureRef.current = true;
-          setIsDragging(true);
-        }
-      } else {
-        return;
-      }
-    }
-
-    if (!isPullGestureRef.current) return;
-
-    if (diffY > 0) {
-      // Strictly prevent browser default overscroll / horizontal drift
-      if (e.cancelable) {
+    if (diff > 0) {
+      // Prevent browser default overscroll / native refresh when we handle it
+      if (diff > 10 && e.cancelable) {
         e.preventDefault();
       }
 
-      const damped = Math.min(MAX_PULL, diffY * DAMPING);
+      const damped = Math.min(MAX_PULL, diff * DAMPING);
       setPullDistance(damped);
 
       if (damped >= THRESHOLD && statusRef.current !== 'ready') {
@@ -109,8 +75,6 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       }
     } else {
       isTrackingRef.current = false;
-      isPullGestureRef.current = false;
-      setIsDragging(false);
       setPullDistance(0);
       setStatus('idle');
     }
@@ -119,8 +83,6 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const handleTouchEnd = useCallback(async () => {
     if (!isTrackingRef.current || disabled) return;
     isTrackingRef.current = false;
-    isPullGestureRef.current = null;
-    setIsDragging(false);
 
     if (statusRef.current === 'ready') {
       setStatus('refreshing');
@@ -167,18 +129,13 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const rotation = Math.min(180, (pullDistance / THRESHOLD) * 180);
 
   return (
-    <div className="relative w-full max-w-full overflow-x-hidden">
+    <>
       {/* Pull Indicator Floating Capsule */}
       {(pullDistance > 0 || status === 'refreshing' || status === 'completed') && (
         <div
-          className={`fixed inset-x-0 top-22 sm:top-24 z-30 pointer-events-none flex justify-center w-full max-w-full overflow-hidden ${
-            isDragging ? 'transition-none' : 'transition-transform duration-250 ease-out'
-          }`}
+          className="fixed left-0 right-0 top-22 sm:top-24 z-30 pointer-events-none flex justify-center transition-transform duration-200"
           style={{
-            transform: `translate3d(0, ${Math.max(0, pullDistance - 16)}px, 0)`,
-            WebkitTransform: `translate3d(0, ${Math.max(0, pullDistance - 16)}px, 0)`,
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
+            transform: `translateY(${Math.max(0, pullDistance - 16)}px)`,
           }}
         >
           <div className="flex items-center gap-2.5 px-4 py-2 bg-white/95 backdrop-blur-md rounded-full border border-[#DDD4BC] shadow-md text-xs font-semibold text-[#143520] transition-all">
@@ -221,19 +178,14 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
 
       {/* Main Content */}
       <div
-        className={`w-full max-w-full overflow-x-hidden ${
-          isDragging ? 'transition-none' : 'transition-transform duration-250 ease-out'
-        }`}
+        className="transition-transform duration-200"
         style={{
-          transform: pullDistance > 0 ? `translate3d(0, ${pullDistance * 0.35}px, 0)` : 'none',
-          WebkitTransform: pullDistance > 0 ? `translate3d(0, ${pullDistance * 0.35}px, 0)` : 'none',
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-          willChange: pullDistance > 0 ? 'transform' : 'auto',
+          transform: pullDistance > 0 ? `translateY(${pullDistance * 0.35}px)` : 'none',
         }}
       >
         {children}
       </div>
-    </div>
+    </>
   );
 };
+
