@@ -28,6 +28,52 @@ export interface CropAcreageBreakdown {
   color: string;
 }
 
+export interface VillageRanking {
+  village: string;
+  farmersCount: number;
+  totalAcres: number;
+  avgAcres: number;
+}
+
+export interface AgeDemographics {
+  youthCount: number; // < 35
+  youthPercentage: number;
+  midAgeCount: number; // 35 - 55
+  midAgePercentage: number;
+  seniorCount: number; // > 55
+  seniorPercentage: number;
+  averageAge: number;
+}
+
+export interface GenderComparison {
+  femaleCount: number;
+  femalePercentage: number;
+  femaleTotalAcres: number;
+  femaleAvgAcres: number;
+  maleCount: number;
+  malePercentage: number;
+  maleTotalAcres: number;
+  maleAvgAcres: number;
+}
+
+export interface SchemeComparison {
+  schemeAcres: number;
+  schemePercentage: number;
+  nonSchemeAcres: number;
+  nonSchemePercentage: number;
+}
+
+export interface BlockComparison {
+  name: string;
+  district: string;
+  farmersCount: number;
+  totalAcres: number;
+  avgAcres: number;
+  femalePercentage: number;
+  rainfedPercentage: number;
+  avgAge: number;
+}
+
 export interface FarmerAnalyticsMetrics {
   totalFarmers: number;
   totalAcreage: number;
@@ -46,6 +92,12 @@ export interface FarmerAnalyticsMetrics {
   lowlandAcreage: number;
   districtBreakdown: DistrictSummary[];
   cropBreakdown: CropAcreageBreakdown[];
+  // Enriched comparative dimensions
+  ageDemographics: AgeDemographics;
+  genderComparison: GenderComparison;
+  schemeComparison: SchemeComparison;
+  blockComparison: BlockComparison[];
+  topVillages: VillageRanking[];
 }
 
 /**
@@ -97,7 +149,7 @@ export function getFarmerAcreage(farmer: FarmerRecord): number {
       if (!isNaN(num) && num > 0) return num;
     }
   }
-  return 1.0; // default 1 acre
+  return 1.0;
 }
 
 /**
@@ -124,18 +176,35 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       lowlandAcreage: 0,
       districtBreakdown: [],
       cropBreakdown: [],
+      ageDemographics: { youthCount: 0, youthPercentage: 0, midAgeCount: 0, midAgePercentage: 0, seniorCount: 0, seniorPercentage: 0, averageAge: 0 },
+      genderComparison: { femaleCount: 0, femalePercentage: 0, femaleTotalAcres: 0, femaleAvgAcres: 0, maleCount: 0, malePercentage: 0, maleTotalAcres: 0, maleAvgAcres: 0 },
+      schemeComparison: { schemeAcres: 0, schemePercentage: 0, nonSchemeAcres: 0, nonSchemePercentage: 0 },
+      blockComparison: [],
+      topVillages: [],
     };
   }
 
   let totalAcreage = 0;
   let femaleCount = 0;
   let maleCount = 0;
+  let femaleAcres = 0;
+  let maleAcres = 0;
+
   let rainfedFarmers = 0;
   let rainfedAcreage = 0;
   let irrigatedFarmers = 0;
   let irrigatedAcreage = 0;
   let uplandAcreage = 0;
   let lowlandAcreage = 0;
+
+  let schemeAcres = 0;
+  let nonSchemeAcres = 0;
+
+  // Age tracking
+  let youthCount = 0; // <35
+  let midAgeCount = 0; // 35-55
+  let seniorCount = 0; // >55
+  const allAges: number[] = [];
 
   const districtMap = new Map<string, {
     farmers: number;
@@ -147,6 +216,19 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
     blocksMap: Map<string, { farmers: number; acreage: number }>;
     villagesSet: Set<string>;
   }>();
+
+  // Block level aggregation
+  const blockMap = new Map<string, {
+    district: string;
+    farmers: number;
+    acreage: number;
+    female: number;
+    rainfed: number;
+    ages: number[];
+  }>();
+
+  // Village level aggregation
+  const villageMap = new Map<string, { farmers: number; acreage: number }>();
 
   // Crop tracking buckets
   let kiwiFarmers = 0;
@@ -188,14 +270,30 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
     const rawVillage = String(data['Village'] || data['Name of the village'] || data['Gram Panchayat'] || '').trim();
     if (rawVillage) {
       allVillages.add(rawVillage);
+      const vEntry = villageMap.get(rawVillage) || { farmers: 0, acreage: 0 };
+      vEntry.farmers++;
+      vEntry.acreage += acres;
+      villageMap.set(rawVillage, vEntry);
+    }
+
+    // Age
+    const age = parseInt(String(data['Age'] || ''));
+    if (!isNaN(age) && age > 0) {
+      allAges.push(age);
+      if (age < 35) youthCount++;
+      else if (age <= 55) midAgeCount++;
+      else seniorCount++;
     }
 
     // Gender
     const rawGender = String(data['Gender'] || '').trim().toLowerCase();
-    if (rawGender.startsWith('f') || rawGender === 'female' || rawGender === 'hmeichhia') {
+    const isFemale = rawGender.startsWith('f') || rawGender === 'female' || rawGender === 'hmeichhia';
+    if (isFemale) {
       femaleCount++;
+      femaleAcres += acres;
     } else {
       maleCount++;
+      maleAcres += acres;
     }
 
     // Land type & irrigation
@@ -218,6 +316,12 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       rainfedAcreage += acres;
     }
 
+    // Scheme vs non-scheme land
+    const sLand = parseFloat(String(data['Scheme_land'] || '0'));
+    if (!isNaN(sLand)) schemeAcres += sLand;
+    const nsLand = parseFloat(String(data['NonScheme_Land'] || '0'));
+    if (!isNaN(nsLand)) nonSchemeAcres += nsLand;
+
     // District map update
     if (!districtMap.has(district)) {
       districtMap.set(district, {
@@ -235,7 +339,7 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
     const distEntry = districtMap.get(district)!;
     distEntry.farmers++;
     distEntry.acreage += acres;
-    if (rawGender.startsWith('f')) distEntry.female++;
+    if (isFemale) distEntry.female++;
     else distEntry.male++;
 
     if (isIrrigated) distEntry.irrigated += acres;
@@ -249,6 +353,25 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
     const blkEntry = distEntry.blocksMap.get(block)!;
     blkEntry.farmers++;
     blkEntry.acreage += acres;
+
+    // Block map update
+    const blockKey = `${district} - ${block}`;
+    if (!blockMap.has(blockKey)) {
+      blockMap.set(blockKey, {
+        district,
+        farmers: 0,
+        acreage: 0,
+        female: 0,
+        rainfed: 0,
+        ages: [],
+      });
+    }
+    const bDetail = blockMap.get(blockKey)!;
+    bDetail.farmers++;
+    bDetail.acreage += acres;
+    if (isFemale) bDetail.female++;
+    if (!isIrrigated) bDetail.rainfed += acres;
+    if (!isNaN(age) && age > 0) bDetail.ages.push(age);
 
     // Crop Categorization Logic
     const fullText = (
@@ -302,7 +425,7 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       percentage: Number(((kiwiAcres / totalCropsAcres) * 100).toFixed(1)),
       avgAcrePerFarmer: Number((kiwiAcres / (kiwiFarmers || 1)).toFixed(2)),
       primaryVillages: Array.from(kiwiVillages).slice(0, 5),
-      color: '#256B3A', // Deep Forest Green
+      color: '#256B3A',
     },
     {
       cropName: 'Dragonfruit (Hill Slope Orchards)',
@@ -312,7 +435,7 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       percentage: Number(((dragonAcres / totalCropsAcres) * 100).toFixed(1)),
       avgAcrePerFarmer: Number((dragonAcres / (dragonFarmers || 1)).toFixed(2)),
       primaryVillages: Array.from(dragonVillages).slice(0, 5),
-      color: '#BFDC28', // Lime Green Accent
+      color: '#BFDC28',
     },
     {
       cropName: 'Terrace Paddy (Lowland & Wet Terraces)',
@@ -322,7 +445,7 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       percentage: Number(((paddyAcres / totalCropsAcres) * 100).toFixed(1)),
       avgAcrePerFarmer: Number((paddyAcres / (paddyFarmers || 1)).toFixed(2)),
       primaryVillages: Array.from(paddyVillages).slice(0, 5),
-      color: '#C98A2C', // Golden Amber
+      color: '#C98A2C',
     },
     {
       cropName: 'Organic Ginger, Chilli & Spices',
@@ -332,7 +455,7 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       percentage: Number(((spicesAcres / totalCropsAcres) * 100).toFixed(1)),
       avgAcrePerFarmer: Number((spicesAcres / (spicesFarmers || 1)).toFixed(2)),
       primaryVillages: Array.from(spicesVillages).slice(0, 5),
-      color: '#C2623D', // Terracotta Warmth
+      color: '#C2623D',
     },
     {
       cropName: 'Mixed Upland Horticulture & Agroforestry',
@@ -342,11 +465,11 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
       percentage: Number(((mixedAcres / totalCropsAcres) * 100).toFixed(1)),
       avgAcrePerFarmer: Number((mixedAcres / (mixedFarmers || 1)).toFixed(2)),
       primaryVillages: Array.from(mixedVillages).slice(0, 5),
-      color: '#5C4A31', // Earth Brown
+      color: '#5C4A31',
     },
   ];
 
-  // Compile District summaries
+  // District summaries
   const districtBreakdown: DistrictSummary[] = Array.from(districtMap.entries()).map(([district, d]) => {
     const blocksList = Array.from(d.blocksMap.entries()).map(([bName, bData]) => ({
       name: bName,
@@ -368,6 +491,67 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
     };
   }).sort((a, b) => b.totalFarmers - a.totalFarmers);
 
+  // Age demographics
+  const ageCount = allAges.length || 1;
+  const avgAge = Math.round(allAges.reduce((a, b) => a + b, 0) / ageCount) || 48;
+  const ageDemographics: AgeDemographics = {
+    youthCount,
+    youthPercentage: Number(((youthCount / ageCount) * 100).toFixed(1)),
+    midAgeCount,
+    midAgePercentage: Number(((midAgeCount / ageCount) * 100).toFixed(1)),
+    seniorCount,
+    seniorPercentage: Number(((seniorCount / ageCount) * 100).toFixed(1)),
+    averageAge: avgAge,
+  };
+
+  // Gender comparison
+  const genderComparison: GenderComparison = {
+    femaleCount,
+    femalePercentage: Number(((femaleCount / totalFarmers) * 100).toFixed(1)),
+    femaleTotalAcres: Number(femaleAcres.toFixed(1)),
+    femaleAvgAcres: Number((femaleAcres / (femaleCount || 1)).toFixed(2)),
+    maleCount,
+    malePercentage: Number(((maleCount / totalFarmers) * 100).toFixed(1)),
+    maleTotalAcres: Number(maleAcres.toFixed(1)),
+    maleAvgAcres: Number((maleAcres / (maleCount || 1)).toFixed(2)),
+  };
+
+  // Scheme land comparison
+  const totalSchemeLand = schemeAcres + nonSchemeAcres || totalAcreage;
+  const schemeComparison: SchemeComparison = {
+    schemeAcres: Number(schemeAcres.toFixed(1)),
+    schemePercentage: Number(((schemeAcres / (totalSchemeLand || 1)) * 100).toFixed(1)),
+    nonSchemeAcres: Number(nonSchemeAcres.toFixed(1)),
+    nonSchemePercentage: Number(((nonSchemeAcres / (totalSchemeLand || 1)) * 100).toFixed(1)),
+  };
+
+  // Block level comparative list
+  const blockComparison: BlockComparison[] = Array.from(blockMap.entries()).map(([key, b]) => {
+    const blockName = key.split(' - ')[1] || key;
+    const bAvgAge = b.ages.length > 0 ? Math.round(b.ages.reduce((x, y) => x + y, 0) / b.ages.length) : avgAge;
+    return {
+      name: blockName,
+      district: b.district,
+      farmersCount: b.farmers,
+      totalAcres: Number(b.acreage.toFixed(1)),
+      avgAcres: Number((b.acreage / (b.farmers || 1)).toFixed(2)),
+      femalePercentage: Number(((b.female / (b.farmers || 1)) * 100).toFixed(1)),
+      rainfedPercentage: Number(((b.rainfed / (b.acreage || 1)) * 100).toFixed(1)),
+      avgAge: bAvgAge,
+    };
+  }).sort((a, b) => b.farmersCount - a.farmersCount);
+
+  // Top villages ranking
+  const topVillages: VillageRanking[] = Array.from(villageMap.entries())
+    .map(([vName, vData]) => ({
+      village: vName,
+      farmersCount: vData.farmers,
+      totalAcres: Number(vData.acreage.toFixed(1)),
+      avgAcres: Number((vData.acreage / (vData.farmers || 1)).toFixed(2)),
+    }))
+    .sort((a, b) => b.farmersCount - a.farmersCount)
+    .slice(0, 10);
+
   return {
     totalFarmers,
     totalAcreage: Number(totalAcreage.toFixed(1)),
@@ -386,5 +570,10 @@ export function calculateFarmerAnalytics(farmers: FarmerRecord[]): FarmerAnalyti
     lowlandAcreage: Number(lowlandAcreage.toFixed(1)),
     districtBreakdown,
     cropBreakdown,
+    ageDemographics,
+    genderComparison,
+    schemeComparison,
+    blockComparison,
+    topVillages,
   };
 }

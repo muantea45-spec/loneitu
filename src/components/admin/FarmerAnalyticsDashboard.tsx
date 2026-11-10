@@ -16,6 +16,11 @@ import {
   PieChart as PieIcon,
   BarChart3,
   Search,
+  Scale,
+  Calendar,
+  Layers,
+  Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 
 export const FarmerAnalyticsDashboard: React.FC = () => {
@@ -212,7 +217,133 @@ export const FarmerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Interactive Charts Grid: District vs Crops */}
+      {/* 3. Deep Comparative Analysis Grid (Block vs Block, Gender, Age & Scheme) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Comparison 1: Block Comparison */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#256B3A] uppercase tracking-wider">
+            <Layers className="w-4 h-4 text-[#256B3A]" />
+            <span>Block Disparity</span>
+          </div>
+          <div className="space-y-2 text-xs">
+            {metrics.blockComparison.map(b => (
+              <div key={b.name} className="p-2.5 rounded-xl bg-[#FBFBF8] border border-[#EBE6D6] space-y-1">
+                <div className="flex justify-between items-center font-bold text-[#143520]">
+                  <span>{b.name} Block</span>
+                  <span className="font-mono text-[#256B3A]">{b.totalAcres} Ac</span>
+                </div>
+                <div className="text-[11px] text-[#6F5B3C] flex justify-between">
+                  <span>{b.farmersCount} farmers (avg {b.avgAcres} Ac)</span>
+                  <span className="font-semibold">{b.femalePercentage}% female</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comparison 2: Gender Land Distribution */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#C2623D] uppercase tracking-wider">
+            <Scale className="w-4 h-4 text-[#C2623D]" />
+            <span>Gender Land Equality</span>
+          </div>
+          <div className="p-3 rounded-xl bg-orange-50/50 border border-orange-100 space-y-2 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="text-[#6F5B3C]">Female Farmers ({metrics.genderComparison.femalePercentage}%):</span>
+              <span className="font-bold text-[#143520]">{metrics.genderComparison.femaleTotalAcres} Ac</span>
+            </div>
+            <div className="w-full bg-orange-100 h-2 rounded-full overflow-hidden">
+              <div className="bg-[#C2623D] h-full rounded-full" style={{ width: `${metrics.genderComparison.femalePercentage}%` }} />
+            </div>
+            <div className="flex justify-between items-center text-[11px] text-[#8F7855]">
+              <span>Avg parcel: <strong>{metrics.genderComparison.femaleAvgAcres} Ac</strong></span>
+              <span>Male avg: <strong>{metrics.genderComparison.maleAvgAcres} Ac</strong></span>
+            </div>
+          </div>
+          <p className="text-[11px] text-[#6F5B3C] leading-relaxed">
+            Women represent <strong>1 in every 3 farmers</strong> across Champhai & Khawzawl, stewarding over <strong>1,511 Acres</strong> of fertile hill land.
+          </p>
+        </div>
+
+        {/* Comparison 3: Age & Generational Cohorts */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#256B3A] uppercase tracking-wider">
+            <Calendar className="w-4 h-4 text-[#256B3A]" />
+            <span>Generational Cohorts</span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="p-2 rounded-xl bg-[#FBFBF8] border border-[#EBE6D6] flex justify-between items-center">
+              <div>
+                <div className="font-bold text-[#143520]">Youth (&lt; 35 yrs)</div>
+                <div className="text-[10px] text-[#8F7855]">Next-Gen Agritech adopters</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-[#256B3A]">{metrics.ageDemographics.youthCount} farmers</div>
+                <div className="text-[10px] font-semibold text-[#6F5B3C]">{metrics.ageDemographics.youthPercentage}%</div>
+              </div>
+            </div>
+
+            <div className="p-2 rounded-xl bg-[#F2F7F3] border border-[#B7CEB4] flex justify-between items-center">
+              <div>
+                <div className="font-bold text-[#143520]">Prime (35 - 55 yrs)</div>
+                <div className="text-[10px] text-[#256B3A]">Core production workforce</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-[#143520]">{metrics.ageDemographics.midAgeCount} farmers</div>
+                <div className="text-[10px] font-semibold text-[#256B3A]">{metrics.ageDemographics.midAgePercentage}%</div>
+              </div>
+            </div>
+
+            <div className="p-2 rounded-xl bg-[#FBFBF8] border border-[#EBE6D6] flex justify-between items-center">
+              <div>
+                <div className="font-bold text-[#143520]">Senior (55+ yrs)</div>
+                <div className="text-[10px] text-[#8F7855]">Traditional indigenous wisdom</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-[#54432C]">{metrics.ageDemographics.seniorCount} farmers</div>
+                <div className="text-[10px] font-semibold text-[#6F5B3C]">{metrics.ageDemographics.seniorPercentage}%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Comparison 4: Scheme Assistance vs Voluntary Commitment */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#C98A2C] uppercase tracking-wider">
+            <Sparkles className="w-4 h-4 text-[#C98A2C]" />
+            <span>Scheme vs Voluntary Land</span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="p-2.5 rounded-xl bg-[#FDFBF7] border border-[#EBD6A3] space-y-1">
+              <div className="flex justify-between items-center font-bold text-[#143520]">
+                <span>Scheme Supported Land</span>
+                <span className="font-mono text-[#256B3A]">{metrics.schemeComparison.schemeAcres} Ac</span>
+              </div>
+              <div className="w-full bg-[#EBE6D6] h-1.5 rounded-full overflow-hidden">
+                <div className="bg-[#256B3A] h-full rounded-full" style={{ width: `${metrics.schemeComparison.schemePercentage}%` }} />
+              </div>
+              <div className="text-[10px] text-[#8F7855] text-right font-semibold">
+                {metrics.schemeComparison.schemePercentage}% of verified acreage
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+              <div className="flex justify-between items-center font-bold text-[#143520]">
+                <span>Voluntary Farmer Land</span>
+                <span className="font-mono text-[#C98A2C]">{metrics.schemeComparison.nonSchemeAcres} Ac</span>
+              </div>
+              <div className="w-full bg-[#EBE6D6] h-1.5 rounded-full overflow-hidden">
+                <div className="bg-[#C98A2C] h-full rounded-full" style={{ width: `${metrics.schemeComparison.nonSchemePercentage}%` }} />
+              </div>
+              <div className="text-[10px] text-[#8F7855] text-right font-semibold">
+                {metrics.schemeComparison.nonSchemePercentage}% committed without subsidy
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Interactive Charts Grid: District vs Crops */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column (7 cols): District Distribution Chart */}
         <div className="lg:col-span-7 bg-white p-5 sm:p-6 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-5">
@@ -373,7 +504,57 @@ export const FarmerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Water Security & Irrigation Infrastructure Banner */}
+      {/* 5. Top 10 Agricultural Production Villages */}
+      <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-[#256B3A] uppercase tracking-wider">
+              <TrendingUp className="w-4 h-4 text-[#256B3A]" />
+              <span>Village Cluster Rankings</span>
+            </div>
+            <h3 className="font-serif font-bold text-lg text-[#143520] mt-0.5">
+              Top 10 Agricultural Villages in Eastern Mizoram
+            </h3>
+            <p className="text-xs text-[#6F5B3C]">
+              Ranked by total registered farming households and committed agricultural land
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold text-[#256B3A] px-3 py-1 bg-[#F2F7F3] rounded-full border border-[#B7CEB4] self-start sm:self-auto">
+            {metrics.totalVillages} Active Villages Registered
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+          {metrics.topVillages.map((v, idx) => (
+            <div
+              key={v.village}
+              className="p-3.5 rounded-xl bg-[#FBFBF8] border border-[#EBE6D6] hover:border-[#256B3A] transition-all flex flex-col justify-between space-y-2 group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="w-5 h-5 rounded-full bg-[#143520] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                  {idx + 1}
+                </span>
+                <span className="text-[10px] font-mono text-[#8F7855]">
+                  avg {v.avgAcres} Ac
+                </span>
+              </div>
+              <div>
+                <div className="font-serif font-bold text-xs sm:text-sm text-[#143520] truncate group-hover:text-[#256B3A] transition-colors">
+                  {v.village}
+                </div>
+                <div className="text-[11px] text-[#6F5B3C] font-semibold mt-0.5">
+                  {v.farmersCount} farmers
+                </div>
+              </div>
+              <div className="pt-1 border-t border-[#EBE6D6] text-[11px] font-mono font-bold text-[#256B3A]">
+                {v.totalAcres.toLocaleString()} Acres
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 6. Water Security & Irrigation Infrastructure Banner */}
       <div className="bg-[#FEF9EB] border border-[#EBD6A3] rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5 max-w-3xl">
           <div className="flex items-center gap-2 text-xs font-bold text-[#A84C2A] uppercase tracking-wider">
@@ -398,7 +579,7 @@ export const FarmerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Comprehensive District & Block Matrix Table */}
+      {/* 7. Comprehensive District & Block Matrix Table */}
       <div className="bg-white rounded-2xl border border-[#DDD4BC] shadow-xs p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>

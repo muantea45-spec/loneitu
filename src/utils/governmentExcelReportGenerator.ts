@@ -237,3 +237,4 @@ export async function generateGovernmentExcelReport(
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
