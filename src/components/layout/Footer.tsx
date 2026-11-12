@@ -1,11 +1,88 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Mail } from 'lucide-react';
+import { ArrowRight, Mail, Eye } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { SocialIconsRow } from '../common/SocialIcons';
 
+const INITIAL_SITE_VIEWS = 100102;
+const SITE_VIEWS_CACHE_KEY = 'loneitu_site_views_v1';
+const STATS_ENDPOINTS = [
+  '/api/stats',
+  'https://loneitu.ddvktp.workers.dev/api/stats',
+];
+
 export const Footer: React.FC = () => {
   const { aboutData, footerData } = useBlog();
+  const hasCountedRef = useRef(false);
+
+  const [siteViews, setSiteViews] = useState<number>(() => {
+    try {
+      const cached = Number(localStorage.getItem(SITE_VIEWS_CACHE_KEY));
+      if (Number.isFinite(cached) && cached >= INITIAL_SITE_VIEWS) {
+        return Math.floor(cached);
+      }
+    } catch { }
+    return INITIAL_SITE_VIEWS;
+  });
+
+  useEffect(() => {
+    if (hasCountedRef.current) return;
+    hasCountedRef.current = true;
+
+    let isCancelled = false;
+
+    const recordVisit = async () => {
+      let cachedBaseline = INITIAL_SITE_VIEWS;
+      try {
+        const stored = Number(localStorage.getItem(SITE_VIEWS_CACHE_KEY));
+        if (Number.isFinite(stored) && stored >= INITIAL_SITE_VIEWS) {
+          cachedBaseline = Math.floor(stored);
+        }
+      } catch { }
+
+      for (const endpoint of STATS_ENDPOINTS) {
+        try {
+          const res = await fetch(`${endpoint}?_t=${Date.now()}`, {
+            method: 'POST',
+            cache: 'no-store',
+          });
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            const json = await res.json();
+            if (json && json.success && typeof json.views === 'number') {
+              const nextViews = json.persisted
+                ? Math.max(INITIAL_SITE_VIEWS, Math.floor(json.views))
+                : Math.max(INITIAL_SITE_VIEWS, Math.floor(json.views), cachedBaseline + 1);
+              if (!isCancelled) {
+                setSiteViews(nextViews);
+                try {
+                  localStorage.setItem(SITE_VIEWS_CACHE_KEY, String(nextViews));
+                } catch { }
+              }
+              return;
+            }
+          }
+        } catch {
+          // try fallback endpoint
+        }
+      }
+
+      // Offline / unreachable fallback: increment local counter gracefully
+      const offlineViews = cachedBaseline + 1;
+      if (!isCancelled) {
+        setSiteViews(offlineViews);
+        try {
+          localStorage.setItem(SITE_VIEWS_CACHE_KEY, String(offlineViews));
+        } catch { }
+      }
+    };
+
+    recordVisit();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const data = footerData || {
     tagline: 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.',
@@ -104,6 +181,17 @@ export const Footer: React.FC = () => {
             <Link to="/archive" className="hover:text-[#BFDC28] transition-colors">
               Archive
             </Link>
+          </div>
+          {/* Live Site View Count Stats (Starting from inherited Blogger count 100,102) */}
+          <div
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1E542E] border border-[#256B3A] shadow-2xs text-xs"
+            title="Total website views (starting from 100,102 inherited Blogger visits)"
+          >
+            <Eye className="w-3.5 h-3.5 text-[#BFDC28] shrink-0" />
+            <span className="text-[#D7E3D5] font-medium">View Count:</span>
+            <span className="font-mono font-bold text-[#BFDC28] tabular-nums">
+              {siteViews.toLocaleString()}
+            </span>
           </div>
           <div className="flex items-center justify-center gap-3 text-[11px] font-medium text-[#88A682] flex-wrap w-full md:w-auto">
             <Link to="/privacy" className="hover:text-[#BFDC28] transition-colors">

@@ -9,6 +9,9 @@ interface Env {
 }
 
 let inMemoryFallback: any = null;
+const INITIAL_SITE_VIEWS = 100102;
+const KV_VIEWS_KEY = 'loneitu_site_views_v1';
+let inMemorySiteViews = INITIAL_SITE_VIEWS;
 
 function escapeHtml(str: string): string {
   return (str || '')
@@ -233,6 +236,50 @@ export default {
           });
         }
       }
+    }
+
+    // 2.5 Site Visitor Stats Counter API: GET/POST /api/stats (starts at 100102)
+    if (url.pathname === '/api/stats') {
+      let current = inMemorySiteViews;
+      if (env.LONEITU_KV) {
+        try {
+          const raw = await env.LONEITU_KV.get(KV_VIEWS_KEY, 'text');
+          const parsed = Number(raw);
+          if (Number.isFinite(parsed) && parsed >= INITIAL_SITE_VIEWS) {
+            current = Math.max(current, Math.floor(parsed));
+          }
+        } catch {
+          // fallback to inMemorySiteViews
+        }
+      }
+
+      if (request.method === 'POST') {
+        const nextViews = current + 1;
+        inMemorySiteViews = nextViews;
+        if (env.LONEITU_KV) {
+          try {
+            await env.LONEITU_KV.put(KV_VIEWS_KEY, String(nextViews));
+          } catch {
+            // ignore transient KV write rate limits
+          }
+        }
+        return new Response(JSON.stringify({ success: true, views: nextViews, persisted: Boolean(env.LONEITU_KV) }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS,
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          },
+        });
+      }
+
+      inMemorySiteViews = current;
+      return new Response(JSON.stringify({ success: true, views: current }), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      });
     }
 
     // 3. Image Upload Endpoint: POST /api/upload
