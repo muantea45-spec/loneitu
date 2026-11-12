@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import type { FarmerRecord } from '../../types/farmer';
 import { resolveImageUrl } from '../../utils/imageUrlResolver';
-import {
-  generateFarmerIdCardPdf,
-  generateFarmerCertificatePdf,
-} from '../../utils/farmerIdCardPdfGenerator';
 import { 
   X, 
   BadgeCheck, 
@@ -13,10 +8,7 @@ import {
   Printer, 
   Check,
   MessageCircle,
-  Phone,
-  QrCode,
-  Award,
-  ExternalLink
+  Phone
 } from 'lucide-react';
 
 interface FarmerDetailModalProps {
@@ -55,27 +47,8 @@ function getDirectCallLink(contact: string): string | null {
 
 export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose }) => {
   const [copied, setCopied] = useState(false);
-  const [generatingType, setGeneratingType] = useState<'id' | 'cert' | null>(null);
 
   if (!farmer) return null;
-
-  const handleGenerateIdCard = async () => {
-    try {
-      setGeneratingType('id');
-      await generateFarmerIdCardPdf(farmer);
-    } finally {
-      setGeneratingType(null);
-    }
-  };
-
-  const handleGenerateCertificate = async () => {
-    try {
-      setGeneratingType('cert');
-      await generateFarmerCertificatePdf(farmer);
-    } finally {
-      setGeneratingType(null);
-    }
-  };
 
   const handleShare = () => {
     const entries = farmer.data ? Object.entries(farmer.data) : [];
@@ -235,38 +208,10 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
 
         {/* Footer Actions */}
         <div className="pt-6 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleGenerateIdCard}
-              disabled={generatingType !== null}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#143520] hover:bg-[#1E542E] text-white transition-colors disabled:opacity-60 cursor-pointer"
-            >
-              <QrCode className="w-4 h-4 text-[#BFDC28]" />
-              <span>{generatingType === 'id' ? 'Generating ID...' : 'QR ID Card'}</span>
-            </button>
-
-            <button
-              onClick={handleGenerateCertificate}
-              disabled={generatingType !== null}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition-colors disabled:opacity-60 cursor-pointer"
-            >
-              <Award className="w-4 h-4 text-amber-700" />
-              <span>{generatingType === 'cert' ? 'Generating Cert...' : 'Certificate'}</span>
-            </button>
-
-            <Link
-              to={`/verify/${encodeURIComponent(farmer.id)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-[#143520] border border-emerald-200 transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Verify Page</span>
-            </Link>
-
+          <div className="flex items-center gap-2">
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
               <span>{copied ? 'Copied Details' : 'Share Profile'}</span>
@@ -274,7 +219,7 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
 
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
             >
               <Printer className="w-4 h-4" />
               <span>Print</span>
@@ -283,7 +228,7 @@ export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, on
 
           <button
             onClick={onClose}
-            className="px-6 py-2 rounded-xl text-xs font-bold bg-[#256B3A] text-white hover:bg-[#1b4d2a] transition-colors shadow-sm ml-auto cursor-pointer"
+            className="px-6 py-2 rounded-xl text-xs font-bold bg-[#256B3A] text-white hover:bg-[#1b4d2a] transition-colors shadow-sm ml-auto"
           >
             Done
           </button>

@@ -50,36 +50,6 @@ function isAdminAuthorized(request: Request, authConfig: { authorizedEmails: str
   return isKeyValid || isEmailValid;
 }
 
-function sanitizeFarmerForVerification(farmer: any) {
-  if (!farmer) return null;
-  const rawData = farmer.data && typeof farmer.data === 'object' ? farmer.data : {};
-  const verifiedData: Record<string, string> = {};
-
-  for (const [key, val] of Object.entries(rawData)) {
-    const strVal = String(val ?? '').trim();
-    if (!strVal) continue;
-    // Mask sensitive numbers (phone/mobile/aadhaar/bank/account) while keeping agricultural/location details public
-    if (/(aadhaar|aadhar|uid|bank|account|ifsc|pan\b)/i.test(key)) {
-      continue;
-    }
-    if (/(contact|phone|mobile|cell|whatsapp|ph)/i.test(key)) {
-      const digits = strVal.replace(/\D/g, '');
-      verifiedData[key] = digits.length >= 4 ? `******${digits.slice(-4)}` : 'Verified on File';
-      continue;
-    }
-    verifiedData[key] = strVal;
-  }
-
-  return {
-    id: farmer.id,
-    fullName: farmer.fullName || rawData['Name'] || rawData['Farmer Name'] || 'Verified Farmer',
-    status: farmer.status || 'Verified',
-    registrationDate: farmer.registrationDate || '2026-04-01',
-    avatar: farmer.avatar || '',
-    verifiedData,
-  };
-}
-
 function escapeHtml(str: string): string {
   return (str || '')
     .replace(/&/g, '&amp;')
@@ -653,52 +623,6 @@ export default {
           });
         }
       }
-    }
-
-    // 2.7 Public Farmer QR Verification Lookup API: GET /api/verify-farmer?id=<farmerId>
-    if (url.pathname === '/api/verify-farmer' && request.method === 'GET') {
-      const farmerId = decodeURIComponent((url.searchParams.get('id') || '').trim());
-      if (!farmerId) {
-        return new Response(JSON.stringify({ success: false, error: 'Missing farmer ID' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-        });
-      }
-
-      let farmersList: any[] = [];
-      if (env.LONEITU_KV) {
-        const farmersDb = await env.LONEITU_KV.get(FARMERS_DB_KEY, 'json');
-        if (farmersDb && Array.isArray(farmersDb.farmers)) {
-          farmersList = farmersDb.farmers;
-        } else {
-          const fullDb = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
-          if (fullDb && Array.isArray(fullDb.farmers)) {
-            farmersList = fullDb.farmers;
-          }
-        }
-      } else if (inMemoryFallback && Array.isArray(inMemoryFallback.farmers)) {
-        farmersList = inMemoryFallback.farmers;
-      }
-
-      const found = farmersList.find((f: any) => f.id === farmerId);
-      if (!found) {
-        return new Response(JSON.stringify({ success: false, error: 'Farmer record not found in verified registry' }), {
-          status: 404,
-          headers: {
-            'Content-Type': 'application/json',
-            ...CORS_HEADERS,
-            'Cache-Control': 'no-store',
-          },
-        });
-      }
-
-      return new Response(JSON.stringify({ success: true, farmer: sanitizeFarmerForVerification(found) }), {
-        headers: {
-          'Content-Type': 'application/json',
-          ...CORS_HEADERS,
-          'Cache-Control': 'public, max-age=60, s-maxage=300',
-        },
-      });
     }
 
     // 3. Image Upload Endpoint: POST /api/upload
