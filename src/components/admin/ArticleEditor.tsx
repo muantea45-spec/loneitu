@@ -126,6 +126,13 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     existingArticle?.status || 'published'
   );
   const isFeatured = existingArticle?.isFeatured ?? false;
+  const [viewsCount, setViewsCount] = useState<string>(
+    String(
+      typeof importedPost?.views === 'number'
+        ? importedPost.views
+        : existingArticle?.views ?? 1
+    )
+  );
   const [authorId, setAuthorId] = useState<string>(
     existingArticle?.author?.id || authors[0]?.id || ''
   );
@@ -204,6 +211,9 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     }
     if (post.tags && Array.isArray(post.tags) && post.tags.length > 0) {
       setTagsList(post.tags);
+    }
+    if (typeof post.views === 'number' && !Number.isNaN(post.views) && post.views >= 0) {
+      setViewsCount(String(Math.floor(post.views)));
     }
     showToast('Imported Blogspot article into editor!', 'success');
   };
@@ -694,6 +704,10 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
     const finalCoverImage = coverImage.trim() || PRESET_COVERS[0].url;
 
     const generatedExcerpt = cleanTextExcerpt(currentContent, 160);
+    const parsedViews =
+      viewsCount.trim() === ''
+        ? existingArticle?.views ?? 1
+        : Math.max(0, Math.floor(Number(viewsCount) || 0));
 
     if (existingArticle) {
       updateArticle(existingArticle.id, {
@@ -707,6 +721,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
         author: selectedAuthor,
         status,
         isFeatured,
+        views: parsedViews,
       });
       showToast('Article updated successfully!', 'success');
     } else {
@@ -721,6 +736,7 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
         author: selectedAuthor,
         status,
         isFeatured,
+        views: parsedViews,
       });
       showToast(
         status === 'published'
@@ -1497,6 +1513,29 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                   <span>Draft</span>
                 </button>
               </div>
+            </div>
+
+            {/* Inherited / Historical Views Count */}
+            <div className="pt-2 border-t border-[#EBE6D6]">
+              <label className="flex items-center justify-between text-xs font-medium text-[#6F5B3C] mb-1.5">
+                <span className="flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[#256B3A]" />
+                  <span>Views Count (Inherited / Blogger)</span>
+                </span>
+                <span className="text-[10px] text-[#8F7855]">Optional</span>
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={viewsCount}
+                onChange={e => setViewsCount(e.target.value)}
+                placeholder="e.g. 2450"
+                className="w-full px-3.5 py-2 bg-[#F6F4EB] border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] font-mono focus:outline-hidden focus:border-[#256B3A]"
+              />
+              <p className="text-[10.5px] text-[#8F7855] mt-1 leading-relaxed">
+                Enter your old view count from <strong>Blogger → Stats → Posts</strong> to inherit historical reads.
+              </p>
             </div>
 
           </div>

@@ -61,6 +61,7 @@ interface BlogContextType {
   addArticle: (data: Partial<Article> & { title: string; content: string; category: string }) => Article;
   batchAddArticles: (items: Array<Partial<Article> & { title: string; content: string; category: string }>) => { count: number; articles: Article[] };
   updateArticle: (id: string, updates: Partial<Article>) => void;
+  bulkUpdateArticleViews: (updates: Array<{ id: string; views: number }>) => number;
   deleteArticle: (id: string) => void;
   toggleFeatured: (id: string) => void;
   toggleStatus: (id: string) => void;
@@ -242,6 +243,13 @@ async function uploadImageToCloud(dataUrl: string, filename?: string): Promise<s
     }
   }
   return dataUrl;
+}
+
+function sanitizeViewsCount(views: unknown, fallback = 1): number {
+  if (typeof views === 'number' && Number.isFinite(views) && views >= 0) {
+    return Math.floor(views);
+  }
+  return fallback;
 }
 
 function normalizeArticleExcerpts(items: Article[]): Article[] {
@@ -1089,7 +1097,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       readingTimeMinutes: calculateReadingTime(data.content),
       status: data.status || 'published',
       isFeatured: Boolean(data.isFeatured),
-      views: 1,
+      views: sanitizeViewsCount(data.views, 1),
       likes: 0,
       comments: [],
     };
@@ -1149,7 +1157,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         readingTimeMinutes: calculateReadingTime(data.content),
         status: data.status || 'published',
         isFeatured: Boolean(data.isFeatured),
-        views: 1,
+        views: sanitizeViewsCount(data.views, 1),
         likes: 0,
         comments: [],
       };
@@ -1193,6 +1201,37 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
     broadcastLocalChange('ARTICLES', updatedArticles);
+  };
+
+  const bulkUpdateArticleViews = (updates: Array<{ id: string; views: number }>): number => {
+    if (!Array.isArray(updates) || updates.length === 0) return 0;
+    const viewsMap = new Map<string, number>();
+    updates.forEach(item => {
+      if (item && item.id) {
+        viewsMap.set(item.id, sanitizeViewsCount(item.views, 0));
+      }
+    });
+    if (viewsMap.size === 0) return 0;
+
+    let changedCount = 0;
+    const baseArticles = latestDbStateRef.current.articles || articles;
+    const updatedArticles = baseArticles.map(art => {
+      const nextViews = viewsMap.get(art.id);
+      if (nextViews === undefined || nextViews === art.views) return art;
+      changedCount++;
+      return { ...art, views: nextViews };
+    });
+
+    if (changedCount === 0) return 0;
+    lastMutationTimeRef.current = Date.now();
+    latestDbStateRef.current.articles = updatedArticles;
+    setArticles(updatedArticles);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
+    } catch { }
+    pushToCloudDatabase({ articles: updatedArticles });
+    broadcastLocalChange('ARTICLES', updatedArticles);
+    return changedCount;
   };
 
   const deleteArticle = (id: string) => {
@@ -1925,6 +1964,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addArticle,
         batchAddArticles,
         updateArticle,
+        bulkUpdateArticleViews,
         deleteArticle,
         toggleFeatured,
         toggleStatus,

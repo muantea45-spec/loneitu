@@ -12,6 +12,7 @@ import {
   Calendar,
   Layers,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 import { useBlog } from '../../context/BlogContext';
 import { useToast } from '../common/Toast';
@@ -26,6 +27,7 @@ interface BlogspotPost {
   tags: string[];
   authorName?: string;
   originalUrl?: string;
+  views?: number;
 }
 
 interface BlogspotImportModalProps {
@@ -49,11 +51,13 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
 
   // Single post result
   const [singlePost, setSinglePost] = useState<BlogspotPost | null>(null);
+  const [singleViews, setSingleViews] = useState<string>('');
 
   // Feed posts results
   const [feedTitle, setFeedTitle] = useState('');
   const [feedPosts, setFeedPosts] = useState<BlogspotPost[]>([]);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [feedViewsMap, setFeedViewsMap] = useState<Record<number, string>>({});
 
   // Configuration for imported articles
   const [selectedAuthorId, setSelectedAuthorId] = useState<string>(() => authors[0]?.id || '');
@@ -69,8 +73,10 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
     e.preventDefault();
     setError(null);
     setSinglePost(null);
+    setSingleViews('');
     setFeedPosts([]);
     setSelectedIndices(new Set());
+    setFeedViewsMap({});
 
     const cleanUrl = url.trim();
     if (!cleanUrl) {
@@ -132,9 +138,17 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
     }
   };
 
+  const parseOptionalViews = (raw?: string): number | undefined => {
+    if (!raw || !raw.trim()) return undefined;
+    const n = Number(raw.trim());
+    if (!Number.isFinite(n) || n < 0) return undefined;
+    return Math.floor(n);
+  };
+
   const handlePublishSingleDirectly = () => {
     if (!singlePost) return;
     const author = authors.find(a => a.id === selectedAuthorId) || authors[0];
+    const inheritedViews = parseOptionalViews(singleViews);
 
     addArticle({
       title: singlePost.title,
@@ -146,6 +160,7 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
       author,
       status: 'published',
       isFeatured: false,
+      views: inheritedViews,
     });
 
     showToast(`Published "${singlePost.title}" to Loneitu Journal!`, 'success');
@@ -155,7 +170,10 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
   const handleOpenSingleInEditor = () => {
     if (!singlePost) return;
     if (onImportToEditor) {
-      onImportToEditor(singlePost);
+      onImportToEditor({
+        ...singlePost,
+        views: parseOptionalViews(singleViews),
+      });
     }
     showToast('Loaded article into editor canvas', 'info');
     onClose();
@@ -170,11 +188,13 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
     setIsImporting(true);
     setImportProgress(`Importing ${selectedIndices.size} articles into repository...`);
 
-    const selectedPosts = feedPosts.filter((_, idx) => selectedIndices.has(idx));
+    const selectedEntries = feedPosts
+      .map((post, idx) => ({ post, idx }))
+      .filter(({ idx }) => selectedIndices.has(idx));
     const author = authors.find(a => a.id === selectedAuthorId) || authors[0];
 
     try {
-      const itemsToImport = selectedPosts.map(post => ({
+      const itemsToImport = selectedEntries.map(({ post, idx }) => ({
         title: post.title,
         content: post.content,
         excerpt: post.excerpt,
@@ -185,6 +205,7 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
         status: 'published' as const,
         isFeatured: false,
         publishedAt: post.publishedAt || new Date().toISOString(),
+        views: parseOptionalViews(feedViewsMap[idx]),
       }));
 
       const result = batchAddArticles(itemsToImport);
@@ -408,6 +429,28 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
                 </div>
               </div>
 
+              {/* Inherit Historical Blogger Views */}
+              <div className="p-3 rounded-xl bg-[#FAF8F3] border border-[#DDD4BC]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="space-y-0.5">
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-[#143520]">
+                    <Eye className="w-3.5 h-3.5 text-[#256B3A]" />
+                    <span>Inherit Blogger Views (Optional)</span>
+                  </label>
+                  <p className="text-[10.5px] text-[#8F7855]">
+                    Enter views from Blogger → Stats → Posts so your article keeps its existing read count.
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={singleViews}
+                  onChange={e => setSingleViews(e.target.value)}
+                  placeholder="e.g. 2450"
+                  className="w-full sm:w-36 px-3 py-1.5 bg-white border border-[#DDD4BC] rounded-xl text-xs text-[#13341D] font-mono focus:outline-hidden focus:border-[#256B3A] shrink-0"
+                />
+              </div>
+
               {/* Single Post Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-[#EBE6D6]">
                 {onImportToEditor && (
@@ -496,6 +539,27 @@ export const BlogspotImportModal: React.FC<BlogspotImportModalProps> = ({
                             <span>• {post.tags.slice(0, 2).join(', ')}</span>
                           )}
                         </div>
+                      </div>
+                      <div
+                        className="shrink-0 flex items-center gap-1"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <Eye className="w-3 h-3 text-[#8F7855]" />
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={feedViewsMap[idx] ?? ''}
+                          onChange={e =>
+                            setFeedViewsMap(prev => ({
+                              ...prev,
+                              [idx]: e.target.value,
+                            }))
+                          }
+                          placeholder="Views"
+                          title="Enter historical Blogger view count (optional)"
+                          className="w-20 px-2 py-1 bg-white border border-[#DDD4BC] rounded-lg text-[11px] font-mono text-[#13341D] focus:outline-hidden focus:border-[#256B3A]"
+                        />
                       </div>
                     </div>
                   );

@@ -140,7 +140,7 @@ export const ArticleDetailPage: React.FC = () => {
               </span>
               <span className="flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-[#256B3A]" />
-                {article.views || 1} views
+                {(article.views ?? 1).toLocaleString()} views
               </span>
 
               {/* Universal Share button in article header */}

@@ -22,6 +22,7 @@ import { formatDate } from '../../utils/formatDate';
 import { useToast } from '../common/Toast';
 import { resolveImageUrl } from '../../utils/imageUrlResolver';
 import { BlogspotImportModal } from './BlogspotImportModal';
+import { BulkViewsModal } from './BulkViewsModal';
 
 interface ArticleListProps {
   onNewArticle: () => void;
@@ -40,6 +41,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isBlogspotModalOpen, setIsBlogspotModalOpen] = useState(false);
+  const [isBulkViewsOpen, setIsBulkViewsOpen] = useState(false);
 
   const filtered = articles.filter(art => {
     if (statusFilter === 'published' && art.status !== 'published') return false;
@@ -88,6 +90,15 @@ export const ArticleList: React.FC<ArticleListProps> = ({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsBulkViewsOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[#DDD4BC] bg-[#FAF8F3] hover:bg-[#EBE6D6] text-[#143520] text-xs font-semibold transition-colors shrink-0 shadow-2xs cursor-pointer"
+              title="Inherit or bulk-sync historical Blogger view counts"
+            >
+              <Eye className="w-4 h-4 text-[#256B3A]" />
+              <span>Sync Views</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsBlogspotModalOpen(true)}
@@ -390,6 +401,12 @@ export const ArticleList: React.FC<ArticleListProps> = ({
         isOpen={isBlogspotModalOpen}
         onClose={() => setIsBlogspotModalOpen(false)}
         onImportToEditor={onImportToEditor}
+      />
+
+      {/* Bulk Inherit & Sync Blogger Views Modal */}
+      <BulkViewsModal
+        isOpen={isBulkViewsOpen}
+        onClose={() => setIsBulkViewsOpen(false)}
       />
     </div>
   );
