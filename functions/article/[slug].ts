@@ -56,10 +56,12 @@ export const onRequest: PagesFunction = async (context) => {
     const env = context.env as any;
     let articles: any[] = [];
 
-    // 1. Direct KV read if available in Pages context (fastest: ~5ms, zero network latency)
+    // 1. Direct KV read if available in Pages context (fastest: reads ~38 KB public DB first)
     if (env?.LONEITU_KV) {
       try {
-        const kvData = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+        const kvData =
+          (await env.LONEITU_KV.get('loneitu_public_db_v1', 'json')) ||
+          (await env.LONEITU_KV.get('loneitu_global_db_v1', 'json'));
         if (kvData?.articles && Array.isArray(kvData.articles)) {
           articles = kvData.articles;
         }

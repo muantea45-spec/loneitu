@@ -11,7 +11,74 @@ interface Env {
 let inMemoryFallback: any = null;
 const INITIAL_SITE_VIEWS = 100102;
 const KV_VIEWS_KEY = 'loneitu_site_views_v1';
+const PUBLIC_DB_KEY = 'loneitu_public_db_v1';
+const FARMERS_DB_KEY = 'loneitu_farmers_db_v1';
+const AUTH_DB_KEY = 'loneitu_auth_v1';
+const FULL_DB_KEY = 'loneitu_global_db_v1';
+const META_DB_KEY = 'loneitu_global_db_meta';
 let inMemorySiteViews = INITIAL_SITE_VIEWS;
+const inMemoryArticleViews: Record<string, number> = {};
+
+function extractPublicPayload(source: any) {
+  return {
+    articles: Array.isArray(source?.articles) ? source.articles : [],
+    categories: Array.isArray(source?.categories) ? source.categories : [],
+    tags: Array.isArray(source?.tags) ? source.tags : [],
+    authors: Array.isArray(source?.authors) ? source.authors : [],
+    aboutData: source?.aboutData || null,
+    footerData: source?.footerData || null,
+    updatedAt: source?.updatedAt || new Date().toISOString(),
+  };
+}
+
+function extractAuthPayload(source: any) {
+  return {
+    authorizedEmails: (source?.authorizedEmails || ['muantea45@gmail.com', 'hriata.cherput@gmail.com']).map((e: string) =>
+      String(e).trim().toLowerCase()
+    ),
+    primaryOwnerEmail: (source?.primaryOwnerEmail || 'hriata.cherput@gmail.com').trim().toLowerCase(),
+    adminSecurityKey: source?.adminSecurityKey || 'agri2026',
+  };
+}
+
+function isAdminAuthorized(request: Request, authConfig: { authorizedEmails: string[]; primaryOwnerEmail: string; adminSecurityKey: string } | null): boolean {
+  if (!authConfig) return true; // Fresh empty DB bootstrap
+  const adminKey = request.headers.get('x-admin-key') || '';
+  const adminEmail = (request.headers.get('x-admin-email') || '').trim().toLowerCase();
+  const isKeyValid = Boolean(adminKey && (adminKey === authConfig.adminSecurityKey || adminKey === 'mizoram-loneitu-2026' || adminKey === 'agri2026'));
+  const isEmailValid = Boolean(adminEmail && (authConfig.authorizedEmails.includes(adminEmail) || adminEmail === authConfig.primaryOwnerEmail));
+  return isKeyValid || isEmailValid;
+}
+
+function sanitizeFarmerForVerification(farmer: any) {
+  if (!farmer) return null;
+  const rawData = farmer.data && typeof farmer.data === 'object' ? farmer.data : {};
+  const verifiedData: Record<string, string> = {};
+
+  for (const [key, val] of Object.entries(rawData)) {
+    const strVal = String(val ?? '').trim();
+    if (!strVal) continue;
+    // Mask sensitive numbers (phone/mobile/aadhaar/bank/account) while keeping agricultural/location details public
+    if (/(aadhaar|aadhar|uid|bank|account|ifsc|pan\b)/i.test(key)) {
+      continue;
+    }
+    if (/(contact|phone|mobile|cell|whatsapp|ph)/i.test(key)) {
+      const digits = strVal.replace(/\D/g, '');
+      verifiedData[key] = digits.length >= 4 ? `******${digits.slice(-4)}` : 'Verified on File';
+      continue;
+    }
+    verifiedData[key] = strVal;
+  }
+
+  return {
+    id: farmer.id,
+    fullName: farmer.fullName || rawData['Name'] || rawData['Farmer Name'] || 'Verified Farmer',
+    status: farmer.status || 'Verified',
+    registrationDate: farmer.registrationDate || '2026-04-01',
+    avatar: farmer.avatar || '',
+    verifiedData,
+  };
+}
 
 function escapeHtml(str: string): string {
   return (str || '')
@@ -65,16 +132,19 @@ export default {
     // 2. Database API: /api/db & /api/db/version
     if (url.pathname === '/api/db' || url.pathname === '/api/db/version') {
       if (request.method === 'GET') {
+        const scope = url.searchParams.get('scope');
+        const bypassCache = url.searchParams.has('_cb');
+
         // Fast Metadata Ping Check (150 bytes, ~10ms execution)
         if (url.searchParams.get('meta') === '1' || url.pathname === '/api/db/version') {
           let meta = null;
           if (env.LONEITU_KV) {
-            meta = await env.LONEITU_KV.get('loneitu_global_db_meta', 'json');
+            meta = await env.LONEITU_KV.get(META_DB_KEY, 'json');
           }
           if (!meta) {
             let data = null;
             if (env.LONEITU_KV) {
-              data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+              data = (await env.LONEITU_KV.get(PUBLIC_DB_KEY, 'json')) || (await env.LONEITU_KV.get(FULL_DB_KEY, 'json'));
             }
             if (!data && inMemoryFallback) data = inMemoryFallback;
             meta = {
@@ -96,9 +166,165 @@ export default {
           });
         }
 
+        // Email Authorization check without leaking full admin list or security key
+        if (scope === 'verify-email') {
+          const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+          let authConfig = null;
+          if (env.LONEITU_KV) {
+            authConfig = await env.LONEITU_KV.get(AUTH_DB_KEY, 'json');
+            if (!authConfig) {
+              const full = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
+              if (full) authConfig = extractAuthPayload(full);
+            }
+          }
+          if (!authConfig && inMemoryFallback) {
+            authConfig = extractAuthPayload(inMemoryFallback);
+          }
+          const authorized = Boolean(
+            email &&
+              authConfig &&
+              (authConfig.authorizedEmails.includes(email) || email === authConfig.primaryOwnerEmail)
+          );
+          const isPrimaryOwner = Boolean(email && authConfig && email === authConfig.primaryOwnerEmail);
+          return new Response(JSON.stringify({ success: true, authorized, isPrimaryOwner }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS,
+              'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            },
+          });
+        }
+
+        // Fast Lightweight Public Read (~38.5 KB — zero farmers, zero admin secrets, edge-cached)
+        if (scope === 'public') {
+          const publicCacheHeader = bypassCache
+            ? 'no-store, no-cache, must-revalidate, max-age=0'
+            : 'public, max-age=30, s-maxage=60, stale-while-revalidate=300';
+
+          if (env.LONEITU_KV) {
+            const publicText = await env.LONEITU_KV.get(PUBLIC_DB_KEY, 'text');
+            if (publicText) {
+              return new Response(`{"success":true,"scope":"public","data":${publicText}}`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...CORS_HEADERS,
+                  'Cache-Control': publicCacheHeader,
+                },
+              });
+            }
+
+            // Auto-migrate from legacy loneitu_global_db_v1 on first public read
+            const fullData = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
+            if (fullData) {
+              const pub = extractPublicPayload(fullData);
+              const pubStr = JSON.stringify(pub);
+              try {
+                await env.LONEITU_KV.put(PUBLIC_DB_KEY, pubStr);
+                await env.LONEITU_KV.put(
+                  FARMERS_DB_KEY,
+                  JSON.stringify({
+                    farmers: Array.isArray(fullData.farmers) ? fullData.farmers : [],
+                    farmerCustomFields: Array.isArray(fullData.farmerCustomFields) ? fullData.farmerCustomFields : [],
+                    updatedAt: fullData.updatedAt || new Date().toISOString(),
+                  })
+                );
+                await env.LONEITU_KV.put(AUTH_DB_KEY, JSON.stringify(extractAuthPayload(fullData)));
+              } catch {
+                // ignore auto-migration write errors
+              }
+              return new Response(`{"success":true,"scope":"public","data":${pubStr}}`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...CORS_HEADERS,
+                  'Cache-Control': publicCacheHeader,
+                  'X-Database-Updated-At': pub.updatedAt || '',
+                },
+              });
+            }
+          }
+
+          const fallbackPublic = inMemoryFallback ? extractPublicPayload(inMemoryFallback) : null;
+          return new Response(JSON.stringify({ success: true, scope: 'public', data: fallbackPublic }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS,
+              'Cache-Control': publicCacheHeader,
+            },
+          });
+        }
+
+        // Admin-Protected Farmers Scope (~3.16 MB — only loaded when Admin logs in)
+        if (scope === 'farmers') {
+          let authConfig = null;
+          if (env.LONEITU_KV) {
+            authConfig = await env.LONEITU_KV.get(AUTH_DB_KEY, 'json');
+            if (!authConfig) {
+              const full = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
+              if (full) authConfig = extractAuthPayload(full);
+            }
+          } else if (inMemoryFallback) {
+            authConfig = extractAuthPayload(inMemoryFallback);
+          }
+
+          if (!isAdminAuthorized(request, authConfig)) {
+            return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+              status: 401,
+              headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+            });
+          }
+
+          if (env.LONEITU_KV) {
+            const farmersText = await env.LONEITU_KV.get(FARMERS_DB_KEY, 'text');
+            if (farmersText) {
+              return new Response(`{"success":true,"scope":"farmers","data":${farmersText}}`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...CORS_HEADERS,
+                  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+                },
+              });
+            }
+            const full = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
+            if (full) {
+              const payload = {
+                farmers: Array.isArray(full.farmers) ? full.farmers : [],
+                farmerCustomFields: Array.isArray(full.farmerCustomFields) ? full.farmerCustomFields : [],
+                updatedAt: full.updatedAt || new Date().toISOString(),
+              };
+              const str = JSON.stringify(payload);
+              try {
+                await env.LONEITU_KV.put(FARMERS_DB_KEY, str);
+              } catch { }
+              return new Response(`{"success":true,"scope":"farmers","data":${str}}`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...CORS_HEADERS,
+                  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+                },
+              });
+            }
+          }
+
+          const fallbackFarmers = inMemoryFallback
+            ? {
+                farmers: inMemoryFallback.farmers || [],
+                farmerCustomFields: inMemoryFallback.farmerCustomFields || [],
+                updatedAt: inMemoryFallback.updatedAt,
+              }
+            : { farmers: [], farmerCustomFields: [] };
+          return new Response(JSON.stringify({ success: true, scope: 'farmers', data: fallbackFarmers }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS,
+              'Cache-Control': 'no-store',
+            },
+          });
+        }
+
+        // Legacy Full Read / Section Read
         let data = null;
         if (env.LONEITU_KV) {
-          data = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+          data = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
         }
         if (!data && inMemoryFallback) {
           data = inMemoryFallback;
@@ -127,6 +353,22 @@ export default {
           );
         }
 
+        // Protect farmer & admin credentials unless caller passes valid Admin credentials
+        if (data) {
+          const authConfig = extractAuthPayload(data);
+          if (!isAdminAuthorized(request, authConfig)) {
+            const safePublic = extractPublicPayload(data);
+            return new Response(JSON.stringify({ success: true, scope: 'public', data: safePublic }), {
+              headers: {
+                'Content-Type': 'application/json',
+                ...CORS_HEADERS,
+                'Cache-Control': 'public, max-age=30, s-maxage=60',
+                'X-Database-Updated-At': safePublic.updatedAt || '',
+              },
+            });
+          }
+        }
+
         return new Response(JSON.stringify({ success: true, data }), {
           headers: {
             'Content-Type': 'application/json',
@@ -142,43 +384,32 @@ export default {
       if (request.method === 'POST') {
         try {
           // Security Check: Verify Admin authorization credentials
-          const adminKey = request.headers.get('x-admin-key') || '';
-          const adminEmail = (request.headers.get('x-admin-email') || '').trim().toLowerCase();
-
+          let authConfig: any = null;
           let currentData: any = null;
           if (env.LONEITU_KV) {
-            currentData = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+            authConfig = await env.LONEITU_KV.get(AUTH_DB_KEY, 'json');
+            currentData = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
+            if (!authConfig && currentData) authConfig = extractAuthPayload(currentData);
           }
           if (!currentData && inMemoryFallback) {
             currentData = inMemoryFallback;
+            if (!authConfig) authConfig = extractAuthPayload(currentData);
           }
 
-          // If a database already exists in KV, check that caller is authorized
-          if (currentData) {
-            const authorizedEmails: string[] = (currentData.authorizedEmails || ['muantea45@gmail.com', 'hriata.cherput@gmail.com']).map((e: string) =>
-              e.trim().toLowerCase()
+          if (authConfig && !isAdminAuthorized(request, authConfig)) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: 'Unauthorized: Valid administrator authorization key or whitelisted email header is required.',
+              }),
+              {
+                status: 401,
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...CORS_HEADERS,
+                },
+              }
             );
-            const expectedKey = currentData.adminSecurityKey || 'agri2026';
-            const primaryOwner = (currentData.primaryOwnerEmail || 'hriata.cherput@gmail.com').trim().toLowerCase();
-
-            const isKeyValid = adminKey && (adminKey === expectedKey || adminKey === 'mizoram-loneitu-2026' || adminKey === 'agri2026');
-            const isEmailValid = adminEmail && (authorizedEmails.includes(adminEmail) || adminEmail === primaryOwner);
-
-            if (!isKeyValid && !isEmailValid) {
-              return new Response(
-                JSON.stringify({
-                  success: false,
-                  error: 'Unauthorized: Valid administrator authorization key or whitelisted email header is required.',
-                }),
-                {
-                  status: 401,
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...CORS_HEADERS,
-                  },
-                }
-              );
-            }
           }
 
           const body = await request.json();
@@ -200,19 +431,41 @@ export default {
           inMemoryFallback = fullDataToSave;
           let kvSaved = false;
           if (env.LONEITU_KV) {
-            await env.LONEITU_KV.put('loneitu_global_db_v1', JSON.stringify(fullDataToSave));
-            // Ultra-lightweight metadata record for instant, low-bandwidth polling
+            const writes: Promise<any>[] = [
+              env.LONEITU_KV.put(FULL_DB_KEY, JSON.stringify(fullDataToSave)),
+              env.LONEITU_KV.put(PUBLIC_DB_KEY, JSON.stringify(extractPublicPayload(fullDataToSave))),
+              env.LONEITU_KV.put(AUTH_DB_KEY, JSON.stringify(extractAuthPayload(fullDataToSave))),
+            ];
+
+            if (Array.isArray(body.farmers) || Array.isArray(body.farmerCustomFields) || !currentData) {
+              writes.push(
+                env.LONEITU_KV.put(
+                  FARMERS_DB_KEY,
+                  JSON.stringify({
+                    farmers: Array.isArray(fullDataToSave.farmers) ? fullDataToSave.farmers : [],
+                    farmerCustomFields: Array.isArray(fullDataToSave.farmerCustomFields)
+                      ? fullDataToSave.farmerCustomFields
+                      : [],
+                    updatedAt: fullDataToSave.updatedAt,
+                  })
+                )
+              );
+            }
+
             const featuredArticle = (fullDataToSave.articles || []).find((a: any) => a.isFeatured);
-            await env.LONEITU_KV.put(
-              'loneitu_global_db_meta',
-              JSON.stringify({
-                updatedAt: fullDataToSave.updatedAt,
-                timestamp: Date.now(),
-                featuredId: featuredArticle?.id || null,
-                cardCount: fullDataToSave.aboutData?.customCardsSection?.cards?.length || 0,
-                articlesCount: fullDataToSave.articles?.length || 0,
-              })
+            writes.push(
+              env.LONEITU_KV.put(
+                META_DB_KEY,
+                JSON.stringify({
+                  updatedAt: fullDataToSave.updatedAt,
+                  timestamp: Date.now(),
+                  featuredId: featuredArticle?.id || null,
+                  cardCount: fullDataToSave.aboutData?.customCardsSection?.cards?.length || 0,
+                  articlesCount: fullDataToSave.articles?.length || 0,
+                })
+              )
             );
+            await Promise.all(writes);
             kvSaved = true;
           }
 
@@ -278,6 +531,172 @@ export default {
           'Content-Type': 'application/json',
           ...CORS_HEADERS,
           'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      });
+    }
+
+    // 2.6 Per-Article Global View Counter API: GET/POST /api/article-views
+    if (url.pathname === '/api/article-views') {
+      if (request.method === 'GET') {
+        const articleId = (url.searchParams.get('id') || '').trim();
+        if (!articleId) {
+          return new Response(JSON.stringify({ success: false, error: 'Missing article id' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+          });
+        }
+
+        let views: number | null = inMemoryArticleViews[articleId] ?? null;
+        if (env.LONEITU_KV) {
+          try {
+            const raw = await env.LONEITU_KV.get(`art_views:${articleId}`, 'text');
+            const parsed = Number(raw);
+            if (Number.isFinite(parsed) && parsed > 0) {
+              views = Math.max(views ?? 0, Math.floor(parsed));
+              inMemoryArticleViews[articleId] = views;
+            }
+          } catch { }
+        }
+        return new Response(JSON.stringify({ success: true, articleId, views }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS,
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          },
+        });
+      }
+
+      if (request.method === 'POST') {
+        try {
+          const body = (await request.json()) as {
+            articleId?: string;
+            baseViews?: number;
+            setExact?: boolean;
+            updates?: Array<{ id: string; views: number }>;
+          };
+
+          // Admin bulk/exact override when Blogger views are updated manually
+          if (body.setExact) {
+            let authConfig = null;
+            if (env.LONEITU_KV) {
+              authConfig = (await env.LONEITU_KV.get(AUTH_DB_KEY, 'json')) || extractAuthPayload(await env.LONEITU_KV.get(FULL_DB_KEY, 'json'));
+            }
+            if (!isAdminAuthorized(request, authConfig)) {
+              return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+              });
+            }
+
+            const list = Array.isArray(body.updates)
+              ? body.updates
+              : body.articleId
+              ? [{ id: body.articleId, views: Number(body.baseViews) || 1 }]
+              : [];
+
+            if (env.LONEITU_KV) {
+              await Promise.all(
+                list.map(async item => {
+                  if (!item.id) return;
+                  const safeVal = Math.max(0, Math.floor(Number(item.views) || 0));
+                  inMemoryArticleViews[item.id] = safeVal;
+                  try {
+                    await env.LONEITU_KV!.put(`art_views:${item.id}`, String(safeVal));
+                  } catch { }
+                })
+              );
+            }
+            return new Response(JSON.stringify({ success: true, updated: list.length }), {
+              headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+            });
+          }
+
+          const articleId = (body.articleId || '').trim();
+          if (!articleId) {
+            return new Response(JSON.stringify({ success: false, error: 'Missing articleId' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+            });
+          }
+
+          let current = Math.max(inMemoryArticleViews[articleId] ?? 0, Math.floor(Number(body.baseViews) || 1));
+          if (env.LONEITU_KV) {
+            try {
+              const raw = await env.LONEITU_KV.get(`art_views:${articleId}`, 'text');
+              const parsed = Number(raw);
+              if (Number.isFinite(parsed) && parsed > 0) {
+                current = Math.max(current, Math.floor(parsed));
+              }
+            } catch { }
+          }
+
+          const nextViews = current + 1;
+          inMemoryArticleViews[articleId] = nextViews;
+
+          if (env.LONEITU_KV) {
+            try {
+              await env.LONEITU_KV.put(`art_views:${articleId}`, String(nextViews));
+            } catch { }
+          }
+
+          return new Response(JSON.stringify({ success: true, articleId, views: nextViews, persisted: Boolean(env.LONEITU_KV) }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS,
+              'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            },
+          });
+        } catch (err: any) {
+          return new Response(JSON.stringify({ success: false, error: err.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+          });
+        }
+      }
+    }
+
+    // 2.7 Public Farmer QR Verification Lookup API: GET /api/verify-farmer?id=<farmerId>
+    if (url.pathname === '/api/verify-farmer' && request.method === 'GET') {
+      const farmerId = decodeURIComponent((url.searchParams.get('id') || '').trim());
+      if (!farmerId) {
+        return new Response(JSON.stringify({ success: false, error: 'Missing farmer ID' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        });
+      }
+
+      let farmersList: any[] = [];
+      if (env.LONEITU_KV) {
+        const farmersDb = await env.LONEITU_KV.get(FARMERS_DB_KEY, 'json');
+        if (farmersDb && Array.isArray(farmersDb.farmers)) {
+          farmersList = farmersDb.farmers;
+        } else {
+          const fullDb = await env.LONEITU_KV.get(FULL_DB_KEY, 'json');
+          if (fullDb && Array.isArray(fullDb.farmers)) {
+            farmersList = fullDb.farmers;
+          }
+        }
+      } else if (inMemoryFallback && Array.isArray(inMemoryFallback.farmers)) {
+        farmersList = inMemoryFallback.farmers;
+      }
+
+      const found = farmersList.find((f: any) => f.id === farmerId);
+      if (!found) {
+        return new Response(JSON.stringify({ success: false, error: 'Farmer record not found in verified registry' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            ...CORS_HEADERS,
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, farmer: sanitizeFarmerForVerification(found) }), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS,
+          'Cache-Control': 'public, max-age=60, s-maxage=300',
         },
       });
     }
@@ -481,7 +900,7 @@ export default {
 
         let db: any = null;
         if (env.LONEITU_KV) {
-          db = await env.LONEITU_KV.get('loneitu_global_db_v1', 'json');
+          db = (await env.LONEITU_KV.get(PUBLIC_DB_KEY, 'json')) || (await env.LONEITU_KV.get(FULL_DB_KEY, 'json'));
         }
         if (!db && inMemoryFallback) {
           db = inMemoryFallback;

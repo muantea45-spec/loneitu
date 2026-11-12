@@ -124,8 +124,13 @@ const STORAGE_KEYS = {
 };
 
 const CLOUD_API_ENDPOINTS = [
-  'https://loneitu.ddvktp.workers.dev/api/db',
   '/api/db',
+  'https://loneitu.ddvktp.workers.dev/api/db',
+];
+
+const ARTICLE_VIEWS_ENDPOINTS = [
+  '/api/article-views',
+  'https://loneitu.ddvktp.workers.dev/api/article-views',
 ];
 
 function broadcastLocalChange(type: string, payload: any) {
@@ -159,15 +164,15 @@ async function fetchDatabaseMeta(): Promise<{ updatedAt?: string; featuredId?: s
   return null;
 }
 
-async function fetchRemoteDatabase(): Promise<any> {
-  const t = Date.now();
+async function fetchRemotePublicDatabase(bypassCache = false): Promise<any> {
+  const query = bypassCache ? `?scope=public&_cb=${Date.now()}` : '?scope=public';
   for (const endpoint of CLOUD_API_ENDPOINTS) {
     try {
-      const url = `${endpoint}?_cb=${t}`;
+      const url = `${endpoint}${query}`;
       const res = await fetch(url, {
-        cache: 'no-store',
+        cache: bypassCache ? 'no-store' : 'default',
       });
-      if (res.ok) {
+      if (res.ok && (res.headers.get('content-type') || '').includes('application/json')) {
         const json = await res.json();
         if (json && json.success && json.data) {
           return json.data;
@@ -178,6 +183,61 @@ async function fetchRemoteDatabase(): Promise<any> {
     }
   }
   return null;
+}
+
+async function fetchRemoteFarmersDatabase(authInfo?: { key?: string; email?: string }): Promise<any> {
+  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || '';
+  const email = authInfo?.email || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) : null) || '';
+  const headers: Record<string, string> = {};
+  if (key) headers['X-Admin-Key'] = key;
+  if (email) headers['X-Admin-Email'] = email;
+
+  const t = Date.now();
+  for (const endpoint of CLOUD_API_ENDPOINTS) {
+    try {
+      const url = `${endpoint}?scope=farmers&_cb=${t}`;
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers,
+      });
+      if (res.ok && (res.headers.get('content-type') || '').includes('application/json')) {
+        const json = await res.json();
+        if (json && json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch {
+      // try fallback endpoint
+    }
+  }
+  return null;
+}
+
+async function fetchRemoteDatabase(bypassCache = false): Promise<any> {
+  return fetchRemotePublicDatabase(bypassCache);
+}
+
+async function syncExactArticleViewsToCloud(
+  updates: Array<{ id: string; views: number }>,
+  authInfo?: { key?: string; email?: string }
+): Promise<void> {
+  if (!updates || updates.length === 0) return;
+  const key = authInfo?.key || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.SECURITY_KEY) : null) || '';
+  const email = authInfo?.email || (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ADMIN_EMAIL) : null) || '';
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (key) headers['X-Admin-Key'] = key;
+  if (email) headers['X-Admin-Email'] = email;
+
+  for (const endpoint of ARTICLE_VIEWS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ setExact: true, updates }),
+      });
+      if (res.ok) return;
+    } catch { }
+  }
 }
 
 async function saveRemoteDatabase(payload: any, authInfo?: { key?: string; email?: string }): Promise<boolean> {
@@ -338,11 +398,16 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [farmers, setFarmers] = useState<FarmerRecord[]>(() => {
     try {
+      // Public readers never hold the 3.16 MB farmer registry in localStorage
+      if (localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) !== 'true') {
+        localStorage.removeItem(STORAGE_KEYS.FARMERS);
+        return [];
+      }
       const stored = localStorage.getItem(STORAGE_KEYS.FARMERS);
       const parsed = stored ? JSON.parse(stored) : INITIAL_FARMERS;
       return Array.isArray(parsed) ? cleanFarmerAvatars(parsed) : [];
     } catch {
-      return INITIAL_FARMERS;
+      return [];
     }
   });
 
@@ -439,11 +504,13 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(farmers));
+      if (isAdminLoggedIn) {
+        localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(farmers));
+      }
     } catch (e) {
       console.error('Failed to sync farmers locally', e);
     }
-  }, [farmers]);
+  }, [farmers, isAdminLoggedIn]);
 
   useEffect(() => {
     try {
@@ -589,12 +656,46 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, [authorizedEmails, primaryOwnerEmail, adminSecurityKey, articles, categories, tags, authors, aboutData, footerData, farmers, farmerCustomFields]);
 
-  // Pull latest database from cloud on load and when switching devices
-  const fetchCloudDb = async () => {
+  const lastPublicSyncTimeRef = useRef<number>(0);
+
+  // Pull farmers registry only when an admin session is active
+  const fetchFarmersDb = async () => {
+    if (!isAdminLoggedIn) return;
     try {
-      const cloudData = await fetchRemoteDatabase();
+      const farmersData = await fetchRemoteFarmersDatabase();
+      if (!farmersData) return;
+
+      if (Date.now() - lastMutationTimeRef.current < 2500) {
+        return;
+      }
+
+      if (Array.isArray(farmersData.farmers)) {
+        const cleaned = cleanFarmerAvatars(farmersData.farmers);
+        setFarmers(cleaned);
+        try {
+          localStorage.setItem(STORAGE_KEYS.FARMERS, JSON.stringify(cleaned));
+        } catch { }
+      }
+
+      if (Array.isArray(farmersData.farmerCustomFields)) {
+        setFarmerCustomFields(farmersData.farmerCustomFields);
+        try {
+          localStorage.setItem(STORAGE_KEYS.FARMER_CUSTOM_FIELDS, JSON.stringify(farmersData.farmerCustomFields));
+        } catch { }
+      }
+    } catch (e) {
+      console.warn('Admin farmers fetch skipped', e);
+    }
+  };
+
+  // Pull latest public database from cloud on load and when switching devices
+  const fetchCloudDb = async (forceFullSync = false) => {
+    try {
+      const bypassCache = Boolean(isAdminLoggedIn || forceFullSync);
+      const cloudData = await fetchRemotePublicDatabase(bypassCache);
       if (!cloudData) return;
 
+      lastPublicSyncTimeRef.current = Date.now();
       if (cloudData.updatedAt) {
         lastKnownRemoteUpdatedAtRef.current = cloudData.updatedAt;
       }
@@ -696,7 +797,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      if (Array.isArray(cloudData.farmers)) {
+      if (isAdminLoggedIn && Array.isArray(cloudData.farmers)) {
         const cleaned = cleanFarmerAvatars(cloudData.farmers);
         setFarmers(cleaned);
         try {
@@ -711,17 +812,39 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch { }
       }
 
+      if (isAdminLoggedIn) {
+        await fetchFarmersDb();
+      }
+
       setCloudSyncStatus('synced');
     } catch (e) {
       console.warn('Initial cloud db fetch skipped', e);
     }
   };
 
+  // Sync database cleanly: edge-cached one-shot fetch for public readers, live 4s polling only for logged-in admins
   useEffect(() => {
     let isMounted = true;
-    fetchCloudDb();
+    fetchCloudDb(isAdminLoggedIn);
 
-    // Fast 1.5-second lightweight metadata poll (150-byte ping) for 100% instant sync across devices
+    if (!isAdminLoggedIn) {
+      // Public visitors: only refresh if returning after > 3 minutes to protect Worker/KV quota at 30k+ visits/day
+      const handlePublicResume = () => {
+        if (
+          document.visibilityState === 'visible' &&
+          isMounted &&
+          Date.now() - lastPublicSyncTimeRef.current > 180000
+        ) {
+          fetchCloudDb(false);
+        }
+      };
+      window.addEventListener('visibilitychange', handlePublicResume);
+      return () => {
+        isMounted = false;
+        window.removeEventListener('visibilitychange', handlePublicResume);
+      };
+    }
+
     let isChecking = false;
     const checkFastSync = async () => {
       if (!isMounted || isChecking || document.visibilityState !== 'visible') return;
@@ -732,7 +855,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const meta = await fetchDatabaseMeta();
         if (meta && meta.updatedAt && meta.updatedAt !== lastKnownRemoteUpdatedAtRef.current) {
           lastKnownRemoteUpdatedAtRef.current = meta.updatedAt;
-          await fetchCloudDb();
+          await fetchCloudDb(true);
         }
       } catch {
         // silent fallback
@@ -741,7 +864,6 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    // Re-sync instantly when tab gains focus or visibility (Desktop <-> Mobile sync)
     const handleSyncOnVisible = () => {
       if (document.visibilityState === 'visible' && isMounted) {
         checkFastSync();
@@ -751,7 +873,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     window.addEventListener('visibilitychange', handleSyncOnVisible);
     window.addEventListener('focus', handleSyncOnVisible);
 
-    const interval = setInterval(checkFastSync, 1500);
+    const interval = setInterval(checkFastSync, 4000);
 
     return () => {
       isMounted = false;
@@ -759,7 +881,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       window.removeEventListener('focus', handleSyncOnVisible);
       clearInterval(interval);
     };
-  }, []);
+  }, [isAdminLoggedIn]);
 
   // Multi-tab broadcast channel listener for 0ms cross-tab updates
   useEffect(() => {
@@ -906,9 +1028,33 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return true;
     }
 
-    // 2. Real-time fetch against central cloud database to pick up new admins instantly
+    // 2. Real-time check against central cloud auth scope to pick up new admins without leaking registry
     try {
-      const cloudData = await fetchRemoteDatabase();
+      for (const endpoint of CLOUD_API_ENDPOINTS) {
+        try {
+          const res = await fetch(`${endpoint}?scope=verify-email&email=${encodeURIComponent(normalized)}&_cb=${Date.now()}`, {
+            cache: 'no-store',
+          });
+          if (res.ok && (res.headers.get('content-type') || '').includes('application/json')) {
+            const json = await res.json();
+            if (json && json.success) {
+              if (json.authorized || isDefaultAuthorizedEmail(normalized)) {
+                const merged = Array.from(new Set([...authorizedEmails, normalized]));
+                setAuthorizedEmails(merged);
+                try {
+                  localStorage.setItem(STORAGE_KEYS.AUTHORIZED_EMAILS, JSON.stringify(merged));
+                } catch { }
+                return true;
+              }
+              return false;
+            }
+          }
+        } catch {
+          // try fallback endpoint
+        }
+      }
+
+      const cloudData = await fetchRemoteDatabase(true);
       if (cloudData) {
         const remoteAuthEmails: string[] = Array.isArray(cloudData.authorizedEmails)
           ? cloudData.authorizedEmails.map((e: string) => e.trim().toLowerCase())
@@ -1070,6 +1216,10 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logoutAdmin = () => {
     setIsAdminLoggedIn(false);
     setAdminEmail(null);
+    setFarmers([]);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.FARMERS);
+    } catch { }
   };
 
   // Article Actions
@@ -1114,6 +1264,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
+    syncExactArticleViewsToCloud([{ id: newArticle.id, views: newArticle.views }]);
     broadcastLocalChange('ARTICLES', updatedArticles);
     return newArticle;
   };
@@ -1200,6 +1351,9 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
+    if (updates.views !== undefined) {
+      syncExactArticleViewsToCloud([{ id, views: sanitizeViewsCount(updates.views, 0) }]);
+    }
     broadcastLocalChange('ARTICLES', updatedArticles);
   };
 
@@ -1214,11 +1368,13 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (viewsMap.size === 0) return 0;
 
     let changedCount = 0;
+    const syncedPairs: Array<{ id: string; views: number }> = [];
     const baseArticles = latestDbStateRef.current.articles || articles;
     const updatedArticles = baseArticles.map(art => {
       const nextViews = viewsMap.get(art.id);
       if (nextViews === undefined || nextViews === art.views) return art;
       changedCount++;
+      syncedPairs.push({ id: art.id, views: nextViews });
       return { ...art, views: nextViews };
     });
 
@@ -1230,6 +1386,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(updatedArticles));
     } catch { }
     pushToCloudDatabase({ articles: updatedArticles });
+    syncExactArticleViewsToCloud(syncedPairs);
     broadcastLocalChange('ARTICLES', updatedArticles);
     return changedCount;
   };
@@ -1286,9 +1443,50 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const incrementViews = (id: string) => {
-    setArticles(prev =>
-      prev.map(a => (a.id === id ? { ...a, views: (a.views || 0) + 1 } : a))
-    );
+    const currentList = latestDbStateRef.current.articles || articles;
+    const target = currentList.find(a => a.id === id);
+    const baseViews = target && typeof target.views === 'number' && Number.isFinite(target.views) ? target.views : 0;
+
+    setArticles(prev => {
+      const next = prev.map(a => (a.id === id ? { ...a, views: (a.views || 0) + 1 } : a));
+      latestDbStateRef.current.articles = next;
+      try {
+        localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(next));
+      } catch { }
+      return next;
+    });
+
+    // Global persistent KV sync layered cleanly on top of inherited Blogger views
+    (async () => {
+      for (const endpoint of ARTICLE_VIEWS_ENDPOINTS) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ articleId: id, baseViews }),
+          });
+          if (res.ok && (res.headers.get('content-type') || '').includes('application/json')) {
+            const json = await res.json();
+            if (json && json.success && typeof json.views === 'number' && Number.isFinite(json.views)) {
+              const serverViews = Math.floor(json.views);
+              setArticles(prev => {
+                const next = prev.map(a =>
+                  a.id === id ? { ...a, views: Math.max(a.views || 0, serverViews) } : a
+                );
+                latestDbStateRef.current.articles = next;
+                try {
+                  localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(next));
+                } catch { }
+                return next;
+              });
+              return;
+            }
+          }
+        } catch {
+          // try fallback endpoint
+        }
+      }
+    })();
   };
 
   const toggleLike = (id: string) => {

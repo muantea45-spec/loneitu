@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -29,6 +29,7 @@ export const ArticleDetailPage: React.FC = () => {
   const { articles, incrementViews, setFilterTag } = useBlog();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const navigate = useNavigate();
+  const viewedArticleIdRef = useRef<string | null>(null);
 
   const article = articles.find(a => a.slug === slug);
   const mediaBadge = article ? getArticleMediaBadge(article) : null;
@@ -40,11 +41,17 @@ export const ArticleDetailPage: React.FC = () => {
     try {
       window.scrollTo(0, 0);
     } catch { }
-    if (article) {
-      incrementViews(article.id);
-      document.title = `${article.title} — Loneitu (MIZORAM TAN)`;
-    }
   }, [slug]);
+
+  useEffect(() => {
+    if (article) {
+      document.title = `${article.title} — Loneitu (MIZORAM TAN)`;
+      if (viewedArticleIdRef.current !== article.id) {
+        viewedArticleIdRef.current = article.id;
+        incrementViews(article.id);
+      }
+    }
+  }, [slug, article?.id]);
 
   if (!article) {
     return (

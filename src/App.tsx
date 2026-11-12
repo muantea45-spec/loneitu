@@ -20,6 +20,7 @@ const ArchivePage = React.lazy(() => import('./pages/ArchivePage').then(m => ({ 
 const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
 const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage').then(m => ({ default: m.TermsOfUsePage })));
+const FarmerVerifyPage = React.lazy(() => import('./pages/FarmerVerifyPage').then(m => ({ default: m.FarmerVerifyPage })));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 
 const PageLoadingFallback: React.FC = () => (
@@ -118,6 +119,8 @@ const AppLayout: React.FC = () => {
                 <Route path="/archives" element={<ArchivePage />} />
                 <Route path="/farmers" element={<Navigate to="/admin" replace />} />
                 <Route path="/farmer-registry" element={<Navigate to="/admin" replace />} />
+                <Route path="/verify" element={<FarmerVerifyPage />} />
+                <Route path="/verify/:farmerId" element={<FarmerVerifyPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />

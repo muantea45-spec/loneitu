@@ -8,6 +8,7 @@ import {
   type ParseResult 
 } from '../../utils/excelFarmerParser';
 import { exportFarmersToPdf } from '../../utils/pdfFarmerExporter';
+import { generateFarmerIdCardPdf } from '../../utils/farmerIdCardPdfGenerator';
 import { downloadFarmerBackup, parseFarmerBackupFile } from '../../utils/farmerBackupUtils';
 import { 
   UploadCloud, 
@@ -37,7 +38,8 @@ import {
   Database,
   MessageCircle,
   Building2,
-  Phone
+  Phone,
+  QrCode
 } from 'lucide-react';
 import { FarmerDetailModal } from '../farmer/FarmerDetailModal';
 import { compressImage } from '../../utils/imageCompressor';
@@ -197,6 +199,16 @@ export const FarmerManager: React.FC = () => {
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [selectedFarmerForDetail, setSelectedFarmerForDetail] = useState<FarmerRecord | null>(null);
   const [editingFarmer, setEditingFarmer] = useState<Partial<FarmerRecord> | null>(null);
+  const [generatingCardId, setGeneratingCardId] = useState<string | null>(null);
+
+  const handleDownloadFarmerIdCard = async (farmer: FarmerRecord) => {
+    try {
+      setGeneratingCardId(farmer.id);
+      await generateFarmerIdCardPdf(farmer);
+    } finally {
+      setGeneratingCardId(null);
+    }
+  };
 
   // Backup restore state
   const [pendingRestore, setPendingRestore] = useState<{
@@ -1233,6 +1245,14 @@ export const FarmerManager: React.FC = () => {
                           </a>
                         )}
                         <button
+                          onClick={() => handleDownloadFarmerIdCard(farmer)}
+                          disabled={generatingCardId === farmer.id}
+                          className="p-1.5 rounded-lg text-emerald-800 hover:text-white hover:bg-[#143520] bg-emerald-50 border border-emerald-200 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                          title="Download QR ID Card (PDF)"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => setSelectedFarmerForDetail(farmer)}
                           className="p-1.5 rounded-lg text-[#143520] dark:text-[#143520] hover:text-white hover:bg-[#143520] bg-[#F6F4EB] dark:bg-[#F6F4EB] border border-[#DDD4BC] dark:border-[#DDD4BC] transition-all shadow-2xs cursor-pointer"
                           title="View Full Profile"
@@ -1554,6 +1574,14 @@ export const FarmerManager: React.FC = () => {
                               <MessageCircle className="w-3.5 h-3.5 fill-current" />
                             </a>
                           )}
+                          <button
+                            onClick={() => handleDownloadFarmerIdCard(farmer)}
+                            disabled={generatingCardId === farmer.id}
+                            className="p-1.5 text-emerald-700 hover:text-white hover:bg-[#143520] rounded-lg transition-all cursor-pointer disabled:opacity-50"
+                            title="Download QR ID Card (PDF)"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             onClick={() => setSelectedFarmerForDetail(farmer)}
                             className="p-1.5 text-slate-400 hover:text-[#256B3A] rounded-lg hover:bg-emerald-100/60 dark:hover:bg-slate-800"
