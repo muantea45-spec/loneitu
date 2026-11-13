@@ -45,14 +45,14 @@ export const TagArchivePage: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-[#EBF1EA] text-[#256B3A]">
-              <TagIcon className="w-5 h-5" />
+            <div className="p-2 rounded-lg bg-[#EBF1EA] text-[#256B3A]">
+              <TagIcon className="w-4 h-4" />
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#143520]">
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#143520]">
               #{tagName}
             </h1>
-            <span className="text-xs px-3 py-1 rounded-full bg-[#EBE6D6] text-[#3B2E1D] font-mono">
-              {matchingArticles.length} publication{matchingArticles.length === 1 ? '' : 's'}
+            <span className="text-xs px-2.5 py-0.5 rounded-md bg-[#EBE6D6] text-[#3B2E1D] font-mono">
+              {matchingArticles.length} {matchingArticles.length === 1 ? 'article' : 'articles'}
             </span>
           </div>
 

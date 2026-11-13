@@ -30,10 +30,10 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentArticle, allA
     <div className="my-16 pt-12 border-t border-[#EBE6D6]">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#256B3A]">
+          <span className="text-xs font-medium text-[#256B3A]">
             Chhiar Zau Duh Tan
           </span>
-          <h3 className="font-serif font-bold text-2xl text-[#143520] mt-1">
+          <h3 className="font-serif font-semibold text-2xl text-[#143520] mt-0.5">
             Hriatzauna Thuziak Dangte
           </h3>
         </div>
@@ -43,7 +43,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentArticle, allA
         {related.map(art => (
           <div
             key={art.id}
-            className="group bg-white rounded-2xl border border-[#EBE6D6] hover:border-[#32864A] overflow-hidden flex flex-col justify-between shadow-xs hover:shadow-md transition-all duration-200"
+            className="group bg-white rounded-2xl border border-[#EBE6D6] hover:border-[#DDD4BC] overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-xs transition-colors"
           >
             <div>
               <div className="relative aspect-16/10 overflow-hidden bg-[#EBE6D6]">
@@ -51,10 +51,10 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentArticle, allA
                   <img
                     src={art.coverImage}
                     alt={art.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover"
                   />
                 </Link>
-                <span className="absolute top-2.5 left-2.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#143520]/90 text-[#BFDC28]">
+                <span className="absolute top-2.5 left-2.5 text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#143520] text-[#BFDC28]">
                   {art.category}
                 </span>
               </div>

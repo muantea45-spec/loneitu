@@ -104,13 +104,13 @@ export const ArticleDetailPage: React.FC = () => {
 
           {/* Category Pill */}
           <div>
-            <span className="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#143520] text-[#BFDC28]">
+            <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-md bg-[#143520] text-[#BFDC28]">
               {article.category}
             </span>
           </div>
 
           {/* Title */}
-          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#143520] leading-[1.2]">
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#143520] leading-[1.2]">
             {article.title}
           </h1>
 
@@ -120,13 +120,13 @@ export const ArticleDetailPage: React.FC = () => {
               <img
                 src={article.author.avatar}
                 alt={article.author.name}
-                className="w-12 h-12 rounded-full object-cover ring-2 ring-[#256B3A]/30"
+                className="w-11 h-11 rounded-full object-cover ring-1 ring-[#256B3A]/30"
               />
               <div>
-                <div className="font-semibold text-sm text-[#143520]">
+                <div className="font-medium text-sm text-[#143520]">
                   {article.author.name}
                 </div>
-                <div className="text-xs text-[#6F5B3C] font-medium">
+                <div className="text-xs text-[#6F5B3C]">
                   {article.author.role}
                 </div>
               </div>
@@ -135,7 +135,7 @@ export const ArticleDetailPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-[#6F5B3C]">
               <Link
                 to={`/archive?year=${new Date(article.publishedAt).getFullYear()}&month=${new Date(article.publishedAt).getMonth() + 1}`}
-                className="flex items-center gap-1.5 hover:text-[#256B3A] hover:underline transition-colors"
+                className="flex items-center gap-1.5 hover:text-[#256B3A] transition-colors"
                 title="View in Date Archive"
               >
                 <Calendar className="w-3.5 h-3.5 text-[#256B3A]" />
@@ -154,7 +154,7 @@ export const ArticleDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(true)}
-                className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold shadow-2xs transition-all hover:scale-102 cursor-pointer"
+                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-medium transition-colors cursor-pointer"
                 title="Share this article"
               >
                 <Share2 className="w-3.5 h-3.5 text-[#BFDC28]" />
@@ -169,7 +169,7 @@ export const ArticleDetailPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
         {/* Cover Image banner */}
         <div className="max-w-4xl mx-auto mb-12">
-          <div className="relative aspect-16/9 rounded-3xl overflow-hidden shadow-lg border border-[#DDD4BC] bg-[#EBE6D6]">
+          <div className="relative aspect-16/9 rounded-2xl overflow-hidden shadow-sm border border-[#DDD4BC] bg-[#EBE6D6]">
             <img
               src={coverSrc}
               alt={article.title}
@@ -181,14 +181,14 @@ export const ArticleDetailPage: React.FC = () => {
             />
             {mediaBadge && (
               <div className="absolute top-4 left-4 z-10">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-lg">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-black/80 text-white border border-white/10 shadow-sm">
                   <Play className="w-3.5 h-3.5 fill-red-500 text-red-500" />
                   <span>{mediaBadge.label}</span>
                 </span>
               </div>
             )}
           </div>
-          <div className="text-[11px] text-[#6F5B3C] text-right mt-2 italic">
+          <div className="text-[11px] text-[#6F5B3C] text-right mt-2">
             Field photography: Verified agrarian site documentation
           </div>
         </div>
@@ -201,11 +201,11 @@ export const ArticleDetailPage: React.FC = () => {
               <TableOfContents content={article.content} />
 
               {/* Quick Author Snippet */}
-              <div className="p-5 bg-white rounded-2xl border border-[#EBE6D6] space-y-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C]">
+              <div className="p-5 bg-white rounded-xl border border-[#EBE6D6] space-y-2">
+                <div className="text-xs font-semibold text-[#6F5B3C]">
                   Lead Investigator
                 </div>
-                <div className="font-serif font-bold text-sm text-[#143520]">
+                <div className="font-serif font-semibold text-sm text-[#143520]">
                   {article.author.name}
                 </div>
                 <p className="text-xs text-[#6F5B3C] line-clamp-3 leading-relaxed">
@@ -214,8 +214,8 @@ export const ArticleDetailPage: React.FC = () => {
               </div>
 
               {/* Tag Cloud in Sidebar */}
-              <div className="p-5 bg-white rounded-2xl border border-[#EBE6D6] space-y-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C]">
+              <div className="p-5 bg-white rounded-xl border border-[#EBE6D6] space-y-2">
+                <div className="text-xs font-semibold text-[#6F5B3C]">
                   Field Practice Tags
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">

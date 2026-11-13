@@ -16,17 +16,17 @@ export const AuthorBio: React.FC<AuthorBioProps> = ({ author }) => {
       />
       <div className="space-y-2 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#143520] text-[#BFDC28]">
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#143520] text-[#BFDC28]">
             Contributing Agronomist
           </span>
           {author.institution && (
-            <span className="text-xs text-[#6F5B3C] font-medium flex items-center gap-1">
+            <span className="text-xs text-[#6F5B3C] font-normal flex items-center gap-1">
               <Building className="w-3.5 h-3.5 text-[#6F5B3C]" />
               {author.institution}
             </span>
           )}
         </div>
-        <h4 className="font-serif font-bold text-xl text-[#143520]">
+        <h4 className="font-serif font-semibold text-xl text-[#143520]">
           {author.name}
         </h4>
         <div className="text-xs font-semibold text-[#256B3A] flex items-center gap-1.5">

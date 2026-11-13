@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { BlogCard } from './BlogCard';
 import type { Article } from '../../types/blog';
 import { BookOpen, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -8,27 +8,14 @@ interface BlogGridProps {
   articles: Article[];
 }
 
-const POSTS_PER_PAGE_MOBILE = 5;
-const POSTS_PER_PAGE_DESKTOP = 6;
+const POSTS_PER_PAGE = 6;
 
 export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
   const { clearFilters } = useBlog();
   const [currentPage, setCurrentPage] = useState(1);
   const gridTopRef = useRef<HTMLDivElement>(null);
-  const [isDesktop, setIsDesktop] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
-  );
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const postsPerPage = isDesktop ? POSTS_PER_PAGE_DESKTOP : POSTS_PER_PAGE_MOBILE;
-  const totalPages = Math.ceil(articles.length / postsPerPage) || 1;
+  const totalPages = Math.ceil(articles.length / POSTS_PER_PAGE) || 1;
   const effectivePage = Math.min(Math.max(1, currentPage), totalPages);
 
   const handlePageChange = (page: number) => {
@@ -43,30 +30,29 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
     return (
       <div className="w-full py-20 px-4 text-center">
         <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border border-[#DDD4BC] shadow-xs space-y-4">
-          <div className="w-14 h-14 bg-[#F2F7F3] text-[#256B3A] rounded-full flex items-center justify-center mx-auto">
-            <BookOpen className="w-7 h-7" />
+          <div className="w-12 h-12 bg-[#F2F7F3] text-[#256B3A] rounded-xl flex items-center justify-center mx-auto">
+            <BookOpen className="w-6 h-6" />
           </div>
-          <h3 className="font-serif font-bold text-xl text-[#143520]">
-            Thuziak thar hmuh tur a awm rih lo.
+          <h3 className="font-serif font-semibold text-xl text-[#143520]">
+            Thuziak thar hmuh tur a awm rih lo
           </h3>
           <p className="text-xs sm:text-sm text-[#6F5B3C] leading-relaxed">
             I thil zawn chhungah hian thuziak a awm rih lo.
           </p>
           <button
             onClick={clearFilters}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#143520] text-white text-xs font-semibold hover:bg-[#1E542E] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#143520] text-white text-xs font-medium hover:bg-[#1E542E] transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Siamṭhat Leh (Reset Filters)</span>
+            <span>Siamṭhat leh</span>
           </button>
         </div>
       </div>
     );
   }
 
-  // Slice posts according to viewport (up to 6 for desktop, 5 for mobile)
-  const startIndex = (effectivePage - 1) * postsPerPage;
-  const currentArticles = articles.slice(startIndex, startIndex + postsPerPage);
+  const startIndex = (effectivePage - 1) * POSTS_PER_PAGE;
+  const currentArticles = articles.slice(startIndex, startIndex + POSTS_PER_PAGE);
 
   // Helper to compute compact mobile pages (up to 2 page options at a time)
   const getMobilePages = (): number[] => {
@@ -101,15 +87,18 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
 
   return (
     <div ref={gridTopRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Section Heading: CONTENT - Centered horizontally across all viewports */}
-      <div className="mb-8 pb-3 border-b border-[#EBE6D6] text-center">
-        <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] tracking-tight uppercase">
-          CONTENT
+      {/* Section Heading */}
+      <div className="mb-8 pb-3 border-b border-[#EBE6D6] flex items-baseline justify-between">
+        <h2 className="font-serif font-semibold text-2xl sm:text-3xl text-[#143520] tracking-tight">
+          Field Articles
         </h2>
+        <span className="text-xs font-mono text-[#6F5B3C]">
+          {articles.length} {articles.length === 1 ? 'article' : 'articles'}
+        </span>
       </div>
 
       {/* Grid container with articles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 lg:gap-8">
         {currentArticles.map(article => (
           <BlogCard key={article.id} article={article} />
         ))}
@@ -126,14 +115,14 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             type="button"
             onClick={() => handlePageChange(effectivePage - 1)}
             disabled={effectivePage === 1}
-            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] rounded-lg text-xs font-medium border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Previous page"
           >
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Hmasa</span>
           </button>
 
-          {/* MOBILE VIEW: Shows up to 2 page options (e.g. Page 1, Page 2) followed by Next arrow */}
+          {/* MOBILE VIEW */}
           <div className="flex md:hidden items-center gap-1.5">
             {mobilePages.map(pageNumber => {
               const isActive = effectivePage === pageNumber;
@@ -142,9 +131,9 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
                   key={pageNumber}
                   type="button"
                   onClick={() => handlePageChange(pageNumber)}
-                  className={`min-w-[44px] min-h-[44px] px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
+                  className={`min-w-[40px] min-h-[40px] px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
                     isActive
-                      ? 'bg-[#143520] text-[#BFDC28] shadow-sm ring-2 ring-[#143520]/20'
+                      ? 'bg-[#143520] text-[#BFDC28]'
                       : 'bg-white border border-[#DDD4BC] text-[#143520] hover:bg-[#F6F4EB]'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
@@ -156,14 +145,14 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             })}
           </div>
 
-          {/* DESKTOP VIEW: Full windowed pagination with ellipsis */}
+          {/* DESKTOP VIEW */}
           <div className="hidden md:flex items-center gap-1.5">
             {desktopPages.map((pageItem, index) => {
               if (pageItem === '...') {
                 return (
                   <span
                     key={`ellipsis-${index}`}
-                    className="px-2 text-xs font-bold text-[#8F7855] select-none"
+                    className="px-2 text-xs font-medium text-[#8F7855] select-none"
                   >
                     ...
                   </span>
@@ -176,9 +165,9 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
                   key={pageNumber}
                   type="button"
                   onClick={() => handlePageChange(pageNumber)}
-                  className={`min-w-[44px] min-h-[44px] px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
+                  className={`min-w-[40px] min-h-[40px] px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden ${
                     isActive
-                      ? 'bg-[#143520] text-[#BFDC28] shadow-sm ring-2 ring-[#143520]/20'
+                      ? 'bg-[#143520] text-[#BFDC28]'
                       : 'bg-white border border-[#DDD4BC] text-[#143520] hover:bg-[#F6F4EB]'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
@@ -195,7 +184,7 @@ export const BlogGrid: React.FC<BlogGridProps> = ({ articles }) => {
             type="button"
             onClick={() => handlePageChange(effectivePage + 1)}
             disabled={effectivePage === totalPages}
-            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-semibold border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] rounded-lg text-xs font-medium border border-[#DDD4BC] bg-white text-[#143520] hover:bg-[#F6F4EB] disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
             aria-label="Next page"
           >
             <span className="hidden sm:inline">Dawt</span>

@@ -98,17 +98,17 @@ export const Footer: React.FC = () => {
     <footer className="w-full bg-[#143520] text-[#EBF1EA] border-t border-[#1E542E] mt-4 sm:mt-6">
       {/* Active Announcement / Notice Banner in Footer (Editable strictly via Admin Console) */}
       {data.bannerEnabled && (data.bannerTitle || data.bannerText) && (
-        <div className="w-full bg-gradient-to-r from-[#173F26] via-[#215E34] to-[#173F26] text-white py-4 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]/60 shadow-inner">
+        <div className="w-full bg-[#173F26] text-white py-3 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]/40">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-start sm:items-center gap-3">
+            <div className="flex items-start sm:items-center gap-2.5">
               {data.bannerBadge && (
-                <span className="px-2.5 py-1 rounded-full bg-[#BFDC28] text-[#143520] text-[10px] font-bold uppercase tracking-wider shrink-0 shadow-2xs">
+                <span className="px-2 py-0.5 rounded-md bg-[#BFDC28] text-[#143520] text-[10px] font-medium tracking-wide shrink-0">
                   {data.bannerBadge}
                 </span>
               )}
               <div>
                 {data.bannerTitle && (
-                  <h4 className="font-serif font-bold text-sm text-white leading-snug">
+                  <h4 className="font-serif font-semibold text-sm text-white leading-snug">
                     {data.bannerTitle}
                   </h4>
                 )}
@@ -123,7 +123,7 @@ export const Footer: React.FC = () => {
             {data.bannerButtonText && data.bannerButtonLink && (
               <a
                 href={data.bannerButtonLink}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#BFDC28] hover:bg-[#d4f231] text-[#143520] text-xs font-bold transition-all hover:scale-102 shrink-0 cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#BFDC28] hover:bg-[#cbe830] text-[#143520] text-xs font-semibold transition-colors shrink-0 cursor-pointer"
               >
                 <span>{data.bannerButtonText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -134,14 +134,14 @@ export const Footer: React.FC = () => {
       )}
 
       <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        {/* Left Column: Brand, Mission Tagline & Contact Email - STRICTLY ALIGNED TO THE LEFT */}
+        {/* Left Column: Brand, Mission Tagline & Contact Email */}
         <div className="flex flex-col items-start text-left w-full md:w-auto">
           <div className="flex items-center justify-start gap-2.5 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-white p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
               <img src="/logo.png" alt="Loneitu" className="w-full h-full object-contain" />
             </div>
-            <span className="font-serif font-bold text-2xl text-white">Loneitu</span>
-            <span className="text-[10px] font-bold text-[#BFDC28] tracking-widest uppercase ml-1">
+            <span className="font-serif font-semibold text-xl text-white">Loneitu</span>
+            <span className="text-[10px] font-medium text-[#BFDC28] tracking-widest uppercase ml-1">
               · MIZORAM TAN
             </span>
           </div>
@@ -149,13 +149,13 @@ export const Footer: React.FC = () => {
             {data.tagline || 'Mizoram leilung mil thlai enkawl dan, huan siam dan thar, leh ran vulh dan tha ziah chhuahna journal.'}
           </p>
 
-          {/* Contact Us @ (Email) - Aligned to the Left */}
+          {/* Contact Us @ (Email) */}
           {contactEmail && (
-            <div className="mt-3.5 flex items-center justify-start gap-2 text-xs">
-              <span className="text-[#ADC6A7] font-medium">Contact Us @</span>
+            <div className="mt-3 flex items-center justify-start gap-2 text-xs">
+              <span className="text-[#ADC6A7] font-normal">Contact:</span>
               <a
                 href={`mailto:${contactEmail}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1E542E] text-[#BFDC28] hover:bg-[#256B3A] border border-[#256B3A] transition-colors font-mono font-medium text-[11px] shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#1E542E] text-[#BFDC28] hover:bg-[#256B3A] border border-[#256B3A] transition-colors font-mono text-xs"
               >
                 <Mail className="w-3.5 h-3.5 text-[#BFDC28] shrink-0" />
                 <span>{contactEmail}</span>
@@ -164,12 +164,12 @@ export const Footer: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: ONLY Social Media Links & HOME, ABOUT, ARCHIVE are Perfectly Centered on Mobile */}
-        <div className="flex flex-col items-center md:items-end justify-center w-full md:w-auto gap-3.5">
+        {/* Right Column */}
+        <div className="flex flex-col items-center md:items-end justify-center w-full md:w-auto gap-3">
           <div className="flex justify-center w-full md:w-auto">
             <SocialIconsRow links={aboutData?.socialLinks} variant="hero" />
           </div>
-          <div className="flex items-center justify-center gap-4 text-xs font-semibold text-[#D7E3D5] flex-wrap w-full md:w-auto">
+          <div className="flex items-center justify-center gap-3 text-xs font-medium text-[#D7E3D5] flex-wrap w-full md:w-auto">
             <Link to="/" className="hover:text-[#BFDC28] transition-colors">
               Home
             </Link>
@@ -182,18 +182,18 @@ export const Footer: React.FC = () => {
               Archive
             </Link>
           </div>
-          {/* Live Site View Count Stats (Starting from inherited Blogger count 100,102) */}
+          {/* Live Site View Count Stats */}
           <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1E542E] border border-[#256B3A] shadow-2xs text-xs"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#1E542E]/70 border border-[#256B3A]/60 text-xs"
             title="Total website views (starting from 100,102 inherited Blogger visits)"
           >
             <Eye className="w-3.5 h-3.5 text-[#BFDC28] shrink-0" />
-            <span className="text-[#D7E3D5] font-medium">View Count:</span>
-            <span className="font-mono font-bold text-[#BFDC28] tabular-nums">
+            <span className="text-[#D7E3D5] font-normal">Views:</span>
+            <span className="font-mono font-semibold text-[#BFDC28] tabular-nums">
               {siteViews.toLocaleString()}
             </span>
           </div>
-          <div className="flex items-center justify-center gap-3 text-[11px] font-medium text-[#88A682] flex-wrap w-full md:w-auto">
+          <div className="flex items-center justify-center gap-3 text-[11px] font-normal text-[#88A682] flex-wrap w-full md:w-auto">
             <Link to="/privacy" className="hover:text-[#BFDC28] transition-colors">
               Privacy Policy
             </Link>

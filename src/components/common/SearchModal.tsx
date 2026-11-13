@@ -143,15 +143,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#6F5B3C] mb-2">
-                  TAGS
+                <p className="text-xs font-semibold text-[#6F5B3C] mb-2">
+                  Tags
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {tags.slice(0, 8).map(tag => (
                     <button
                       key={tag.id}
                       onClick={() => handleSelectTag(tag.slug)}
-                      className="text-xs px-3.5 py-1.5 rounded-full bg-[#EBE6D6] text-[#3B2E1D] hover:bg-[#256B3A] hover:text-white transition-colors cursor-pointer"
+                      className="text-xs px-2.5 py-1 rounded-md bg-[#EBE6D6] text-[#3B2E1D] hover:bg-[#256B3A] hover:text-white transition-colors cursor-pointer"
                     >
                       #{tag.name}
                     </button>

@@ -53,7 +53,7 @@ export const CategoryArchivePage: React.FC = () => {
   return (
     <div className="w-full min-h-screen bg-[#FBFBF8] pb-16">
       {/* Sector Archive Hero Banner */}
-      <div className="w-full bg-gradient-to-b from-[#143520] to-[#1E542E] text-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
+      <div className="w-full bg-[#143520] text-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]/30">
         <div className="max-w-7xl mx-auto space-y-5">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs text-[#ADC6A7]">
@@ -63,24 +63,24 @@ export const CategoryArchivePage: React.FC = () => {
             <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-[#D7E3D5]">Sector Archives</span>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-[#BFDC28] font-semibold">{category.name}</span>
+            <span className="text-[#BFDC28] font-medium">{category.name}</span>
           </nav>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#BFDC28] text-[#143520]">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#BFDC28] text-[#143520]">
               <Sprout className="w-3.5 h-3.5" />
-              Specialized Agricultural Domain
+              Specialized Domain
             </span>
-            <span className="text-xs text-[#D7E3D5] px-2.5 py-1 rounded-full bg-white/10 font-mono">
-              {matchingArticles.length} active research paper{matchingArticles.length === 1 ? '' : 's'}
+            <span className="text-xs text-white/80 px-2 py-0.5 rounded-md bg-white/10 font-mono">
+              {matchingArticles.length} {matchingArticles.length === 1 ? 'article' : 'articles'}
             </span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
+          <h1 className="font-serif text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-tight">
             {category.name}
           </h1>
 
-          <p className="text-base sm:text-lg text-[#D7E3D5] max-w-3xl leading-relaxed font-light">
+          <p className="text-base sm:text-lg text-white/85 max-w-3xl leading-relaxed font-normal">
             {category.description}
           </p>
         </div>

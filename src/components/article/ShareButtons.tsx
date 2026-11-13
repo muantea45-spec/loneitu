@@ -45,7 +45,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
         {/* Main Share Button with Logo */}
         <button
           onClick={() => setIsShareModalOpen(true)}
-          className="px-3.5 py-2 rounded-xl bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all hover:scale-102 cursor-pointer"
+          className="px-3.5 py-2 rounded-lg bg-[#143520] hover:bg-[#1E542E] text-white text-xs font-medium flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
           title="Share to WhatsApp, Facebook, X, etc."
         >
           <Share2 className="w-3.5 h-3.5 text-[#BFDC28]" />
@@ -55,7 +55,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
         {/* WhatsApp Direct Option */}
         <button
           onClick={handleShareWhatsApp}
-          className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+          className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-[#25D366]/10 hover:bg-[#25D366] text-[#1e8341] hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
           title="Share to WhatsApp"
         >
           <WhatsAppIcon className="w-4 h-4" />
@@ -64,7 +64,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
         {/* Facebook Direct Option */}
         <button
           onClick={handleShareFacebook}
-          className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+          className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
           title="Share to Facebook"
         >
           <FacebookIcon className="w-4 h-4" />
@@ -72,7 +72,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ title, articleId }) 
 
         <button
           onClick={handleCopyLink}
-          className="px-3.5 py-2 min-h-[40px] rounded-xl bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+          className="px-3.5 py-2 min-h-[36px] rounded-lg bg-[#F6F4EB] hover:bg-[#EBE6D6] text-[#3B2E1D] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
           title="Copy link"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <LinkIcon className="w-3.5 h-3.5" />}

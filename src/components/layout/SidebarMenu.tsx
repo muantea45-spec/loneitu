@@ -56,10 +56,10 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                   onClose();
                   onOpenSearch();
                 }}
-                className="w-full min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-xs focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
+                className="w-full min-h-[40px] flex items-center justify-center gap-2 px-3.5 py-2 bg-white border border-[#DDD4BC] rounded-lg text-xs font-medium text-[#13341D] hover:bg-[#EBE6D6] transition-colors cursor-pointer shadow-2xs focus-visible:ring-2 focus-visible:ring-[#256B3A] outline-hidden"
               >
                 <Search className="w-4 h-4 text-[#256B3A]" />
-                <span>Zawnna (Search Articles)</span>
+                <span>Search / Zawnna</span>
               </button>
             </div>
 
@@ -68,7 +68,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <Link
                 to="/"
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname === '/'
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/'
                   ? 'bg-[#EBF1EA] text-[#143520]'
                   : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
                   }`}
@@ -79,7 +79,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <Link
                 to="/archive"
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname.startsWith('/archive')
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname.startsWith('/archive')
                   ? 'bg-[#EBF1EA] text-[#143520]'
                   : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
                   }`}
@@ -90,7 +90,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <Link
                 to="/about"
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${location.pathname === '/about'
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/about'
                   ? 'bg-[#EBF1EA] text-[#143520]'
                   : 'text-[#3B2E1D] hover:bg-[#F6F4EB]'
                   }`}
@@ -103,11 +103,11 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
             {/* Category Archives / Categories */}
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between px-2 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#6F5B3C] flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-[#6F5B3C] flex items-center gap-1.5">
                   <FolderTree className="w-3.5 h-3.5 text-[#256B3A]" />
                   <span>Categories</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#6F5B3C]">{categories.length} categories</span>
+                <span className="text-[11px] font-mono text-[#6F5B3C]">{categories.length} categories</span>
               </div>
 
               <div className="space-y-1.5">
@@ -121,10 +121,10 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                       key={cat.id}
                       to={`/category/${cat.slug}`}
                       onClick={onClose}
-                      className="flex items-center justify-between p-3 rounded-xl border border-[#EBE6D6] hover:border-[#32864A] hover:bg-white bg-[#FDFCF9] transition-all group shadow-2xs"
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-[#EBE6D6] hover:border-[#DDD4BC] hover:bg-white bg-[#FDFCF9] transition-colors group shadow-2xs"
                     >
                       <div className="min-w-0 pr-2">
-                        <div className="text-xs font-bold text-[#143520] group-hover:text-[#256B3A] truncate">
+                        <div className="text-xs font-semibold text-[#143520] group-hover:text-[#256B3A] truncate">
                           {cat.name}
                         </div>
                         <div className="text-[11px] text-[#6F5B3C] line-clamp-1 mt-0.5">
@@ -132,10 +132,10 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EBF1EA] text-[#1E542E] font-medium">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#EBF1EA] text-[#1E542E] font-medium">
                           {count}
                         </span>
-                        <ArrowRight className="w-3.5 h-3.5 text-[#6F5B3C] group-hover:text-[#256B3A] group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-3.5 h-3.5 text-[#6F5B3C] group-hover:text-[#256B3A] transition-colors" />
                       </div>
                     </Link>
                   );

@@ -82,8 +82,8 @@ export const ArchivePage: React.FC = () => {
     <div className="min-h-screen bg-[#FBFBF8] py-8 sm:py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Clean Header: Loneitu Archive */}
-        <div className="bg-[#143520] text-white rounded-3xl p-6 sm:p-10 border border-[#1E542E] shadow-sm">
-          <h1 className="font-serif font-bold text-2xl sm:text-4xl text-white">
+        <div className="bg-[#143520] text-white rounded-2xl p-6 sm:p-8 border border-[#1E542E] shadow-2xs">
+          <h1 className="font-serif font-semibold text-2xl sm:text-3xl text-white">
             Loneitu Archive
           </h1>
         </div>
@@ -97,7 +97,7 @@ export const ArchivePage: React.FC = () => {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search article titles..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs sm:text-sm text-[#143520] placeholder-[#6F5B3C]/70 focus:outline-hidden focus:border-[#256B3A] shadow-2xs transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#DDD4BC] rounded-lg text-xs sm:text-sm text-[#143520] placeholder-[#6F5B3C]/70 focus:outline-hidden focus:border-[#256B3A] shadow-2xs transition-colors"
             />
             <Search className="w-4 h-4 text-[#6F5B3C] absolute left-3.5 top-3" />
           </div>
@@ -109,7 +109,7 @@ export const ArchivePage: React.FC = () => {
               <select
                 value={selectedYear}
                 onChange={e => setSelectedYear(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A] shadow-2xs cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 bg-white border border-[#DDD4BC] rounded-lg text-xs font-medium text-[#143520] focus:outline-hidden focus:border-[#256B3A] shadow-2xs cursor-pointer"
                 aria-label="Filter by Year"
               >
                 <option value="all">All Years</option>
@@ -126,7 +126,7 @@ export const ArchivePage: React.FC = () => {
               <select
                 value={selectedMonth}
                 onChange={e => setSelectedMonth(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2.5 bg-white border border-[#DDD4BC] rounded-xl text-xs font-semibold text-[#143520] focus:outline-hidden focus:border-[#256B3A] shadow-2xs cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 bg-white border border-[#DDD4BC] rounded-lg text-xs font-medium text-[#143520] focus:outline-hidden focus:border-[#256B3A] shadow-2xs cursor-pointer"
                 aria-label="Filter by Month"
               >
                 <option value="all">All Months</option>

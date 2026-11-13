@@ -104,16 +104,16 @@ export const AboutPage: React.FC = () => {
       {/* Hero Header */}
       <div className="w-full bg-[#143520] text-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#256B3A]">
         <div className="max-w-4xl mx-auto space-y-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#BFDC28]/20 border border-[#BFDC28]/40 text-[#BFDC28] text-xs font-bold uppercase tracking-wider mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-white/10 border border-white/15 text-[#BFDC28] text-xs font-medium mx-auto">
             <Sprout className="w-4 h-4" />
             <span>{aboutData.badge}</span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
+          <h1 className="font-serif text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-tight">
             {aboutData.heroTitle}
           </h1>
 
-          <p className="text-base sm:text-lg text-[#D7E3D5] leading-relaxed max-w-2xl mx-auto font-light">
+          <p className="text-base sm:text-lg text-white/85 leading-relaxed max-w-2xl mx-auto font-normal">
             {aboutData.heroDescription}
           </p>
 
@@ -204,10 +204,10 @@ export const AboutPage: React.FC = () => {
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#256B3A]/10 text-[#256B3A] flex items-center justify-center shrink-0">
                   <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#143520] tracking-tight uppercase">
-                  STAFF
+                <h2 className="font-serif font-semibold text-2xl sm:text-3xl text-[#143520] tracking-tight">
+                  Staff & Team
                 </h2>
-                <span className="text-xs font-bold text-[#6F5B3C] bg-[#F6F4EB] px-2.5 py-0.5 rounded-full border border-[#DDD4BC]">
+                <span className="text-xs font-mono text-[#6F5B3C] bg-[#F6F4EB] px-2 py-0.5 rounded-md border border-[#DDD4BC]">
                   {filteredCards.length}
                 </span>
               </div>
